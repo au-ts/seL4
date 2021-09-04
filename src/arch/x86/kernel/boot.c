@@ -72,10 +72,7 @@ BOOT_CODE static bool_t arch_init_freemem(p_region_t ui_p_reg,
                                           mem_p_regs_t *mem_p_regs,
                                           word_t extra_bi_size_bits)
 {
-    // Extend the reserved region down to include the base of the kernel image.
-    // KERNEL_ELF_PADDR_BASE is the lowest physical load address used
-    // in the x86 linker script.
-    ui_p_reg.start = KERNEL_ELF_PADDR_BASE;
+    ui_p_reg.start = 0;
     reserved[0] = paddr_to_pptr_reg(ui_p_reg);
     return init_freemem(mem_p_regs->count, mem_p_regs->list, MAX_RESERVED,
                         reserved, it_v_reg, extra_bi_size_bits);
@@ -87,6 +84,7 @@ BOOT_CODE bool_t init_sys_state(
     cpu_id_t      cpu_id,
     mem_p_regs_t  *mem_p_regs,
     ui_info_t     ui_info,
+    p_region_t    boot_mem_reuse_p_reg,
     /* parameters below not modeled in abstract specification */
     uint32_t      num_drhu,
     paddr_t      *drhu_list,
@@ -112,6 +110,7 @@ BOOT_CODE bool_t init_sys_state(
 
     /* convert from physical addresses to kernel pptrs */
     region_t ui_reg             = paddr_to_pptr_reg(ui_info.p_reg);
+    region_t boot_mem_reuse_reg = paddr_to_pptr_reg(boot_mem_reuse_p_reg);
 
     /* convert from physical addresses to userland vptrs */
     v_region_t ui_v_reg;
@@ -121,7 +120,7 @@ BOOT_CODE bool_t init_sys_state(
 
     ipcbuf_vptr = ui_v_reg.end;
     bi_frame_vptr = ipcbuf_vptr + BIT(PAGE_BITS);
-    extra_bi_frame_vptr = bi_frame_vptr + BIT(seL4_BootInfoFrameBits);
+    extra_bi_frame_vptr = bi_frame_vptr + BIT(PAGE_BITS);
 
     if (vbe->vbeMode != -1) {
         extra_bi_size += sizeof(seL4_X86_BootInfo_VBE);
@@ -142,7 +141,7 @@ BOOT_CODE bool_t init_sys_state(
 
     /* The region of the initial thread is the user image + ipcbuf and boot info */
     it_v_reg.start = ui_v_reg.start;
-    it_v_reg.end = ROUND_UP(extra_bi_frame_vptr + (extra_bi_size_bits > 0 ? BIT(extra_bi_size_bits) : 0), PAGE_BITS);
+    it_v_reg.end = ROUND_UP(extra_bi_frame_vptr + BIT(extra_bi_size_bits), PAGE_BITS);
 #ifdef CONFIG_IOMMU
     /* calculate the number of io pts before initialising memory */
     if (!vtd_init_num_iopts(num_drhu)) {
@@ -176,7 +175,7 @@ BOOT_CODE bool_t init_sys_state(
     populate_bi_frame(0, ksNumCPUs, ipcbuf_vptr, extra_bi_size);
     region_t extra_bi_region = {
         .start = rootserver.extra_bi,
-        .end = rootserver.extra_bi + (extra_bi_size_bits > 0 ? BIT(extra_bi_size_bits) : 0)
+        .end = rootserver.extra_bi + BIT(extra_bi_size_bits)
     };
 
     /* populate vbe info block */
@@ -226,7 +225,7 @@ BOOT_CODE bool_t init_sys_state(
         extra_bi_offset += 4;
     }
 
-    /* provide a chunk for any leftover padding in the extended boot info */
+    /* provde a chunk for any leftover padding in the extended boot info */
     seL4_BootInfoHeader padding_header;
     padding_header.id = SEL4_BOOTINFO_HEADER_PADDING;
     padding_header.len = (extra_bi_region.end - extra_bi_region.start) - extra_bi_offset;
@@ -297,13 +296,9 @@ BOOT_CODE bool_t init_sys_state(
 #endif
 
     /* create the idle thread */
-    create_idle_thread();
-
-    /* copy i387 FPU initial state from FPU */
-    saveFpuState(NODE_STATE(ksIdleThread));
-    x86KSnullFpuState = NODE_STATE(ksIdleThread)->tcbArch.tcbContext.fpuState;
-    /* Check that we can load it: */
-    loadFpuState(NODE_STATE(ksIdleThread));
+    if (!create_idle_thread()) {
+        return false;
+    }
 
     /* create the initial thread */
     tcb_t *initial = create_initial_thread(root_cnode_cap,
@@ -333,7 +328,7 @@ BOOT_CODE bool_t init_sys_state(
 #endif
 
     /* create all of the untypeds. Both devices and kernel window memory */
-    if (!create_untypeds(root_cnode_cap)) {
+    if (!create_untypeds(root_cnode_cap, boot_mem_reuse_reg, ndks_boot.slot_pos_cur)) {
         return false;
     }
 

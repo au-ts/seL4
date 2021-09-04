@@ -5,9 +5,6 @@
  */
 
 #pragma once
-
-#include <config.h>
-#include <types.h>
 #include <bootinfo.h>
 #include <arch/bootinfo.h>
 
@@ -18,7 +15,7 @@
 typedef cte_t  slot_t;
 typedef cte_t *slot_ptr_t;
 #define SLOT_PTR(pptr, pos) (((slot_ptr_t)(pptr)) + (pos))
-#define pptr_of_cap(cap) ((pptr_t)cap_get_capPtr(cap))
+#define pptr_of_cap (pptr_t)cap_get_capPtr
 
 /* (node-local) state accessed only during bootstrapping */
 
@@ -39,8 +36,6 @@ static inline bool_t is_reg_empty(region_t reg)
     return reg.start == reg.end;
 }
 
-p_region_t get_p_reg_kernel_img_boot(void);
-p_region_t get_p_reg_kernel_img(void);
 bool_t init_freemem(word_t n_available, const p_region_t *available,
                     word_t n_reserved, const region_t *reserved,
                     v_region_t it_v_reg, word_t extra_bi_size_bits);
@@ -50,15 +45,16 @@ cap_t create_root_cnode(void);
 bool_t provide_cap(cap_t root_cnode_cap, cap_t cap);
 cap_t create_it_asid_pool(cap_t root_cnode_cap);
 void write_it_pd_pts(cap_t root_cnode_cap, cap_t it_pd_cap);
-void create_idle_thread(void);
-bool_t create_untypeds(cap_t root_cnode_cap);
+bool_t create_idle_thread(void);
+bool_t create_untypeds_for_region(cap_t root_cnode_cap, bool_t device_memory, region_t reg, seL4_SlotPos first_untyped_slot);
+bool_t create_untypeds(cap_t root_cnode_cap, region_t boot_mem_reuse_reg, seL4_SlotPos first_untyped_slot);
 void bi_finalise(void);
 void create_domain_cap(cap_t root_cnode_cap);
 
 cap_t create_ipcbuf_frame_cap(cap_t root_cnode_cap, cap_t pd_cap, vptr_t vptr);
 word_t calculate_extra_bi_size_bits(word_t extra_size);
 void populate_bi_frame(node_id_t node_id, word_t num_nodes, vptr_t ipcbuf_vptr,
-                       word_t extra_bi_size);
+                       word_t extra_bi_size_bits);
 void create_bi_frame_cap(cap_t root_cnode_cap, cap_t pd_cap, vptr_t vptr);
 
 #ifdef CONFIG_KERNEL_MCS
@@ -137,24 +133,3 @@ static inline BOOT_CODE pptr_t it_alloc_paging(void)
 
 /* return the amount of paging structures required to cover v_reg */
 word_t arch_get_n_paging(v_region_t it_veg);
-
-#if defined(CONFIG_DEBUG_BUILD) && defined(ENABLE_SMP_SUPPORT) && defined(CONFIG_KERNEL_MCS) && !defined(CONFIG_PLAT_QEMU_ARM_VIRT) && !defined(CONFIG_PLAT_QEMU_RISCV_VIRT)
-/* Test whether clocks are synchronised across nodes */
-#define ENABLE_SMP_CLOCK_SYNC_TEST_ON_BOOT
-#endif
-
-#ifdef ENABLE_SMP_CLOCK_SYNC_TEST_ON_BOOT
-BOOT_CODE void clock_sync_test(void);
-
-/* Delta (in us) allowed in the clock sync test in addition to getTimerPrecision().
-   On RISC-V, reading the clock goes via mmode. If mmode uses a big lock, that
-   can take considerable time */
-#ifdef CONFIG_ARCH_RISCV
-#define CLOCK_SYNC_DELTA 5
-#else
-#define CLOCK_SYNC_DELTA 1
-#endif
-
-#else
-#define clock_sync_test()
-#endif
