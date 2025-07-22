@@ -112,13 +112,13 @@ void NORETURN fastpath_call(word_t cptr, word_t msgInfo)
     stored_hw_asid.words[0] = asid_map_asid_map_vspace_get_stored_hw_vmid(asid_map);
 #else
     // XX:: ??
-    stored_hw_asid.words[0] = (hw_asid_t)vspaceId;
+    stored_hw_asid.words[0] = (hw_asid_t){vspaceId}.v;
 #endif
 #endif
 
 #ifdef CONFIG_ARCH_RISCV
-    /* Get HW ASID */
-    stored_hw_asid.words[0] = cap_page_table_cap_get_capPTMappedASID(newVTable);
+    /* Get HW(???) ASID */
+    stored_hw_asid.words[0] = (hw_asid_t){cap_page_table_cap_get_capPTMappedASID(newVTable)};
 #endif
 
     /* let gcc optimise this out for 1 domain */
@@ -390,7 +390,7 @@ void NORETURN fastpath_reply_recv(word_t cptr, word_t msgInfo)
     /* vmids are the tags used instead of hw_asids in hyp mode */
     stored_hw_asid.words[0] = asid_map_asid_map_vspace_get_stored_hw_vmid(asid_map);
 #else
-    stored_hw_asid.words[0] = (hw_asid_t)vspaceId;
+    stored_hw_asid.words[0] = (hw_asid_t){vspaceId}.v;
 #endif
 #endif
 

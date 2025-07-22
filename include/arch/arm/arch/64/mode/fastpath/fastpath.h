@@ -27,6 +27,7 @@ compile_assert(SysReplyRecv_Minus2, SysReplyRecv == -2)
 #define endpoint_ptr_get_epQueue_tail_fp(ep_ptr) TCB_PTR(endpoint_ptr_get_epQueue_tail(ep_ptr))
 #define cap_vtable_cap_get_vspace_root_fp(vtable_cap) VSPACE_PTR(cap_vspace_cap_get_capVSBasePtr(vtable_cap))
 
+// XXX: lol pde_t
 static inline void FORCE_INLINE
 switchToThread_fp(tcb_t *thread, vspace_root_t *vroot, pde_t stored_hw_asid)
 {
@@ -35,7 +36,7 @@ switchToThread_fp(tcb_t *thread, vspace_root_t *vroot, pde_t stored_hw_asid)
     if (config_set(CONFIG_ARM_HYPERVISOR_SUPPORT)) {
         vcpu_switch(thread->tcbArch.tcbVCPU);
     }
-    hw_asid = (hw_asid_t)(stored_hw_asid.words[0] & 0xffff);
+    hw_asid = (hw_asid_t){stored_hw_asid.words[0] & 0xffff};
     armv_contextSwitch_HWASID(vroot, hw_asid);
 
 #ifdef CONFIG_BENCHMARK_TRACK_UTILISATION

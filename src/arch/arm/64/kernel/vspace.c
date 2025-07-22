@@ -973,10 +973,11 @@ static inline void invalidateTLBByASID(vspace_id_t vspaceId)
     if (!asid_map_asid_map_vspace_get_stored_vmid_valid(asid_map)) {
         return;
     }
-    invalidateTranslationASID(asid_map_asid_map_vspace_get_stored_hw_vmid(asid_map));
+    hw_asid_t hw_asid = {asid_map_asid_map_vspace_get_stored_hw_vmid(asid_map)};
 #else
-    invalidateTranslationASID(vspaceId);
+    hw_asid_t hw_asid = {vspaceId};
 #endif
+    invalidateTranslationASID(hw_asid);
 }
 
 static inline void invalidateTLBByASIDVA(vspace_id_t vspaceId, vptr_t vaddr)
@@ -994,12 +995,11 @@ static inline void invalidateTLBByASIDVA(vspace_id_t vspaceId, vptr_t vaddr)
     if (!asid_map_asid_map_vspace_get_stored_vmid_valid(asid_map)) {
         return;
     }
-    uint64_t hw_asid = asid_map_asid_map_vspace_get_stored_hw_vmid(asid_map);
-    invalidateTranslationSingle((hw_asid << 48) | vaddr >> seL4_PageBits);
+    hw_asid_t hw_asid = (hw_asid_t){asid_map_asid_map_vspace_get_stored_hw_vmid(asid_map)};
 #else
-    uint64_t hw_asid = (uint64_t)(hw_asid_t)vspaceId;
-    invalidateTranslationSingle((hw_asid << 48) | vaddr >> seL4_PageBits);
+    hw_asid_t hw_asid = (hw_asid_t){vspaceId};
 #endif
+    invalidateTranslationSingle((((uint64_t)hw_asid.v) << 48) | vaddr >> seL4_PageBits);
 }
 
 
@@ -1063,10 +1063,10 @@ void unmapPage(vm_page_size_t page_size, vspace_id_t vspaceId, vptr_t vptr, pptr
 
     *(lu_ret.ptSlot) = pte_pte_invalid_new();
     cleanByVA_PoU((vptr_t)lu_ret.ptSlot, pptr_to_paddr(lu_ret.ptSlot));
-    hw_asid_t hw_asid = (hw_asid_t)vspaceId;
-    assert(hw_asid < BIT(16));
+    hw_asid_t hw_asid = (hw_asid_t){vspaceId};
+    assert(hw_asid.v < BIT(16));
     // XXX: ???
-    invalidateTLBByASIDVA(hw_asid, vptr);
+    invalidateTLBByASIDVA(hw_asid.v, vptr);
 }
 
 void deleteASID(vspace_id_t vspaceId, vspace_root_t *vspace)
