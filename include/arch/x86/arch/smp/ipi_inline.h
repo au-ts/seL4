@@ -53,4 +53,3 @@ static inline void doRemoteVMCheckBoundNotification(word_t cpu, tcb_t *tcb)
 #endif
 
 #endif /* ENABLE_SMP_SUPPORT */
-

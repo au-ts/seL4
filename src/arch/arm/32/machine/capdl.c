@@ -258,8 +258,8 @@ static void cap_frame_print_attrs_vptr(word_t vptr, pde_t *pd)
 void print_ipc_buffer_slot(tcb_t *tcb)
 {
     word_t vptr = tcb->tcbIPCBuffer;
-    asid_t asid = cap_page_directory_cap_get_capPDMappedASID(TCB_PTR_CTE_PTR(tcb, tcbVTable)->cap);
-    findPDForASID_ret_t find_ret = findPDForASID(asid);
+    vspace_id_t vspaceId = cap_page_directory_cap_get_capPDMappedASID(TCB_PTR_CTE_PTR(tcb, tcbVTable)->cap);
+    findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
     printf("ipc_buffer_slot: ");
     cap_frame_print_attrs_vptr(vptr, find_ret.pd);
 }
@@ -268,23 +268,23 @@ void print_cap_arch(cap_t cap)
 {
     switch (cap_get_capType(cap)) {
     case cap_page_table_cap: {
-        asid_t asid = cap_page_table_cap_get_capPTMappedASID(cap);
-        findPDForASID_ret_t find_ret = findPDForASID(asid);
+        vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedASID(cap);
+        findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
         vptr_t vptr = cap_page_table_cap_get_capPTMappedAddress(cap);
-        if (asid) {
-            printf("pt_%p_%04lu (asid: %lu)\n",
-                   lookupPDSlot(find_ret.pd, vptr), PD_INDEX(vptr), (long unsigned int)asid);
+        if (vspaceId != vspaceIdInvalid) {
+            printf("pt_%p_%04lu (vspaceId: %lu)\n",
+                   lookupPDSlot(find_ret.pd, vptr), PD_INDEX(vptr), (long unsigned int)vspaceId);
         } else {
             printf("pt_%p_%04lu\n", lookupPDSlot(find_ret.pd, vptr), PD_INDEX(vptr));
         }
         break;
     }
     case cap_page_directory_cap: {
-        asid_t asid = cap_page_directory_cap_get_capPDMappedASID(cap);
-        findPDForASID_ret_t find_ret = findPDForASID(asid);
-        if (asid) {
-            printf("%p_pd (asid: %lu)\n",
-                   find_ret.pd, (long unsigned int)asid);
+        vspace_id_t vspaceId = cap_page_directory_cap_get_capPDMappedASID(cap);
+        findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
+        if (vspaceId != vspaceIdInvalid) {
+            printf("%p_pd (vspaceId: %lu)\n",
+                   find_ret.pd, (long unsigned int)vspaceId);
         } else {
             printf("%p_pd\n", find_ret.pd);
         }
@@ -297,14 +297,14 @@ void print_cap_arch(cap_t cap)
     }
     case cap_small_frame_cap: {
         vptr_t vptr = cap_small_frame_cap_get_capFMappedAddress(cap);
-        findPDForASID_ret_t find_ret = findPDForASID(cap_small_frame_cap_get_capFMappedASID(cap));
+        findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(cap_small_frame_cap_get_capFMappedASID(cap));
         assert(find_ret.status == EXCEPTION_NONE);
         cap_frame_print_attrs_vptr(vptr, find_ret.pd);
         break;
     }
     case cap_frame_cap: {
         vptr_t vptr = cap_frame_cap_get_capFMappedAddress(cap);
-        findPDForASID_ret_t find_ret = findPDForASID(cap_frame_cap_get_capFMappedASID(cap));
+        findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(cap_frame_cap_get_capFMappedASID(cap));
         assert(find_ret.status == EXCEPTION_NONE);
         cap_frame_print_attrs_vptr(vptr, find_ret.pd);
         break;

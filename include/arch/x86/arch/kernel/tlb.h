@@ -31,5 +31,3 @@ static inline void invalidateTranslationAll(word_t mask)
     invalidateLocalTranslationAll();
     SMP_COND_STATEMENT(doRemoteInvalidateTranslationAll(mask));
 }
-
-

@@ -39,7 +39,7 @@ deriveCap_ret_t Mode_deriveCap(cte_t *slot, cap_t cap)
     switch (cap_get_capType(cap)) {
     case cap_frame_cap:
         cap = cap_frame_cap_set_capFMapType(cap, X86_MappingNone);
-        ret.cap = cap_frame_cap_set_capFMappedASID(cap, asidInvalid);
+        ret.cap = cap_frame_cap_set_capFMappedASID(cap, vspaceIdInvalid);
         ret.status = EXCEPTION_NONE;
         return ret;
 
@@ -136,11 +136,11 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
     case seL4_X86_4K:
         return cap_frame_cap_new(
                    X86_SmallPage,          /* capFSize             */
-                   ASID_LOW(asidInvalid),  /* capFMappedASIDLow    */
+                   ASID_LOW(vspaceIdInvalid),  /* capFMappedASIDLow    */
                    false,                  /* capFMappedAddress    */
                    X86_MappingNone,        /* capFMapType          */
                    deviceMemory,           /* capFIsDevice         */
-                   ASID_HIGH(asidInvalid), /* capFMappedASIDHigh   */
+                   ASID_HIGH(vspaceIdInvalid), /* capFMappedASIDHigh   */
                    VMReadWrite,            /* capFVMRights         */
                    (word_t)regionBase      /* capFBasePtr          */
                );
@@ -148,11 +148,11 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
     case seL4_X86_LargePageObject:
         return cap_frame_cap_new(
                    X86_LargePage,          /* capFSize             */
-                   ASID_LOW(asidInvalid),  /* capFMappedASIDLow    */
+                   ASID_LOW(vspaceIdInvalid),  /* capFMappedASIDLow    */
                    false,                  /* capFMappedAddress    */
                    X86_MappingNone,        /* capFMapType          */
                    deviceMemory,           /* capFIsDevice         */
-                   ASID_HIGH(asidInvalid), /* capFMappedASIDHigh   */
+                   ASID_HIGH(vspaceIdInvalid), /* capFMappedASIDHigh   */
                    VMReadWrite,            /* capFVMRights         */
                    (word_t)regionBase      /* capFBasePtr          */
                );
@@ -160,7 +160,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
     case seL4_X86_PageTableObject:
         return cap_page_table_cap_new(
                    0,                  /* capPTIsMapped        */
-                   asidInvalid,        /* capPTMappedASID      */
+                   vspaceIdInvalid,        /* capPTMappedASID      */
                    0,                  /* capPTMappedAddress   */
                    (word_t)regionBase  /* capPTBasePtr         */
                );
@@ -169,7 +169,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
         copyGlobalMappings(regionBase);
         return cap_page_directory_cap_new(
                    0,                  /* capPDIsMapped      */
-                   asidInvalid,        /* capPDMappedASID    */
+                   vspaceIdInvalid,        /* capPDMappedASID    */
                    0,                  /* capPDMappedAddress */
                    (word_t)regionBase  /* capPDBasePtr       */
                );

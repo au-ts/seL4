@@ -16,7 +16,7 @@
 
 cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_reg);
 cap_t create_unmapped_it_frame_cap(pptr_t pptr, bool_t use_large);
-cap_t create_mapped_it_frame_cap(cap_t pd_cap, pptr_t pptr, vptr_t vptr, asid_t asid, bool_t use_large,
+cap_t create_mapped_it_frame_cap(cap_t pd_cap, pptr_t pptr, vptr_t vptr, vspace_id_t vspaceId, bool_t use_large,
                                  bool_t executable);
 
 void map_kernel_window(void);
@@ -44,4 +44,3 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
 #ifdef CONFIG_PRINTING
 void Arch_userStackTrace(tcb_t *tptr);
 #endif
-

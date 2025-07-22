@@ -100,18 +100,18 @@ struct asid_pool {
     asid_map_t array[BIT(asidLowBits)];
 };
 
-typedef struct asid_pool asid_pool_t;
+typedef struct asid_pool vspace_id_pool_t;
 
 #define ASID_POOL_INDEX_BITS  seL4_ASIDPoolIndexBits
 #define ASID_POOL_SIZE_BITS (seL4_ASIDPoolBits + WORD_SIZE_BITS)
-#define ASID_POOL_PTR(r)    ((asid_pool_t*)r)
+#define ASID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
 #define ASID_POOL_REF(p)    ((word_t)p)
 #define ASID_BITS           (asidHighBits + asidLowBits)
 #define nASIDPools          BIT(asidHighBits)
 #define ASID_LOW(a)         (a & MASK(asidLowBits))
 #define ASID_HIGH(a)        ((a >> asidLowBits) & MASK(asidHighBits))
 
-static inline asid_t PURE cap_get_capMappedASID(cap_t cap)
+static inline vspace_id_t PURE cap_get_capMappedASID(cap_t cap)
 {
     cap_tag_t ctag;
 
@@ -192,4 +192,3 @@ static inline void *CONST cap_get_modeCapPtr(cap_t cap)
         return NULL;
     }
 }
-

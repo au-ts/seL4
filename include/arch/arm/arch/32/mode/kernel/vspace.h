@@ -29,11 +29,11 @@ struct createMappingEntries_ret {
 };
 typedef struct createMappingEntries_ret createMappingEntries_ret_t;
 
-struct findPDForASID_ret {
+struct findVSpaceForVSpaceId_ret {
     exception_t status;
     pde_t *pd;
 };
-typedef struct findPDForASID_ret findPDForASID_ret_t;
+typedef struct findVSpaceForVSpaceId_ret findVSpaceForVSpaceId_ret_t;
 
 struct lookupPTSlot_ret {
     exception_t status;
@@ -42,23 +42,23 @@ struct lookupPTSlot_ret {
 typedef struct lookupPTSlot_ret lookupPTSlot_ret_t;
 
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
-hw_asid_t getHWASID(asid_t asid);
+hw_asid_t getHWASID(vspace_id_t vspaceId);
 #endif
 void copyGlobalMappings(pde_t *newPD);
-findPDForASID_ret_t findPDForASID(asid_t asid);
+findVSpaceForVSpaceId_ret_t findVSpaceForVSpaceId(vspace_id_t asid);
 lookupPTSlot_ret_t lookupPTSlot(pde_t *pd, vptr_t vptr);
 pde_t *CONST lookupPDSlot(pde_t *pd, vptr_t vptr);
-void deleteASIDPool(asid_t base, asid_pool_t *pool);
-void deleteASID(asid_t asid, pde_t *pd);
-pde_t *pageTableMapped(asid_t asid, vptr_t vaddr, pte_t *pt);
-void unmapPageTable(asid_t asid, vptr_t vaddr, pte_t *pt);
-void unmapPage(vm_page_size_t page_size, asid_t asid, vptr_t vptr, void *pptr);
-hw_asid_t getHWASID(asid_t asid);
+void deleteASIDPool(vspace_id_t base, vspace_id_pool_t *pool);
+void deleteASID(vspace_id_t vspaceId, pde_t *pd);
+pde_t *pageTableMapped(vspace_id_t vspaceId, vptr_t vaddr, pte_t *pt);
+void unmapPageTable(vspace_id_t vspaceId, vptr_t vaddr, pte_t *pt);
+void unmapPage(vm_page_size_t page_size, vspace_id_t vspaceId, vptr_t vptr, void *pptr);
+hw_asid_t getHWASID(vspace_id_t vspaceId);
 hw_asid_t findFreeHWASID(void);
-void flushPage(vm_page_size_t page_size, pde_t *pd, asid_t asid, word_t vptr);
-void flushTable(pde_t *pd, asid_t asid, word_t vptr, pte_t *pt);
-void flushSpace(asid_t asid);
-void invalidateTLBByASID(asid_t asid);
+void flushPage(vm_page_size_t page_size, pde_t *pd, vspace_id_t vspaceId, word_t vptr);
+void flushTable(pde_t *pd, vspace_id_t vspaceId, word_t vptr, pte_t *pt);
+void flushSpace(vspace_id_t vspaceId);
+void invalidateTLBByASID(vspace_id_t vspaceId);
 
 bool_t CONST isIOSpaceFrameCap(cap_t cap);
 
@@ -70,4 +70,3 @@ static const region_t BOOT_RODATA mode_reserved_region[] = {
     }
 };
 #define MODE_RESERVED ARRAY_SIZE(mode_reserved_region)
-

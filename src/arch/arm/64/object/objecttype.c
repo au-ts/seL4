@@ -57,7 +57,7 @@ deriveCap_ret_t Arch_deriveCap(cte_t *slot, cap_t cap)
         return ret;
 
     case cap_frame_cap:
-        ret.cap = cap_frame_cap_set_capFMappedASID(cap, asidInvalid);
+        ret.cap = cap_frame_cap_set_capFMappedASID(cap, vspaceIdInvalid);
         ret.status = EXCEPTION_NONE;
         return ret;
 
@@ -386,7 +386,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                 addrFromPPtr(regionBase));
         }
         return cap_frame_cap_new(
-                   asidInvalid,           /* capFMappedASID */
+                   vspaceIdInvalid,           /* capFMappedASID */
                    (word_t)regionBase,    /* capFBasePtr */
                    ARMSmallPage,          /* capFSize */
                    0,                     /* capFMappedAddress */
@@ -412,7 +412,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                 addrFromPPtr(regionBase));
         }
         return cap_frame_cap_new(
-                   asidInvalid,           /* capFMappedASID */
+                   vspaceIdInvalid,           /* capFMappedASID */
                    (word_t)regionBase,    /* capFBasePtr */
                    ARMLargePage,          /* capFSize */
                    0,                     /* capFMappedAddress */
@@ -438,7 +438,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                 addrFromPPtr(regionBase));
         }
         return cap_frame_cap_new(
-                   asidInvalid,           /* capFMappedASID */
+                   vspaceIdInvalid,           /* capFMappedASID */
                    (word_t)regionBase,    /* capFBasePtr */
                    ARMHugePage,           /* capFSize */
                    0,                     /* capFMappedAddress */
@@ -454,14 +454,14 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                             addrFromPPtr(regionBase));
 #ifdef CONFIG_ARM_SMMU
         return cap_vspace_cap_new(
-                   asidInvalid,           /* capVSMappedASID */
+                   vspaceIdInvalid,           /* capVSMappedASID */
                    (word_t)regionBase,    /* capVSBasePtr    */
                    0,                     /* capVSIsMapped   */
                    CB_INVALID             /* capVSMappedCB   */
                );
 #else
         return cap_vspace_cap_new(
-                   asidInvalid,           /* capVSMappedASID */
+                   vspaceIdInvalid,           /* capVSMappedASID */
                    (word_t)regionBase,    /* capVSBasePtr    */
                    0                      /* capVSIsMapped   */
                );
@@ -474,7 +474,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                             (word_t)regionBase + MASK(seL4_PageTableBits),
                             addrFromPPtr(regionBase));
         return cap_page_table_cap_new(
-                   asidInvalid,           /* capPTMappedASID    */
+                   vspaceIdInvalid,           /* capPTMappedASID    */
                    (word_t)regionBase,    /* capPTBasePtr       */
                    0,                     /* capPTIsMapped      */
                    0                      /* capPTMappedAddress */

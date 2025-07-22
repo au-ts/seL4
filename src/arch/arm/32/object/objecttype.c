@@ -65,12 +65,12 @@ deriveCap_ret_t Arch_deriveCap(cte_t *slot, cap_t cap)
     /* This is a deviation from haskell, which has only
      * one frame cap type on ARM */
     case cap_small_frame_cap:
-        ret.cap = cap_small_frame_cap_set_capFMappedASID(cap, asidInvalid);
+        ret.cap = cap_small_frame_cap_set_capFMappedASID(cap, vspaceIdInvalid);
         ret.status = EXCEPTION_NONE;
         return ret;
 
     case cap_frame_cap:
-        ret.cap = cap_frame_cap_set_capFMappedASID(cap, asidInvalid);
+        ret.cap = cap_frame_cap_set_capFMappedASID(cap, vspaceIdInvalid);
         ret.status = EXCEPTION_NONE;
         return ret;
 
@@ -429,12 +429,12 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                 addrFromPPtr(regionBase));
         }
         return cap_small_frame_cap_new(
-                   ASID_LOW(asidInvalid), VMReadWrite,
+                   ASID_LOW(vspaceIdInvalid), VMReadWrite,
                    0, !!deviceMemory,
 #ifdef CONFIG_TK1_SMMU
                    0,
 #endif
-                   ASID_HIGH(asidInvalid),
+                   ASID_HIGH(vspaceIdInvalid),
                    (word_t)regionBase);
 
     case seL4_ARM_LargePageObject:
@@ -455,8 +455,8 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                 addrFromPPtr(regionBase));
         }
         return cap_frame_cap_new(
-                   ARMLargePage, ASID_LOW(asidInvalid), VMReadWrite,
-                   0, !!deviceMemory, ASID_HIGH(asidInvalid),
+                   ARMLargePage, ASID_LOW(vspaceIdInvalid), VMReadWrite,
+                   0, !!deviceMemory, ASID_HIGH(vspaceIdInvalid),
                    (word_t)regionBase);
 
     case seL4_ARM_SectionObject:
@@ -487,8 +487,8 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                 addrFromPPtr(regionBase));
         }
         return cap_frame_cap_new(
-                   ARMSection, ASID_LOW(asidInvalid), VMReadWrite,
-                   0, !!deviceMemory, ASID_HIGH(asidInvalid),
+                   ARMSection, ASID_LOW(vspaceIdInvalid), VMReadWrite,
+                   0, !!deviceMemory, ASID_HIGH(vspaceIdInvalid),
                    (word_t)regionBase);
 
     case seL4_ARM_SuperSectionObject:
@@ -519,8 +519,8 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                 addrFromPPtr(regionBase));
         }
         return cap_frame_cap_new(
-                   ARMSuperSection, ASID_LOW(asidInvalid), VMReadWrite,
-                   0, !!deviceMemory, ASID_HIGH(asidInvalid),
+                   ARMSuperSection, ASID_LOW(vspaceIdInvalid), VMReadWrite,
+                   0, !!deviceMemory, ASID_HIGH(vspaceIdInvalid),
                    (word_t)regionBase);
 
     case seL4_ARM_PageTableObject:
@@ -534,7 +534,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
         cleanCacheRange_PoU((word_t)regionBase,
                             (word_t)regionBase + MASK(seL4_PageTableBits),
                             addrFromPPtr(regionBase));
-        return cap_page_table_cap_new(false, asidInvalid, 0,
+        return cap_page_table_cap_new(false, vspaceIdInvalid, 0,
                                       (word_t)regionBase);
 
     case seL4_ARM_PageDirectoryObject:
@@ -551,7 +551,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                             (word_t)regionBase + MASK(seL4_PageDirBits),
                             addrFromPPtr(regionBase));
 
-        return cap_page_directory_cap_new(false, asidInvalid,
+        return cap_page_directory_cap_new(false, vspaceIdInvalid,
                                           (word_t)regionBase);
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
     case seL4_ARM_VCPUObject:
@@ -566,7 +566,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
         cleanCacheRange_RAM((word_t)regionBase,
                             (word_t)regionBase + MASK(seL4_IOPageTableBits),
                             addrFromPPtr(regionBase));
-        return cap_io_page_table_cap_new(0, asidInvalid, (word_t)regionBase, 0);
+        return cap_io_page_table_cap_new(0, vspaceIdInvalid, (word_t)regionBase, 0);
 #endif
     default:
         /*
@@ -622,4 +622,3 @@ Arch_prepareThreadDelete(tcb_t * thread) {
     }
 #endif /* CONFIG_ARM_HYPERVISOR_SUPPORT */
 }
-

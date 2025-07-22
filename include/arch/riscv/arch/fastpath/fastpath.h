@@ -38,9 +38,9 @@ NORETURN;
 
 static inline void FORCE_INLINE switchToThread_fp(tcb_t *thread, pte_t *vroot, pte_t stored_hw_asid)
 {
-    asid_t asid = (asid_t)(stored_hw_asid.words[0]);
+    hw_asid_t hw_asid = (hw_asid_t)(stored_hw_asid.words[0]);
 
-    setVSpaceRoot(addrFromPPtr(vroot), asid);
+    setVSpaceRoot(addrFromPPtr(vroot), hw_asid);
 
     NODE_STATE(ksCurThread) = thread;
 }
@@ -170,4 +170,3 @@ static inline void NORETURN FORCE_INLINE fastpath_restore(word_t badge, word_t m
 
     UNREACHABLE();
 }
-

@@ -371,7 +371,7 @@ exception_t smmu_delete_cb(cap_t cap)
     return status;
 }
 
-void smmu_cb_delete_vspace(word_t cb, asid_t asid)
+void smmu_cb_delete_vspace(word_t cb, vspace_id_t vspaceId)
 {
     /* Deleting the vspace cap stored in context bank's CNode, causing:
      * -reset the relationship between context bank and vspace's ASID
@@ -381,7 +381,7 @@ void smmu_cb_delete_vspace(word_t cb, asid_t asid)
     smmu_cb_disable(cb, asid);
 }
 
-void invalidateSMMUTLBByASID(asid_t asid, word_t bind_cb)
+void invalidateSMMUTLBByASID(vspace_id_t vspaceId, word_t bind_cb)
 {
     /* Due to the requirement of one vspace (ASID) can be shared by
      * multiple threads and drivers, there is no obvious way to
@@ -397,7 +397,7 @@ void invalidateSMMUTLBByASID(asid_t asid, word_t bind_cb)
     }
 }
 
-void invalidateSMMUTLBByASIDVA(asid_t asid, vptr_t vaddr, word_t bind_cb)
+void invalidateSMMUTLBByASIDVA(vspace_id_t vspaceId, vptr_t vaddr, word_t bind_cb)
 {
     /* Implemented in the same way as invalidateSMMUTLBByASID */
     for (int cb = 0; cb < SMMU_MAX_CB && bind_cb; cb++) {
@@ -409,4 +409,3 @@ void invalidateSMMUTLBByASIDVA(asid_t asid, vptr_t vaddr, word_t bind_cb)
 }
 
 #endif
-

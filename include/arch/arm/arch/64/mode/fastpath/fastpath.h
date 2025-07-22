@@ -30,13 +30,13 @@ compile_assert(SysReplyRecv_Minus2, SysReplyRecv == -2)
 static inline void FORCE_INLINE
 switchToThread_fp(tcb_t *thread, vspace_root_t *vroot, pde_t stored_hw_asid)
 {
-    asid_t asid;
+    hw_asid_t hw_asid;
 
     if (config_set(CONFIG_ARM_HYPERVISOR_SUPPORT)) {
         vcpu_switch(thread->tcbArch.tcbVCPU);
     }
-    asid = (asid_t)(stored_hw_asid.words[0] & 0xffff);
-    armv_contextSwitch_HWASID(vroot, asid);
+    hw_asid = (hw_asid_t)(stored_hw_asid.words[0] & 0xffff);
+    armv_contextSwitch_HWASID(vroot, hw_asid);
 
 #ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
     benchmark_utilisation_switch(NODE_STATE(ksCurThread), thread);
@@ -191,4 +191,3 @@ static inline void NORETURN FORCE_INLINE fastpath_restore(word_t badge, word_t m
 
     UNREACHABLE();
 }
-

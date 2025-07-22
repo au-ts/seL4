@@ -26,6 +26,10 @@ typedef word_t cpu_id_t;
 typedef word_t node_id_t;
 typedef word_t dom_t;
 
+/* XXXXXXXXXXXXXXXX: HW ASID is always hardcoded as 1. */
+// XX: 8 on SVLEN=32, 16 on SVLEN=64
+typedef uint16_t  hw_asid_t;
+
 typedef uint64_t timestamp_t;
 
 #define wordBits BIT(wordRadix)

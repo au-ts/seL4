@@ -264,11 +264,11 @@ void print_cap_arch(cap_t cap)
 
     switch (cap_get_capType(cap)) {
     case cap_page_table_cap: {
-        asid_t asid = cap_page_table_cap_get_capPTMappedASID(cap);
+        vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedASID(cap);
         vptr_t vptr = cap_page_table_cap_get_capPTMappedAddress(cap);
         pte_t *target_pt = PT_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
 
-        findVSpaceForASID_ret_t find_ret = findVSpaceForASID(asid);
+        findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
         pte_t *ptSlot = NULL;
         pte_t *pt = (pte_t *)find_ret.vspace_root;
         word_t level;
@@ -286,20 +286,20 @@ void print_cap_arch(cap_t cap)
         }
 
 
-        if (asid) {
-            printf("pt_%p_%04lu (asid: %lu)\n",
-                   target_pt, GET_UPT_INDEX(vptr, level), (long unsigned int)asid);
+        if (vspaceId != vspaceIdInvalid) {
+            printf("pt_%p_%04lu (vspaceId: %lu)\n",
+                   target_pt, GET_UPT_INDEX(vptr, level), (long unsigned int)vspaceId);
         } else {
             printf("pt_%p_%04lu\n", target_pt, GET_UPT_INDEX(vptr, level));
         }
         break;
     }
     case cap_vspace_cap: {
-        asid_t asid = cap_vspace_cap_get_capVSMappedASID(cap);
-        findVSpaceForASID_ret_t find_ret = findVSpaceForASID(asid);
-        if (asid) {
-            printf("%p_pd (asid: %lu)\n",
-                   find_ret.vspace_root, (long unsigned int)asid);
+        vspace_id_t vspaceId = cap_vspace_cap_get_capVSMappedASID(cap);
+        findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
+        if (vspaceId != vspaceIdInvalid) {
+            printf("%p_pd (vspaceId: %lu)\n",
+                   find_ret.vspace_root, (long unsigned int)vspaceId);
         } else {
             printf("%p_pd\n", find_ret.vspace_root);
         }
@@ -312,7 +312,7 @@ void print_cap_arch(cap_t cap)
     }
     case cap_frame_cap: {
         vptr_t vptr = cap_frame_cap_get_capFMappedAddress(cap);
-        findVSpaceForASID_ret_t find_ret = findVSpaceForASID(cap_frame_cap_get_capFMappedASID(cap));
+        findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(cap_frame_cap_get_capFMappedASID(cap));
         assert(find_ret.status == EXCEPTION_NONE);
         _cap_frame_print_attrs_vptr(vptr, find_ret.vspace_root);
         break;

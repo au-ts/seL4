@@ -26,3 +26,6 @@ typedef word_t node_id_t;
 typedef word_t dom_t;
 
 typedef uint64_t timestamp_t;
+
+/* XXXX: size. */
+typedef word_t hw_asid_t;

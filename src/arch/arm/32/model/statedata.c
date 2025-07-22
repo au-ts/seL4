@@ -15,10 +15,12 @@
 #include <plat/machine/hardware.h>
 
 /* The top level asid mapping table */
-asid_pool_t *armKSASIDTable[BIT(asidHighBits)];
+vspace_id_pool_t *armKSASIDTable[BIT(asidHighBits)];
+
+/* XXXX: ASID -> VSPaceId */
 
 /* The hardware ASID to virtual ASID mapping table */
-asid_t armKSHWASIDTable[BIT(hwASIDBits)];
+vspace_id_t armKSHWASIDTable[BIT(hwASIDBits)];
 hw_asid_t armKSNextASID;
 
 #ifndef CONFIG_ARM_HYPERVISOR_SUPPORT

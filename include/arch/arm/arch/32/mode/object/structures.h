@@ -92,9 +92,9 @@ struct asid_pool {
     pde_t *array[BIT(asidLowBits)];
 };
 
-typedef struct asid_pool asid_pool_t;
+typedef struct asid_pool vspace_id_pool_t;
 
-#define ASID_POOL_PTR(r) ((asid_pool_t *)r)
+#define ASID_POOL_PTR(r) ((vspace_id_pool_t *)r)
 #define ASID_POOL_REF(p) ((unsigned int)p)
 
 #define HW_ASID_SIZE_BITS 1
@@ -107,12 +107,10 @@ typedef struct asid_pool asid_pool_t;
 #define ASID_LOW(a) (a & MASK(asidLowBits))
 #define ASID_HIGH(a) ((a >> asidLowBits) & MASK(asidHighBits))
 
-static inline cap_t CONST cap_small_frame_cap_set_capFMappedASID(cap_t cap, word_t asid)
+static inline cap_t CONST cap_small_frame_cap_set_capFMappedASID(cap_t cap, vspace_id_t vspaceId)
 {
-    cap = cap_small_frame_cap_set_capFMappedASIDLow(cap,
-                                                    asid & MASK(asidLowBits));
-    return cap_small_frame_cap_set_capFMappedASIDHigh(cap,
-                                                      (asid >> asidLowBits) & MASK(asidHighBits));
+    cap = cap_small_frame_cap_set_capFMappedASIDLow(cap, ASID_LOW(vspaceId));
+    return cap_small_frame_cap_set_capFMappedASIDHigh(cap, ASID_HIGH(vspaceId));
 }
 
 static inline word_t CONST cap_small_frame_cap_get_capFMappedASID(cap_t cap)
@@ -121,12 +119,10 @@ static inline word_t CONST cap_small_frame_cap_get_capFMappedASID(cap_t cap)
            cap_small_frame_cap_get_capFMappedASIDLow(cap);
 }
 
-static inline cap_t CONST cap_frame_cap_set_capFMappedASID(cap_t cap, word_t asid)
+static inline cap_t CONST cap_frame_cap_set_capFMappedASID(cap_t cap, vspace_id_t vspaceId)
 {
-    cap = cap_frame_cap_set_capFMappedASIDLow(cap,
-                                              asid & MASK(asidLowBits));
-    return cap_frame_cap_set_capFMappedASIDHigh(cap,
-                                                (asid >> asidLowBits) & MASK(asidHighBits));
+    cap = cap_frame_cap_set_capFMappedASIDLow(cap, ASID_LOW(vspaceId));
+    return cap_frame_cap_set_capFMappedASIDHigh(cap, ASID_HIGH(vspaceId));
 }
 
 static inline word_t CONST cap_frame_cap_get_capFMappedASID(cap_t cap)
@@ -151,7 +147,7 @@ static inline word_t CONST generic_frame_cap_get_capFMappedASID(cap_t cap)
     }
 }
 
-static inline cap_t CONST generic_frame_cap_set_capFMappedAddress(cap_t cap, word_t asid, word_t addr)
+static inline cap_t CONST generic_frame_cap_set_capFMappedAddress(cap_t cap, vspace_id_t vspaceId, word_t addr)
 {
     cap_tag_t ctag;
 
@@ -160,20 +156,20 @@ static inline cap_t CONST generic_frame_cap_set_capFMappedAddress(cap_t cap, wor
            ctag == cap_frame_cap);
 
     if (ctag == cap_small_frame_cap) {
-        cap = cap_small_frame_cap_set_capFMappedASID(cap, asid);
+        cap = cap_small_frame_cap_set_capFMappedASID(cap, vspaceId);
         cap = cap_small_frame_cap_set_capFMappedAddress(cap, addr);
         return cap;
     } else {
-        cap = cap_frame_cap_set_capFMappedASID(cap, asid);
+        cap = cap_frame_cap_set_capFMappedASID(cap, vspaceId);
         cap = cap_frame_cap_set_capFMappedAddress(cap, addr);
         return cap;
     }
 }
 
-static inline void generic_frame_cap_ptr_set_capFMappedAddress(cap_t *cap_ptr, word_t asid,
+static inline void generic_frame_cap_ptr_set_capFMappedAddress(cap_t *cap_ptr, vspace_id_t vspaceId,
                                                                word_t addr)
 {
-    *cap_ptr = generic_frame_cap_set_capFMappedAddress(*cap_ptr, asid, addr);
+    *cap_ptr = generic_frame_cap_set_capFMappedAddress(*cap_ptr, vspaceId, addr);
 }
 
 static inline vm_rights_t CONST generic_frame_cap_get_capFVMRights(cap_t cap)
@@ -433,4 +429,3 @@ static inline word_t PURE pte_ptr_get_pteType(pte_t *pte_ptr)
     }
 }
 #endif /* CONFIG_ARM_HYPERVISOR_SUPPORT */
-

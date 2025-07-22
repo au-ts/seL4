@@ -38,22 +38,21 @@ struct findEPTForASID_ret {
 };
 typedef struct findEPTForASID_ret findEPTForASID_ret_t;
 
-EPTPDPTMapped_ret_t EPTPDPTMapped(asid_t asid, vptr_t vptr, ept_pdpte_t *pdpt);
-EPTPageDirectoryMapped_ret_t EPTPageDirectoryMapped(asid_t asid, vptr_t vaddr, ept_pde_t *pd);
-EPTPageTableMapped_ret_t EPTPageTableMapped(asid_t asid, vptr_t vaddr, ept_pte_t *pt);
-findEPTForASID_ret_t findEPTForASID(asid_t asid);
+EPTPDPTMapped_ret_t EPTPDPTMapped(vspace_id_t vspaceId, vptr_t vptr, ept_pdpte_t *pdpt);
+EPTPageDirectoryMapped_ret_t EPTPageDirectoryMapped(vspace_id_t vspaceId, vptr_t vaddr, ept_pde_t *pd);
+EPTPageTableMapped_ret_t EPTPageTableMapped(vspace_id_t vspaceId, vptr_t vaddr, ept_pte_t *pt);
+findEPTForASID_ret_t findEPTForASID(vspace_id_t vspaceId);
 
-void deleteEPTASID(asid_t asid, ept_pml4e_t *ept);
+void deleteEPTASID(vspace_id_t vspaceId, ept_pml4e_t *ept);
 exception_t decodeX86EPTInvocation(word_t invLabel, word_t length, cptr_t cptr, cte_t *cte, cap_t cap,
                                    word_t *buffer);
 exception_t decodeX86EPTPDInvocation(word_t invLabel, word_t length, cte_t *cte, cap_t cap, word_t *buffer);
 exception_t decodeX86EPTPTInvocation(word_t invLabel, word_t length, cte_t *cte, cap_t cap, word_t *buffer);
 exception_t decodeX86EPTPageMap(word_t invLabel, word_t length, cte_t *cte, cap_t cap, word_t *buffer);
 exception_t performX86EPTPageInvocationUnmap(cap_t cap, cte_t *ctSlot);
-void unmapEPTPDPT(asid_t asid, vptr_t vaddr, ept_pdpte_t *pdpt);
-void unmapEPTPageDirectory(asid_t asid, vptr_t vaddr, ept_pde_t *pd);
-void unmapEPTPageTable(asid_t asid, vptr_t vaddr, ept_pte_t *pt);
-void unmapEPTPage(vm_page_size_t page_size, asid_t asid, vptr_t vptr, void *pptr);
+void unmapEPTPDPT(vspace_id_t vspaceId, vptr_t vaddr, ept_pdpte_t *pdpt);
+void unmapEPTPageDirectory(vspace_id_t vspaceId, vptr_t vaddr, ept_pde_t *pd);
+void unmapEPTPageTable(vspace_id_t vspaceId, vptr_t vaddr, ept_pte_t *pt);
+void unmapEPTPage(vm_page_size_t page_size, vspace_id_t vspaceId, vptr_t vptr, void *pptr);
 
 #endif /* CONFIG_VTX */
-

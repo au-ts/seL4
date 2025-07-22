@@ -238,12 +238,13 @@ static inline void invalidateLocalTLB(void)
     isb();
 }
 
-static inline void invalidateLocalTLB_ASID(asid_t asid)
+// XXX: umm uint8_t is smaller than BIT(16) always? is this even right anymore?
+static inline void invalidateLocalTLB_ASID(hw_asid_t hw_asid)
 {
-    assert(asid < BIT(16));
+    assert(hw_asid < BIT(16));
 
     dsb();
-    asm volatile("tlbi aside1, %0" : : "r"(asid << 48));
+    asm volatile("tlbi aside1, %0" : : "r"((uint64_t)hw_asid << 48));
     dsb();
     isb();
 }

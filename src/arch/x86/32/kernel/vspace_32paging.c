@@ -194,28 +194,28 @@ void copyGlobalMappings(vspace_root_t *new_vspace)
     }
 }
 
-exception_t performASIDPoolInvocation(asid_t asid, asid_pool_t *poolPtr, cte_t *vspaceCapSlot)
+exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot)
 {
     asid_map_t asid_map;
 #ifdef CONFIG_VTX
     if (cap_get_capType(vspaceCapSlot->cap) == cap_ept_pml4_cap) {
-        cap_ept_pml4_cap_ptr_set_capPML4MappedASID(&vspaceCapSlot->cap, asid);
+        cap_ept_pml4_cap_ptr_set_capPML4MappedASID(&vspaceCapSlot->cap, vspaceId);
         cap_ept_pml4_cap_ptr_set_capPML4IsMapped(&vspaceCapSlot->cap, 1);
         asid_map = asid_map_asid_map_ept_new(cap_ept_pml4_cap_get_capPML4BasePtr(vspaceCapSlot->cap));
     } else
 #endif
     {
         assert(cap_get_capType(vspaceCapSlot->cap) == cap_page_directory_cap);
-        cap_page_directory_cap_ptr_set_capPDMappedASID(&vspaceCapSlot->cap, asid);
+        cap_page_directory_cap_ptr_set_capPDMappedASID(&vspaceCapSlot->cap, vspaceId);
         cap_page_directory_cap_ptr_set_capPDIsMapped(&vspaceCapSlot->cap, 1);
         asid_map = asid_map_asid_map_vspace_new(cap_page_directory_cap_get_capPDBasePtr(vspaceCapSlot->cap));
     }
-    poolPtr->array[asid & MASK(asidLowBits)] = asid_map;
+    poolPtr->array[ASID_LOW(vspaceId)] = asid_map;
 
     return EXCEPTION_NONE;
 }
 
-void unmapPageDirectory(asid_t asid, vptr_t vaddr, pde_t *pd)
+void unmapPageDirectory(vspace_id_t vspaceId, vptr_t vaddr, pde_t *pd)
 {
     deleteASID(asid, pd);
 }

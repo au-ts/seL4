@@ -21,7 +21,7 @@
 #endif
 
 /* The top level asid mapping table */
-extern asid_pool_t *armKSASIDTable[BIT(asidHighBits)] VISIBLE;
+extern vspace_id_pool_t *armKSASIDTable[BIT(asidHighBits)] VISIBLE;
 
 /* This is the temporary userspace page table in kernel. It is required before running
  * user thread to avoid speculative page table walking with the wrong page table. */
@@ -33,8 +33,8 @@ extern pte_t armKSGlobalKernelPDs[BIT(PT_INDEX_BITS)][BIT(PT_INDEX_BITS)] VISIBL
 extern pte_t armKSGlobalKernelPT[BIT(PT_INDEX_BITS)] VISIBLE;
 
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
-
-extern asid_t armKSHWASIDTable[BIT(hwASIDBits)] VISIBLE;
+/* map from hw_asid_t -> vspace_id_t */
+extern vspace_id_t armKSHWASIDTable[BIT(hwASIDBits)] VISIBLE;
 extern hw_asid_t armKSNextASID VISIBLE;
 #endif
 

@@ -18,16 +18,17 @@
 bool_t CONST isVTableRoot(cap_t cap);
 bool_t CONST isValidNativeRoot(cap_t cap);
 
-void unmapPageTable(asid_t asid, vptr_t vaddr, pte_t *pt);
-void unmapPage(vm_page_size_t page_size, asid_t asid, vptr_t vptr, pptr_t pptr);
+void unmapPageTable(vspace_id_t vspaceId, vptr_t vaddr, pte_t *pt);
+void unmapPage(vm_page_size_t page_size, vspace_id_t vspaceId, vptr_t vptr, pptr_t pptr);
 
-void deleteASIDPool(asid_t base, asid_pool_t *pool);
-void deleteASID(asid_t asid, vspace_root_t *vspace);
+void deleteASIDPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool);
+void deleteASID(vspace_id_t vspaceId, vspace_root_t *vspace);
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
-hw_asid_t getHWASID(asid_t asid);
+hw_asid_t getHWASID(vspace_id_t vspaceId);
 #endif
 
-asid_map_t findMapForASID(asid_t asid);
+// rename
+asid_map_t findMapForASID(vspace_id_t vspaceId);
 
 #ifdef __clang__
 static const region_t BOOT_RODATA mode_reserved_region[] = {};
@@ -38,7 +39,7 @@ static const region_t BOOT_RODATA *mode_reserved_region = NULL;
 #define PAR_EL1_MASK 0x0000fffffffff000ul
 #define GET_PAR_ADDR(x) ((x) & PAR_EL1_MASK)
 
-static inline exception_t performASIDPoolInvocation(asid_t asid, asid_pool_t *poolPtr, cte_t *vspaceCapSlot)
+static inline exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot)
 {
     cap_t cap = vspaceCapSlot->cap;
     asid_map_t asid_map = asid_map_asid_map_vspace_new(
@@ -53,13 +54,13 @@ static inline exception_t performASIDPoolInvocation(asid_t asid, asid_pool_t *po
                               , 0, false
 #endif
                           );
-    cap = cap_vspace_cap_set_capVSMappedASID(cap, asid);
+    cap = cap_vspace_cap_set_capVSMappedASID(cap, vspaceId);
     cap = cap_vspace_cap_set_capVSIsMapped(cap, 1);
     vspaceCapSlot->cap = cap;
 
-    poolPtr->array[asid & MASK(asidLowBits)] = asid_map;
+    poolPtr->array[ASID_LOW(vspaceId)] = asid_map;
     return EXCEPTION_NONE;
 }
 
-void increaseASIDBindCB(asid_t asid);
-void decreaseASIDBindCB(asid_t asid);
+void increaseASIDBindCB(vspace_id_t vspaceId);
+void decreaseASIDBindCB(vspace_id_t vspaceId);

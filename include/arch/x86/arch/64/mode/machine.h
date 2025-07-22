@@ -157,11 +157,11 @@ typedef struct invpcid_desc {
 #define INVPCID_TYPE_ALL_GLOBAL     2   /* also invalidate global */
 #define INVPCID_TYPE_ALL            3
 
-static inline void invalidateLocalPCID(word_t type, void *vaddr, asid_t asid)
+static inline void invalidateLocalPCID(word_t type, void *vaddr, hw_asid_t hw_asid)
 {
     if (config_set(CONFIG_SUPPORT_PCID)) {
         invpcid_desc_t desc;
-        desc.asid = asid & 0xfff;
+        desc.asid = hw_asid & 0xfff;
         desc.addr = (uint64_t)vaddr;
         asm volatile("invpcid %1, %0" :: "r"(type), "m"(desc));
     } else {
@@ -193,9 +193,9 @@ static inline void invalidateLocalTranslationSingle(vptr_t vptr)
     invalidateLocalPCID(INVPCID_TYPE_ALL_GLOBAL, (void *)0, 0);
 }
 
-static inline void invalidateLocalTranslationSingleASID(vptr_t vptr, asid_t asid)
+static inline void invalidateLocalTranslationSingleASID(vptr_t vptr, hw_asid_t hw_asid)
 {
-    invalidateLocalPCID(INVPCID_TYPE_ADDR, (void *)vptr, asid);
+    invalidateLocalPCID(INVPCID_TYPE_ADDR, (void *)vptr, hw_asid);
 }
 
 static inline void invalidateLocalTranslationAll(void)
@@ -349,4 +349,3 @@ static inline void x86_set_tls_segment_base(word_t tls_base)
 {
     x86_write_fs_base(tls_base, CURRENT_CPU_INDEX());
 }
-

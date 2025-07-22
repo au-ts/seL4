@@ -219,7 +219,7 @@ exception_t decodeX86IOPTInvocation(
 
     pci_request_id = cap_io_space_cap_get_capPCIDevice(io_space);
     domain_id = cap_io_space_cap_get_capDomainID(io_space);
-    if (pci_request_id == asidInvalid) {
+    if (pci_request_id == vspaceIdInvalid) {
         current_syscall_error.type = seL4_InvalidCapability;
         current_syscall_error.invalidCapNumber = 0;
 
@@ -324,7 +324,7 @@ exception_t decodeX86IOMapInvocation(
         return EXCEPTION_SYSCALL_ERROR;
     }
 
-    if (cap_frame_cap_get_capFMappedASID(cap) != asidInvalid) {
+    if (cap_frame_cap_get_capFMappedASID(cap) != vspaceIdInvalid) {
         userError("X86PageMapIO: Page already mapped.");
         current_syscall_error.type = seL4_InvalidCapability;
         current_syscall_error.invalidCapNumber = 0;
@@ -344,7 +344,7 @@ exception_t decodeX86IOMapInvocation(
 
     pci_request_id = cap_io_space_cap_get_capPCIDevice(io_space);
 
-    if (pci_request_id == asidInvalid) {
+    if (pci_request_id == vspaceIdInvalid) {
         userError("X86PageMapIO: Invalid PCI device.");
         current_syscall_error.type = seL4_InvalidCapability;
         current_syscall_error.invalidCapNumber = 0;
@@ -492,7 +492,7 @@ exception_t performX86IOUnMapInvocation(cap_t cap, cte_t *ctSlot)
 
     ctSlot->cap = cap_frame_cap_set_capFMappedAddress(ctSlot->cap, 0);
     ctSlot->cap = cap_frame_cap_set_capFMapType(ctSlot->cap, X86_MappingNone);
-    ctSlot->cap = cap_frame_cap_set_capFMappedASID(ctSlot->cap, asidInvalid);
+    ctSlot->cap = cap_frame_cap_set_capFMappedASID(ctSlot->cap, vspaceIdInvalid);
 
     return EXCEPTION_NONE;
 }

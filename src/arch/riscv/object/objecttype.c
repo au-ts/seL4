@@ -33,7 +33,7 @@ deriveCap_ret_t Arch_deriveCap(cte_t *slot, cap_t cap)
 
     case cap_frame_cap:
         cap = cap_frame_cap_set_capFMappedAddress(cap, 0);
-        ret.cap = cap_frame_cap_set_capFMappedASID(cap, asidInvalid);
+        ret.cap = cap_frame_cap_set_capFMappedASID(cap, vspaceIdInvalid);
         ret.status = EXCEPTION_NONE;
         return ret;
 
@@ -91,13 +91,13 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
              * a mapped PageTable and unmap it from whatever page table it is mapped
              * into.
              */
-            asid_t asid = cap_page_table_cap_get_capPTMappedASID(cap);
-            findVSpaceForASID_ret_t find_ret = findVSpaceForASID(asid);
+            vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedASID(cap);
+            findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
             pte_t *pte = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
             if (find_ret.status == EXCEPTION_NONE && find_ret.vspace_root == pte) {
-                deleteASID(asid, pte);
+                deleteASID(vspaceId, pte);
             } else {
-                unmapPageTable(asid, cap_page_table_cap_get_capPTMappedAddress(cap), pte);
+                unmapPageTable(vspaceId, cap_page_table_cap_get_capPTMappedAddress(cap), pte);
             }
         }
         break;
@@ -210,7 +210,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
                                                     (unat RISCVPageBits))" */
         }
         return cap_frame_cap_new(
-                   asidInvalid,                    /* capFMappedASID       */
+                   vspaceIdInvalid,                    /* capFMappedASID       */
                    (word_t) regionBase,            /* capFBasePtr          */
                    RISCV_4K_Page,                  /* capFSize             */
                    wordFromVMRights(VMReadWrite),  /* capFVMRights         */
@@ -233,7 +233,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
                                                     (unat RISCVMegaPageBits))" */
         }
         return cap_frame_cap_new(
-                   asidInvalid,                    /* capFMappedASID       */
+                   vspaceIdInvalid,                    /* capFMappedASID       */
                    (word_t) regionBase,            /* capFBasePtr          */
                    RISCV_Mega_Page,                  /* capFSize             */
                    wordFromVMRights(VMReadWrite),  /* capFVMRights         */
@@ -258,7 +258,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
                                                     (unat RISCVGigaPageBits))" */
         }
         return cap_frame_cap_new(
-                   asidInvalid,                    /* capFMappedASID       */
+                   vspaceIdInvalid,                    /* capFMappedASID       */
                    (word_t) regionBase,            /* capFBasePtr          */
                    RISCV_Giga_Page,                  /* capFSize             */
                    wordFromVMRights(VMReadWrite),  /* capFVMRights         */
@@ -272,7 +272,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
         /** AUXUPD: "(True, ptr_retyps 1
               (Ptr (ptr_val \<acute>regionBase) :: (pte_C[512]) ptr))" */
         return cap_page_table_cap_new(
-                   asidInvalid,            /* capPTMappedASID    */
+                   vspaceIdInvalid,            /* capPTMappedASID    */
                    (word_t)regionBase,     /* capPTBasePtr       */
                    0,                      /* capPTIsMapped      */
                    0                       /* capPTMappedAddress */

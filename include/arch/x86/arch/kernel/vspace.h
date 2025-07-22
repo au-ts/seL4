@@ -27,11 +27,11 @@ struct lookupPDSlot_ret {
 };
 typedef struct lookupPDSlot_ret lookupPDSlot_ret_t;
 
-struct findVSpaceForASID_ret {
+struct findVSpaceForVSpaceId_ret {
     exception_t status;
     vspace_root_t *vspace_root;
 };
-typedef struct findVSpaceForASID_ret findVSpaceForASID_ret_t;
+typedef struct findVSpaceForVSpaceId_ret findVSpaceForVSpaceId_ret_t;
 
 void init_boot_pd(void);
 void enable_paging(void);
@@ -69,24 +69,24 @@ cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_reg);
 
 bool_t isVTableRoot(cap_t cap);
 
-asid_map_t findMapForASID(asid_t asid);
+asid_map_t findMapForASID(vspace_id_t vspaceId);
 
 lookupPTSlot_ret_t lookupPTSlot(vspace_root_t *vspace, vptr_t vptr);
 lookupPDSlot_ret_t lookupPDSlot(vspace_root_t *vspace, vptr_t vptr);
 void copyGlobalMappings(vspace_root_t *new_vspace);
 word_t *PURE lookupIPCBuffer(bool_t isReceiver, tcb_t *thread);
 exception_t handleVMFault(tcb_t *thread, vm_fault_type_t vm_faultType);
-void unmapPageDirectory(asid_t asid, vptr_t vaddr, pde_t *pd);
-void unmapPageTable(asid_t, vptr_t vaddr, pte_t *pt);
+void unmapPageDirectory(vspace_id_t vspaceId, vptr_t vaddr, pde_t *pd);
+void unmapPageTable(vspace_id_t, vptr_t vaddr, pte_t *pt);
 
-exception_t performASIDPoolInvocation(asid_t asid, asid_pool_t *poolPtr, cte_t *vspaceCapSlot);
-exception_t performASIDControlInvocation(void *frame, cte_t *slot, cte_t *parent, asid_t asid_base);
-void hwASIDInvalidate(asid_t asid, vspace_root_t *vspace);
-void deleteASIDPool(asid_t asid_base, asid_pool_t *pool);
-void deleteASID(asid_t asid, vspace_root_t *vspace);
-findVSpaceForASID_ret_t findVSpaceForASID(asid_t asid);
+exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot);
+exception_t performASIDControlInvocation(void *frame, cte_t *slot, cte_t *parent, vspace_id_t vspaceId_base);
+void hwASIDInvalidate(vspace_id_t vspaceId, vspace_root_t *vspace);
+void deleteASIDPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool);
+void deleteASID(vspace_id_t vspaceId, vspace_root_t *vspace);
+findVSpaceForVSpaceId_ret_t findVSpaceForVSpaceId(vspace_id_t vspaceId);
 
-void unmapPage(vm_page_size_t page_size, asid_t asid, vptr_t vptr, void *pptr);
+void unmapPage(vm_page_size_t page_size, vspace_id_t vspaceId, vptr_t vptr, void *pptr);
 /* returns whether the translation was removed and needs to be flushed from the hardware (i.e. tlb) */
 bool_t modeUnmapPage(vm_page_size_t page_size, vspace_root_t *vroot, vptr_t vptr, void *pptr);
 exception_t decodeX86ModeMapPage(word_t invLabel, vm_page_size_t page_size, cte_t *cte, cap_t cap,
@@ -133,4 +133,3 @@ static inline bool_t checkVPAlignment(vm_page_size_t sz, word_t w)
 {
     return IS_ALIGNED(w, pageBitsForSize(sz));
 }
-

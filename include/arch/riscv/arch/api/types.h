@@ -10,8 +10,8 @@
 #include <sel4/sel4_arch/objecttype.h>
 #include <sel4/arch/objecttype.h>
 
-enum asidConstants {
-    asidInvalid = 0
+enum vspaceIdConstants {
+    vspaceIdInvalid = 0
 };
 
-typedef word_t asid_t;
+typedef word_t vspace_id_t;

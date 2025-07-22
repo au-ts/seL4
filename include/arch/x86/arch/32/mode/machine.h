@@ -188,4 +188,3 @@ static inline void init_syscall_msrs(void)
 {
     fail("syscall not supported on ia32");
 }
-

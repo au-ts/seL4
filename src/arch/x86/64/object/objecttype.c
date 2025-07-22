@@ -65,7 +65,7 @@ deriveCap_ret_t Mode_deriveCap(cte_t *slot, cap_t cap)
 
     case cap_frame_cap:
         cap = cap_frame_cap_set_capFMapType(cap, X86_MappingNone);
-        ret.cap = cap_frame_cap_set_capFMappedASID(cap, asidInvalid);
+        ret.cap = cap_frame_cap_set_capFMappedASID(cap, vspaceIdInvalid);
         ret.status = EXCEPTION_NONE;
         return ret;
 
@@ -196,7 +196,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                                     (unat X64SmallPageBits))" */
         }
         return cap_frame_cap_new(
-                   asidInvalid,        /* capFMappedASID           */
+                   vspaceIdInvalid,        /* capFMappedASID           */
                    (word_t)regionBase, /* capFBasePtr              */
                    X86_SmallPage,      /* capFSize                 */
                    X86_MappingNone,    /* capFMapType              */
@@ -220,7 +220,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                                     (unat X64LargePageBits))" */
         }
         return cap_frame_cap_new(
-                   asidInvalid,        /* capFMappedASID           */
+                   vspaceIdInvalid,        /* capFMappedASID           */
                    (word_t)regionBase, /* capFBasePtr              */
                    X86_LargePage,      /* capFSize                 */
                    X86_MappingNone,    /* capFMapType              */
@@ -244,7 +244,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                                     (unat X64HugePageBits))" */
         }
         return cap_frame_cap_new(
-                   asidInvalid,        /* capFMappedASID           */
+                   vspaceIdInvalid,        /* capFMappedASID           */
                    (word_t)regionBase, /* capFBasePtr              */
                    X64_HugePage,       /* capFSize                 */
                    X86_MappingNone,    /* capFMapType              */
@@ -257,7 +257,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
         /** AUXUPD: "(True, ptr_retyps 1
               (Ptr (ptr_val \<acute>regionBase) :: (pte_C[512]) ptr))" */
         return cap_page_table_cap_new(
-                   asidInvalid,            /* capPTMappedASID    */
+                   vspaceIdInvalid,            /* capPTMappedASID    */
                    (word_t)regionBase,     /* capPTBasePtr       */
                    0,                      /* capPTIsMapped      */
                    0                       /* capPTMappedAddress */
@@ -267,7 +267,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
         /** AUXUPD: "(True, ptr_retyps 1
               (Ptr (ptr_val \<acute>regionBase) :: (pde_C[512]) ptr))" */
         return cap_page_directory_cap_new(
-                   asidInvalid,                /* capPDMappedASID      */
+                   vspaceIdInvalid,                /* capPDMappedASID      */
                    (word_t)regionBase,         /* capPDBasePtr         */
                    0,                          /* capPDIsMapped        */
                    0                           /* capPDMappedAddress   */
@@ -277,7 +277,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
         /** AUXUPD: "(True, ptr_retyps 1
               (Ptr (ptr_val \<acute>regionBase) :: (pdpte_C[512]) ptr))" */
         return cap_pdpt_cap_new(
-                   asidInvalid,                /* capPDPTMappedASID    */
+                   vspaceIdInvalid,                /* capPDPTMappedASID    */
                    (word_t)regionBase,         /* capPDPTBasePtr       */
                    0,                          /* capPDPTIsMapped      */
                    0                           /* capPDPTMappedAddress */
@@ -288,7 +288,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
               (Ptr (ptr_val \<acute>regionBase) :: (pml4e_C[512]) ptr))" */
         copyGlobalMappings(PML4_PTR(regionBase));
         return cap_pml4_cap_new(
-                   asidInvalid,                /* capPML4MappedASID   */
+                   vspaceIdInvalid,                /* capPML4MappedASID   */
                    (word_t)regionBase,         /* capPML4BasePtr      */
                    0                           /* capPML4IsMapped     */
                );
@@ -299,7 +299,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                    0,
                    0,
                    0,
-                   asidInvalid,
+                   vspaceIdInvalid,
                    (word_t)regionBase
                );
 #endif

@@ -49,40 +49,40 @@ struct asid_pool {
     asid_map_t array[BIT(asidLowBits)];
 };
 
-typedef struct asid_pool asid_pool_t;
+typedef struct asid_pool vspace_id_pool_t;
 
 #define ASID_POOL_INDEX_BITS    seL4_ASIDPoolIndexBits
-#define ASID_POOL_PTR(r)    ((asid_pool_t*)r)
+#define ASID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
 #define ASID_POOL_REF(p)    ((word_t)p)
 #define ASID_BITS           (asidHighBits + asidLowBits)
 #define nASIDPools          BIT(asidHighBits)
 #define ASID_LOW(a)         (a & MASK(asidLowBits))
 #define ASID_HIGH(a)        ((a >> asidLowBits) & MASK(asidHighBits))
 
-static inline asid_t CONST cap_frame_cap_get_capFMappedASID(cap_t cap)
+static inline vspace_id_t CONST cap_frame_cap_get_capFMappedASID(cap_t cap)
 {
     return
         (cap_frame_cap_get_capFMappedASIDHigh(cap) << asidLowBits) +
         cap_frame_cap_get_capFMappedASIDLow(cap);
 }
 
-static inline cap_t CONST cap_frame_cap_set_capFMappedASID(cap_t cap, word_t asid)
+static inline cap_t CONST cap_frame_cap_set_capFMappedASID(cap_t cap, vspace_id_t vspaceId)
 {
-    cap = cap_frame_cap_set_capFMappedASIDLow(cap, ASID_LOW(asid));
-    return cap_frame_cap_set_capFMappedASIDHigh(cap, ASID_HIGH(asid));
+    cap = cap_frame_cap_set_capFMappedASIDLow(cap, ASID_LOW(vspaceId));
+    return cap_frame_cap_set_capFMappedASIDHigh(cap, ASID_HIGH(vspaceId));
 }
 
-static inline asid_t PURE cap_frame_cap_ptr_get_capFMappedASID(cap_t *cap)
+static inline vspace_id_t PURE cap_frame_cap_ptr_get_capFMappedASID(cap_t *cap)
 {
     return cap_frame_cap_get_capFMappedASID(*cap);
 }
 
-static inline void cap_frame_cap_ptr_set_capFMappedASID(cap_t *cap, asid_t asid)
+static inline void cap_frame_cap_ptr_set_capFMappedASID(cap_t *cap, vspace_id_t vspaceId)
 {
-    *cap = cap_frame_cap_set_capFMappedASID(*cap, asid);
+    *cap = cap_frame_cap_set_capFMappedASID(*cap, vspaceId);
 }
 
-static inline asid_t PURE cap_get_capMappedASID(cap_t cap)
+static inline vspace_id_t PURE cap_get_capMappedASID(cap_t cap)
 {
     cap_tag_t ctag;
 
@@ -116,4 +116,3 @@ static inline void *CONST cap_get_modeCapPtr(cap_t cap)
 {
     fail("Invalid mode cap type");
 }
-

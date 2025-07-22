@@ -24,9 +24,9 @@ struct asid_pool {
     pte_t *array[BIT(asidLowBits)];
 };
 
-typedef struct asid_pool asid_pool_t;
+typedef struct asid_pool vspace_id_pool_t;
 
-#define ASID_POOL_PTR(r)    ((asid_pool_t*)r)
+#define ASID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
 #define ASID_POOL_REF(p)    ((word_t)p)
 #define ASID_BITS           (asidHighBits + asidLowBits)
 #define nASIDPools          BIT(asidHighBits)
@@ -149,4 +149,3 @@ static inline bool_t CONST Arch_isCapRevocable(cap_t derivedCap, cap_t srcCap)
 }
 
 #endif /* !__ASSEMBLER__  */
-

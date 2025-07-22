@@ -405,7 +405,7 @@ static void smmu_config_stage2(struct smmu_table_config *cfg,
 #else
 static void smmu_config_stage1(struct smmu_table_config *cfg,
                                bool_t coherence, uint32_t pa_bits,
-                               vspace_root_t *vspace, asid_t asid)
+                               vspace_root_t *vspace, vspace_id_t vspaceId)
 {
     uint32_t reg = 0;
     /*SMMU_CBn_TCR*/
@@ -467,7 +467,7 @@ static void smmu_config_stage1(struct smmu_table_config *cfg,
 #endif /*CONFIG_ARM_HYPERVISOR_SUPPORT*/
 
 
-void smmu_cb_assign_vspace(word_t cb, vspace_root_t *vspace, asid_t asid)
+void smmu_cb_assign_vspace(word_t cb, vspace_root_t *vspace, vspace_id_t vspaceId)
 {
     uint32_t reg = 0;
     uint32_t vmid = cb;
@@ -534,7 +534,7 @@ void smmu_cb_assign_vspace(word_t cb, vspace_root_t *vspace, asid_t asid)
     smmu_write_reg32(SMMU_CBn_BASE_PPTR(cb), SMMU_CBn_SCTLR, reg);
 }
 
-void smmu_cb_disable(word_t cb, asid_t asid)
+void smmu_cb_disable(word_t cb, vspace_id_t vspaceId)
 {
 
     uint32_t reg = smmu_read_reg32(SMMU_CBn_BASE_PPTR(cb), SMMU_CBn_SCTLR);
@@ -584,7 +584,7 @@ void smmu_tlb_invalidate_all(void)
     smmu_tlb_sync(SMMU_GR0_PPTR, SMMU_sTLBGSYNC, SMMU_sTLBGSTATUS);
 }
 
-void smmu_tlb_invalidate_cb(int cb, asid_t asid)
+void smmu_tlb_invalidate_cb(int cb, vspace_id_t vspaceId)
 {
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
     /*stage 2*/
@@ -601,7 +601,7 @@ void smmu_tlb_invalidate_cb(int cb, asid_t asid)
 #endif
 }
 
-void smmu_tlb_invalidate_cb_va(int cb, asid_t asid, vptr_t vaddr)
+void smmu_tlb_invalidate_cb_va(int cb, vspace_id_t vspaceId, vptr_t vaddr)
 {
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
     /*stage 2*/

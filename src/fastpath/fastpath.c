@@ -97,8 +97,8 @@ void NORETURN fastpath_call(word_t cptr, word_t msgInfo)
 #endif
 #ifdef CONFIG_ARCH_AARCH64
     /* Need to test that the ASID is still valid */
-    asid_t asid = cap_vspace_cap_get_capVSMappedASID(newVTable);
-    asid_map_t asid_map = findMapForASID(asid);
+    vspace_id_t vspaceId = cap_vspace_cap_get_capVSMappedASID(newVTable);
+    asid_map_t asid_map = findMapForASID(vspaceId);
     if (unlikely(asid_map_get_type(asid_map) != asid_map_asid_map_vspace ||
                  VSPACE_PTR(asid_map_asid_map_vspace_get_vspace_root(asid_map)) != cap_pd)) {
         slowpath(SysCall);
@@ -111,7 +111,8 @@ void NORETURN fastpath_call(word_t cptr, word_t msgInfo)
     /* vmids are the tags used instead of hw_asids in hyp mode */
     stored_hw_asid.words[0] = asid_map_asid_map_vspace_get_stored_hw_vmid(asid_map);
 #else
-    stored_hw_asid.words[0] = asid;
+    // XX:: ??
+    stored_hw_asid.words[0] = (hw_asid_t)vspaceId;
 #endif
 #endif
 
@@ -374,8 +375,8 @@ void NORETURN fastpath_reply_recv(word_t cptr, word_t msgInfo)
 #endif
 #ifdef CONFIG_ARCH_AARCH64
     /* Need to test that the ASID is still valid */
-    asid_t asid = cap_vspace_cap_get_capVSMappedASID(newVTable);
-    asid_map_t asid_map = findMapForASID(asid);
+    vspace_id_t vspaceId = cap_vspace_cap_get_capVSMappedASID(newVTable);
+    asid_map_t asid_map = findMapForASID(vspaceId);
     if (unlikely(asid_map_get_type(asid_map) != asid_map_asid_map_vspace ||
                  VSPACE_PTR(asid_map_asid_map_vspace_get_vspace_root(asid_map)) != cap_pd)) {
         slowpath(SysReplyRecv);
@@ -389,7 +390,7 @@ void NORETURN fastpath_reply_recv(word_t cptr, word_t msgInfo)
     /* vmids are the tags used instead of hw_asids in hyp mode */
     stored_hw_asid.words[0] = asid_map_asid_map_vspace_get_stored_hw_vmid(asid_map);
 #else
-    stored_hw_asid.words[0] = asid;
+    stored_hw_asid.words[0] = (hw_asid_t)vspaceId;
 #endif
 #endif
 
@@ -774,7 +775,7 @@ void NORETURN fastpath_vm_fault(vm_fault_type_t type)
 
 #ifdef CONFIG_ARCH_AARCH64
     /* Need to test that the ASID is still valid */
-    asid_t asid = cap_vspace_cap_get_capVSMappedASID(newVTable);
+    vspace_id_t vspaceId = cap_vspace_cap_get_capVSMappedASID(newVTable);
     asid_map_t asid_map = findMapForASID(asid);
     if (unlikely(asid_map_get_type(asid_map) != asid_map_asid_map_vspace ||
                  VSPACE_PTR(asid_map_asid_map_vspace_get_vspace_root(asid_map)) != cap_pd)) {

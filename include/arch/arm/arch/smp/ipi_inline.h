@@ -49,4 +49,3 @@ static inline void doRemoteDeactivatePrivateInterrupt(word_t cpu, word_t irq)
 }
 #endif /* CONFIG_ARM_GIC_V3_SUPPORT */
 #endif /* ENABLE_SMP_SUPPORT */
-

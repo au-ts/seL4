@@ -61,7 +61,7 @@ typedef pte_t vspace_root_t;
 struct asid_pool {
     asid_map_t array[BIT(asidLowBits)];
 };
-typedef struct asid_pool asid_pool_t;
+typedef struct asid_pool vspace_id_pool_t;
 
 /* Generic fastpath.c code expects pde_t for stored_hw_asid
  * that's a workaround in the time being.
@@ -69,7 +69,7 @@ typedef struct asid_pool asid_pool_t;
 typedef pte_t pde_t;
 
 
-#define ASID_POOL_PTR(r)    ((asid_pool_t*)r)
+#define ASID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
 #define ASID_POOL_REF(p)    ((word_t)p)
 
 

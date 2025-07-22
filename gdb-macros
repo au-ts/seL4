@@ -390,11 +390,11 @@ document dump_thread_info
   Dump the extra caps associated with a thread (root CNode, VSpace etc). arg0: the in-kernel data structure representing the thread cap
 end
 
-define pd_for_asid
-  set $asid = $arg0
-  set $poolPtr = x86KSASIDTable[$asid >> asidLowBits];
-  set $pd = poolPtr->array[$asid & ((1<<asidLowBits)-1)];
-  if( !$asid || !$poolPtr )
+define pd_for_vspace_id
+  set $vspaceId = $arg0
+  set $poolPtr = x86KSASIDTable[$vspaceId >> asidLowBits];
+  set $pd = poolPtr->array[$vspaceId & ((1<<asidLowBits)-1)];
+  if( !$vspaceId || !$poolPtr )
     printf "Something went wrong\n"
   else
     print $pd

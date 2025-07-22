@@ -12,8 +12,9 @@
 #include <util.h>
 #include <object/structures.h>
 
-extern asid_pool_t *armKSASIDTable[BIT(asidHighBits)] VISIBLE;
-extern asid_t armKSHWASIDTable[BIT(hwASIDBits)] VISIBLE;
+extern vspace_id_pool_t *armKSASIDTable[BIT(asidHighBits)] VISIBLE;
+/* map from hw_asid_t -> vspace_id_t */
+extern vspace_id_t armKSHWASIDTable[BIT(hwASIDBits)] VISIBLE;
 extern hw_asid_t armKSNextASID VISIBLE;
 
 #ifndef CONFIG_ARM_HYPERVISOR_SUPPORT

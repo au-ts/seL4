@@ -32,7 +32,7 @@ BOOT_BSS static volatile _Atomic word_t node_boot_lock;
 
 BOOT_BSS static region_t res_reg[NUM_RESERVED_REGIONS];
 
-BOOT_CODE cap_t create_mapped_it_frame_cap(cap_t pd_cap, pptr_t pptr, vptr_t vptr, asid_t asid, bool_t
+BOOT_CODE cap_t create_mapped_it_frame_cap(cap_t pd_cap, pptr_t pptr, vptr_t vptr, vspace_id_t vspaceId, bool_t
                                            use_large, bool_t executable)
 {
     cap_t cap;
@@ -45,7 +45,7 @@ BOOT_CODE cap_t create_mapped_it_frame_cap(cap_t pd_cap, pptr_t pptr, vptr_t vpt
     }
 
     cap = cap_frame_cap_new(
-              asid,                            /* capFMappedASID       */
+              vspaceId,                            /* capFMappedASID       */
               pptr,                            /* capFBasePtr          */
               frame_size,                      /* capFSize             */
               wordFromVMRights(VMReadWrite),   /* capFVMRights         */

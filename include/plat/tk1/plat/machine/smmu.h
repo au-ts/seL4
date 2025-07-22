@@ -140,7 +140,7 @@ inline static uint32_t plat_smmu_iopt_index(word_t io_address)
 inline static uint32_t plat_smmu_get_asid_by_module_id(uint32_t mid)
 {
     if (mid < SMMU_FIRST_ASID || mid > SMMU_LAST_ASID) {
-        return asidInvalid;
+        return vspaceIdInvalid;
     }
 
     /* we have one-to-one mapping from module id to ASID */
@@ -166,4 +166,3 @@ static inline void plat_smmu_handle_interrupt(void)
 }
 
 #endif /* CONFIG_TK1_SMMU */
-

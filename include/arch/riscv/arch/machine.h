@@ -117,16 +117,16 @@ static inline void sfence(void)
     sbi_remote_sfence_vma(mask, 0, 0);
 }
 
-static inline void hwASIDFlushLocal(asid_t asid)
+static inline void hwASIDFlushLocal(hw_asid_t hw_asid)
 {
-    asm volatile("sfence.vma x0, %0" :: "r"(asid): "memory");
+    asm volatile("sfence.vma x0, %0" :: "r"(hw_asid): "memory");
 }
 
-static inline void hwASIDFlush(asid_t asid)
+static inline void hwASIDFlush(hw_asid_t hw_asid)
 {
     hwASIDFlushLocal(asid);
     word_t mask = get_sbi_mask_for_all_remote_harts();
-    sbi_remote_sfence_vma_asid(mask, 0, 0, asid);
+    sbi_remote_sfence_vma_asid(mask, 0, 0, hw_asid);
 }
 
 #else
@@ -136,9 +136,9 @@ static inline void sfence(void)
     asm volatile("sfence.vma" ::: "memory");
 }
 
-static inline void hwASIDFlush(asid_t asid)
+static inline void hwASIDFlush(hw_asid_t hw_asid)
 {
-    asm volatile("sfence.vma x0, %0" :: "r"(asid): "memory");
+    asm volatile("sfence.vma x0, %0" :: "r"(hw_asid): "memory");
 }
 
 #endif /* end of !ENABLE_SMP_SUPPORT */
@@ -251,10 +251,10 @@ static inline void write_fcsr(uint32_t value)
 #else
 #error "Unsupported PT levels"
 #endif
-static inline void setVSpaceRoot(paddr_t addr, asid_t asid)
+static inline void setVSpaceRoot(paddr_t addr, hw_asid_t hw_asid)
 {
     satp_t satp = satp_new(SATP_MODE,              /* mode */
-                           asid,                   /* asid */
+                           hw_asid,                   /* asid */
                            addr >> seL4_PageBits); /* PPN */
 
     write_satp(satp.words[0]);
