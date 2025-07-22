@@ -40,6 +40,7 @@ clearExMonitor_fp(void)
     );
 }
 
+// XXX: This is why we have pde_t stored_hw_asid everywhere.
 static inline void FORCE_INLINE switchToThread_fp(tcb_t *thread, pde_t *cap_pd, pde_t stored_hw_asid)
 {
     hw_asid_t hw_asid;
@@ -47,7 +48,7 @@ static inline void FORCE_INLINE switchToThread_fp(tcb_t *thread, pde_t *cap_pd, 
     if (config_set(CONFIG_ARM_HYPERVISOR_SUPPORT)) {
         vcpu_switch(thread->tcbArch.tcbVCPU);
     }
-    hw_asid = pde_pde_invalid_get_stored_hw_asid(stored_hw_asid);
+    hw_asid = (hw_asid_t){pde_pde_invalid_get_stored_hw_asid(stored_hw_asid)};
     armv_contextSwitch_HWASID(cap_pd, hw_asid);
 
 #ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
@@ -170,4 +171,3 @@ static inline void NORETURN FORCE_INLINE fastpath_restore(word_t badge, word_t m
     }
     UNREACHABLE();
 }
-

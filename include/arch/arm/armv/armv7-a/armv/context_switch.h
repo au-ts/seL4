@@ -16,7 +16,7 @@ static inline void setHardwareASID(hw_asid_t hw_asid)
 #if defined(CONFIG_ARM_ERRATA_430973)
     flushBTAC();
 #endif
-    writeContextID(hw_asid);
+    writeContextID(hw_asid.v);
 }
 
 static inline void armv_contextSwitch_HWASID(pde_t *cap_pd, hw_asid_t hw_asid)

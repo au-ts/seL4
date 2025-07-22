@@ -1111,9 +1111,9 @@ static void storeHWASID(vspace_id_t vspaceId, hw_asid_t hw_asid)
 
     /* Store HW ASID in the last entry
        Masquerade as an invalid PDE */
-    pd[PD_ASID_SLOT] = pde_pde_invalid_new(hw_asid, true);
+    pd[PD_ASID_SLOT] = pde_pde_invalid_new(hw_asid.v, true);
 
-    armKSHWASIDTable[hw_asid] = vspaceId;
+    armKSHWASIDTable[hw_asid.v] = vspaceId;
 }
 
 hw_asid_t findFreeHWASID(void)
@@ -1123,10 +1123,10 @@ hw_asid_t findFreeHWASID(void)
 
     /* Find a free hardware ASID */
     for (hw_asid_offset = 0;
-         hw_asid_offset <= (word_t)((hw_asid_t) - 1);
+         hw_asid_offset <= (word_t)(hwASIDMax);
          hw_asid_offset ++) {
-        hw_asid = armKSNextASID + ((hw_asid_t)hw_asid_offset);
-        if (armKSHWASIDTable[hw_asid] == vspaceIdInvalid) {
+        hw_asid = (hw_asid_t){armKSNextASID.v + ((hw_asid_t){hw_asid_offset}).v};
+        if (armKSHWASIDTable[hw_asid.v] == vspaceIdInvalid) {
             return hw_asid;
         }
     }
@@ -1134,14 +1134,14 @@ hw_asid_t findFreeHWASID(void)
     hw_asid = armKSNextASID;
 
     /* If we've scanned the table without finding a free ASID */
-    invalidateASID(armKSHWASIDTable[hw_asid]);
+    invalidateASID(armKSHWASIDTable[hw_asid.v]);
 
     /* Flush TLB */
     invalidateTranslationASID(hw_asid);
-    armKSHWASIDTable[hw_asid] = vspaceIdInvalid;
+    armKSHWASIDTable[hw_asid.v] = vspaceIdInvalid;
 
     /* Increment the NextASID index */
-    armKSNextASID++;
+    armKSNextASID.v++;
 
     return hw_asid;
 }
@@ -1152,7 +1152,7 @@ hw_asid_t getHWASID(vspace_id_t vspaceId)
 
     stored_hw_asid = loadHWASID(vspaceId);
     if (pde_pde_invalid_get_stored_asid_valid(stored_hw_asid)) {
-        return pde_pde_invalid_get_stored_hw_asid(stored_hw_asid);
+        return (hw_asid_t){pde_pde_invalid_get_stored_hw_asid(stored_hw_asid)};
     } else {
         hw_asid_t new_hw_asid;
 
@@ -1495,7 +1495,7 @@ void flushTable(pde_t *pd, vspace_id_t vspaceId, word_t vptr, pte_t *pt)
     stored_hw_asid = loadHWASID(vspaceId);
 
     if (pde_pde_invalid_get_stored_asid_valid(stored_hw_asid)) {
-        invalidateTranslationASID(pde_pde_invalid_get_stored_hw_asid(stored_hw_asid));
+        invalidateTranslationASID((hw_asid_t){pde_pde_invalid_get_stored_hw_asid(stored_hw_asid)});
         if (root_switched) {
             setVMRoot(NODE_STATE(ksCurThread));
         }
@@ -1520,7 +1520,7 @@ void flushSpace(vspace_id_t vspaceId)
     }
 
     /* Do the TLB flush */
-    invalidateTranslationASID(pde_pde_invalid_get_stored_hw_asid(stored_hw_asid));
+    invalidateTranslationASID((hw_asid_t){pde_pde_invalid_get_stored_hw_asid(stored_hw_asid)});
 }
 
 void invalidateTLBByASID(vspace_id_t vspaceId)
@@ -1536,7 +1536,7 @@ void invalidateTLBByASID(vspace_id_t vspaceId)
     }
 
     /* Do the TLB flush */
-    invalidateTranslationASID(pde_pde_invalid_get_stored_hw_asid(stored_hw_asid));
+    invalidateTranslationASID((hw_asid_t){pde_pde_invalid_get_stored_hw_asid(stored_hw_asid)});
 }
 
 static inline bool_t CONST checkVPAlignment(vm_page_size_t sz, word_t w)
