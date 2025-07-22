@@ -23,9 +23,19 @@ typedef word_t node_id_t;
 typedef word_t cpu_id_t;
 typedef word_t dom_t;
 
+#if defined(CONFIG_ARCH_AARCH32)
 typedef struct {
-    uint8_t v;
+    // uint8_t v;
+    word_t v;
 } hw_asid_t;
+#elif defined(CONFIG_ARCH_AARCH64)
+// XX: ???
+typedef struct {
+    word_t v;
+} hw_asid_t;
+#else
+#error
+#endif
 
 enum hwASIDConstants {
     hwASIDMax = 255,
