@@ -30,4 +30,6 @@ typedef uint64_t timestamp_t;
 /* XXXX: size.  (follows `word_t pcid` ?)
     KernelSupportPCID
 */
-typedef word_t hw_asid_t;
+typedef struct {
+    word_t v;
+} hw_asid_t;

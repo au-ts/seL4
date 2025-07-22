@@ -23,7 +23,7 @@ void Mode_handleRemoteCall(IpiModeRemoteCall_t call, word_t arg0, word_t arg1, w
 
 static inline void doRemoteInvalidatePCID(word_t type, void *vaddr, hw_asid_t pcid, word_t mask)
 {
-    doRemoteMaskOp3Arg((IpiRemoteCall_t)IpiRemoteCall_InvalidatePCID, type, (word_t)vaddr, (word_t)pcid, mask);
+    doRemoteMaskOp3Arg((IpiRemoteCall_t)IpiRemoteCall_InvalidatePCID, type, (word_t)vaddr, (word_t)pcid.v, mask);
 }
 
 /* see tlb.h invalidateLocalASID for why these are different */

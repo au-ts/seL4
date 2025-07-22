@@ -10,7 +10,7 @@
 
 static inline void invalidatePageStructureCacheASID(paddr_t root, vspace_id_t vspaceId, word_t mask)
 {
-    hw_asid_t pcid = (hw_asid_t)vspaceId;
+    hw_asid_t pcid = (hw_asid_t){vspaceId};
 
     invalidateLocalPageStructureCacheHWASID(root, pcid);
     SMP_COND_STATEMENT(doRemoteInvalidatePageStructureCacheHWASID(root, pcid, mask));
@@ -24,7 +24,7 @@ static inline void invalidateTranslationSingle(vptr_t vptr, word_t mask)
 
 static inline void invalidateTranslationSingleASID(vptr_t vptr, vspace_id_t vspaceId, word_t mask)
 {
-    hw_asid_t pcid = (hw_asid_t)vspaceId;
+    hw_asid_t pcid = (hw_asid_t){vspaceId};
 
     invalidateLocalTranslationSingleHWASID(vptr, pcid);
     SMP_COND_STATEMENT(doRemoteInvalidateTranslationSingleHWASID(vptr, pcid, mask));

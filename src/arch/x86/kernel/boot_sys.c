@@ -151,7 +151,8 @@ static BOOT_CODE bool_t try_boot_sys_node(cpu_id_t cpu_id)
         )) {
         return false;
     }
-    setCurrentVSpaceRoot(kpptr_to_paddr(X86_KERNEL_VSPACE_ROOT), 0);
+    // XXX: what asid?
+    setCurrentVSpaceRoot(kpptr_to_paddr(X86_KERNEL_VSPACE_ROOT), (hw_asid_t){0});
     /* Sync up the compilers view of the world here to force the PD to actually
      * be set *right now* instead of delayed */
     asm volatile("" ::: "memory");
@@ -733,4 +734,3 @@ BOOT_CODE VISIBLE void boot_sys(
     schedule();
     activateThread();
 }
-

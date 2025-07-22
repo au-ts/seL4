@@ -118,7 +118,7 @@ void NORETURN fastpath_call(word_t cptr, word_t msgInfo)
 
 #ifdef CONFIG_ARCH_RISCV
     /* Get HW(???) ASID */
-    stored_hw_asid.words[0] = (hw_asid_t){cap_page_table_cap_get_capPTMappedASID(newVTable)};
+    stored_hw_asid.words[0] = (hw_asid_t){cap_page_table_cap_get_capPTMappedASID(newVTable)}.v;
 #endif
 
     /* let gcc optimise this out for 1 domain */

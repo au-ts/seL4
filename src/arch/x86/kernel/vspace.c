@@ -87,8 +87,8 @@ void deleteASID(vspace_id_t vspaceId, vspace_root_t *vspace)
         if (asid_map_get_type(asid_map) == asid_map_asid_map_vspace &&
             (vspace_root_t *)asid_map_asid_map_vspace_get_vspace_root(asid_map) == vspace) {
 
-            hw_asid_t hw_asid = (hw_asid_t)vspaceId;
-            hwASIDInvalidate(hw_asid, vspace);
+            /* XXX: not hw ASID. */
+            hwASIDInvalidate(vspaceId, vspace);
             poolPtr->array[ASID_LOW(vspaceId)] = asid_map_asid_map_none_new();
             setVMRoot(NODE_STATE(ksCurThread));
         }

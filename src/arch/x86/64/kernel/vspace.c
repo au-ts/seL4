@@ -481,7 +481,7 @@ void setVMRoot(tcb_t *tcb)
 
     if (cap_get_capType(threadRoot) != cap_pml4_cap ||
         !cap_pml4_cap_get_capPML4IsMapped(threadRoot)) {
-        setCurrentUserVSpaceRoot(kpptr_to_paddr(X86_GLOBAL_VSPACE_ROOT), 0);
+        setCurrentUserVSpaceRoot(kpptr_to_paddr(X86_GLOBAL_VSPACE_ROOT), (hw_asid_t){0});
         return;
     }
 
@@ -489,10 +489,10 @@ void setVMRoot(tcb_t *tcb)
     vspaceId = cap_pml4_cap_get_capPML4MappedASID(threadRoot);
     find_ret = findVSpaceForVSpaceId(vspaceId);
     if (unlikely(find_ret.status != EXCEPTION_NONE || find_ret.vspace_root != pml4)) {
-        setCurrentUserVSpaceRoot(kpptr_to_paddr(X86_GLOBAL_VSPACE_ROOT), 0);
+        setCurrentUserVSpaceRoot(kpptr_to_paddr(X86_GLOBAL_VSPACE_ROOT), (hw_asid_t){0});
         return;
     }
-    hw_asid_t hw_asid = (hw_asid_t)vspaceId;
+    hw_asid_t hw_asid = (hw_asid_t){vspaceId};
     cr3 = makeCR3(pptr_to_paddr(pml4), hw_asid);
     if (getCurrentUserCR3().words[0] != cr3.words[0]) {
         SMP_COND_STATEMENT(tlb_bitmap_set(pml4, getCurrentCPUIndex());)
@@ -1056,20 +1056,19 @@ static void flushPD(vspace_root_t *vspace, word_t vptr, pde_t *pd, vspace_id_t v
      * one by one using invplg.
      * choose the easy way, invalidate the PCID
      */
-    invalidateASID(vspace, vspaceId, SMP_TERNARY(tlb_bitmap_get(vspace), 0));
-
+    hwASIDInvalidate(vspaceId, vspace);
 }
 
 static void flushPDPT(vspace_root_t *vspace, word_t vptr, pdpte_t *pdpt, vspace_id_t vspaceId)
 {
-    /* similar here */
-    invalidateASID(vspace, vspaceId, SMP_TERNARY(tlb_bitmap_get(vspace), 0));
-    return;
+    /* as in flushPD */
+    hwASIDInvalidate(vspaceId, vspace);
 }
 
 /* This function is named funny, it's basically only used from ASID pools (i.e software) */
 void hwASIDInvalidate(vspace_id_t vspaceId, vspace_root_t *vspace)
 {
+    /* invalidate the hw asid from the sw asid - ASID gets PCID and fixes up TLB map */
     invalidateASID(vspace, vspaceId, SMP_TERNARY(tlb_bitmap_get(vspace), 0));
 }
 
@@ -1095,12 +1094,11 @@ void unmapPageDirectory(vspace_id_t vspaceId, vptr_t vaddr, pde_t *pd)
         return;
     }
 
-    hw_asid_t hw_asid = (hw_asid_t)vspaceId;
-    flushPD(find_ret.vspace_root, vaddr, pd, hw_asid);
+    flushPD(find_ret.vspace_root, vaddr, pd, vspaceId);
 
     *lu_ret.pdptSlot = makeUserPDPTEInvalid();
 
-    invalidatePageStructureCacheASID(pptr_to_paddr(find_ret.vspace_root), hw_asid,
+    invalidatePageStructureCacheASID(pptr_to_paddr(find_ret.vspace_root), vspaceId,
                                      SMP_TERNARY(tlb_bitmap_get(find_ret.vspace_root), 0));
 }
 
@@ -1267,8 +1265,7 @@ static void unmapPDPT(vspace_id_t vspaceId, vptr_t vaddr, pdpte_t *pdpt)
         return;
     }
 
-    hw_asid_t hw_asid = (hw_asid_t)vspaceId;
-    flushPDPT(find_ret.vspace_root, vaddr, pdpt, hw_asid);
+    flushPDPT(find_ret.vspace_root, vaddr, pdpt, vspaceId);
 
     *pml4Slot = makeUserPML4EInvalid();
 }

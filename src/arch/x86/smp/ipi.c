@@ -22,7 +22,7 @@ void handleRemoteCall(IpiRemoteCall_t call, word_t arg0, word_t arg1, word_t arg
             break;
 
         case IpiRemoteCall_InvalidatePageStructureCacheHWASID:
-            invalidateLocalPageStructureCacheHWASID(arg0, (hw_asid_t)arg1);
+            invalidateLocalPageStructureCacheHWASID(arg0, (hw_asid_t){arg1});
             break;
 
         case IpiRemoteCall_InvalidateTranslationSingle:
@@ -30,7 +30,7 @@ void handleRemoteCall(IpiRemoteCall_t call, word_t arg0, word_t arg1, word_t arg
             break;
 
         case IpiRemoteCall_InvalidateTranslationSingleHWASID:
-            invalidateLocalTranslationSingleHWASID(arg0, (hw_asid_t)arg1);
+            invalidateLocalTranslationSingleHWASID(arg0, (hw_asid_t){arg1});
             break;
 
         case IpiRemoteCall_InvalidateTranslationAll:

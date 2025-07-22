@@ -31,7 +31,7 @@
 
 static inline cr3_t makeCR3(paddr_t addr, hw_asid_t pcid)
 {
-    return cr3_new(addr, config_set(CONFIG_SUPPORT_PCID) ? pcid : 0);
+    return cr3_new(addr, config_set(CONFIG_SUPPORT_PCID) ? pcid.v : 0);
 }
 
 /* Address space control */
@@ -161,7 +161,7 @@ static inline void invalidateLocalPCID(word_t type, void *vaddr, hw_asid_t hw_as
 {
     if (config_set(CONFIG_SUPPORT_PCID)) {
         invpcid_desc_t desc;
-        desc.asid = hw_asid & 0xfff;
+        desc.asid = hw_asid.v & 0xfff;
         desc.addr = (uint64_t)vaddr;
         asm volatile("invpcid %1, %0" :: "r"(type), "m"(desc));
     } else {
@@ -190,7 +190,7 @@ static inline void invalidateLocalTranslationSingle(vptr_t vptr)
     /* As this may be used to invalidate global mappings by the kernel,
      * and as its only used in boot code, we can just invalidate
      * absolutely everything from the tlb */
-    invalidateLocalPCID(INVPCID_TYPE_ALL_GLOBAL, (void *)0, 0);
+    invalidateLocalPCID(INVPCID_TYPE_ALL_GLOBAL, (void *)0, (hw_asid_t){0});
 }
 
 static inline void invalidateLocalTranslationSingleHWASID(vptr_t vptr, hw_asid_t pcid)
@@ -200,7 +200,7 @@ static inline void invalidateLocalTranslationSingleHWASID(vptr_t vptr, hw_asid_t
 
 static inline void invalidateLocalTranslationAll(void)
 {
-    invalidateLocalPCID(INVPCID_TYPE_ALL_GLOBAL, (void *)0, 0);
+    invalidateLocalPCID(INVPCID_TYPE_ALL_GLOBAL, (void *)0, (hw_asid_t){0});
 }
 
 static inline void invalidateLocalPageStructureCacheHWASID(paddr_t root, hw_asid_t pcid)

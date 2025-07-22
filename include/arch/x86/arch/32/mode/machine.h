@@ -24,10 +24,10 @@ static inline void setCurrentPD(paddr_t addr)
 }
 
 // XX: pcid => hw_asid_t?
-static inline void setCurrentVSpaceRoot(paddr_t addr, word_t pcid)
+static inline void setCurrentVSpaceRoot(paddr_t addr, hw_asid_t pcid)
 {
     /* pcid is not supported on ia32 and so we should always be passed zero */
-    assert(pcid == 0);
+    assert(pcid.v == 0);
     setCurrentPD(addr);
 }
 
