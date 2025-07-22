@@ -28,7 +28,9 @@ typedef word_t dom_t;
 
 /* XXXXXXXXXXXXXXXX: HW ASID is always hardcoded as 1. */
 // XX: 8 on SVLEN=32, 16 on SVLEN=64
-typedef uint16_t  hw_asid_t;
+typedef struct {
+    uint16_t v;
+} hw_asid_t;
 
 typedef uint64_t timestamp_t;
 

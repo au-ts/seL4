@@ -304,7 +304,8 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
 
 BOOT_CODE void activate_kernel_vspace(void)
 {
-    setVSpaceRoot(kpptr_to_paddr(&kernel_root_pageTable), 0);
+    /** XXX: ?? */
+    setVSpaceRoot(kpptr_to_paddr(&kernel_root_pageTable), (hw_asid_t){0});
 }
 
 BOOT_CODE void write_it_asid_pool(cap_t it_ap_cap, cap_t it_lvl1pt_cap)
@@ -499,7 +500,8 @@ void deleteASID(vspace_id_t vspaceId, pte_t *vspace)
 
     poolPtr = riscvKSASIDTable[ASID_HIGH(vspaceId)];
     if (poolPtr != NULL && poolPtr->array[ASID_LOW(vspaceId)] == vspace) {
-        hwASIDFlush(vspaceId);
+        hw_asid_t hw_asid = (hw_asid_t){vspaceId};
+        hwASIDFlush(hw_asid);
         poolPtr->array[ASID_LOW(vspaceId)] = NULL;
         setVMRoot(NODE_STATE(ksCurThread));
     }
@@ -587,7 +589,8 @@ void setVMRoot(tcb_t *tcb)
     threadRoot = TCB_PTR_CTE_PTR(tcb, tcbVTable)->cap;
 
     if (cap_get_capType(threadRoot) != cap_page_table_cap) {
-        setVSpaceRoot(kpptr_to_paddr(&kernel_root_pageTable), 0);
+        /* XXX: hwASIDInvalid ? */
+        setVSpaceRoot(kpptr_to_paddr(&kernel_root_pageTable), (hw_asid_t){0});
         return;
     }
 
@@ -596,11 +599,12 @@ void setVMRoot(tcb_t *tcb)
     vspaceId = cap_page_table_cap_get_capPTMappedASID(threadRoot);
     find_ret = findVSpaceForVSpaceId(vspaceId);
     if (unlikely(find_ret.status != EXCEPTION_NONE || find_ret.vspace_root != lvl1pt)) {
-        setVSpaceRoot(kpptr_to_paddr(&kernel_root_pageTable), 0);
+        setVSpaceRoot(kpptr_to_paddr(&kernel_root_pageTable), (hw_asid_t){0});
         return;
     }
 
-    setVSpaceRoot(addrFromPPtr(lvl1pt), vspaceId);
+    hw_asid_t hw_asid = (hw_asid_t){vspaceId};
+    setVSpaceRoot(addrFromPPtr(lvl1pt), hw_asid);
 }
 
 bool_t CONST isValidVTableRoot(cap_t cap)
