@@ -8,10 +8,12 @@
 
 #include <arch/smp/ipi_inline.h>
 
-static inline void invalidatePageStructureCacheASID(paddr_t root, asid_t asid, word_t mask)
+static inline void invalidatePageStructureCacheASID(paddr_t root, vspace_id_t vspaceId, word_t mask)
 {
-    invalidateLocalPageStructureCacheASID(root, asid);
-    SMP_COND_STATEMENT(doRemoteInvalidatePageStructureCacheASID(root, asid, mask));
+    hw_asid_t pcid = (hw_asid_t)vspaceId;
+
+    invalidateLocalPageStructureCacheHWASID(root, pcid);
+    SMP_COND_STATEMENT(doRemoteInvalidatePageStructureCacheHWASID(root, pcid, mask));
 }
 
 static inline void invalidateTranslationSingle(vptr_t vptr, word_t mask)
@@ -20,10 +22,12 @@ static inline void invalidateTranslationSingle(vptr_t vptr, word_t mask)
     SMP_COND_STATEMENT(doRemoteInvalidateTranslationSingle(vptr, mask));
 }
 
-static inline void invalidateTranslationSingleASID(vptr_t vptr, asid_t asid, word_t mask)
+static inline void invalidateTranslationSingleASID(vptr_t vptr, vspace_id_t vspaceId, word_t mask)
 {
-    invalidateLocalTranslationSingleASID(vptr, asid);
-    SMP_COND_STATEMENT(doRemoteInvalidateTranslationSingleASID(vptr, asid, mask));
+    hw_asid_t pcid = (hw_asid_t)vspaceId;
+
+    invalidateLocalTranslationSingleHWASID(vptr, pcid);
+    SMP_COND_STATEMENT(doRemoteInvalidateTranslationSingleHWASID(vptr, pcid, mask));
 }
 
 static inline void invalidateTranslationAll(word_t mask)

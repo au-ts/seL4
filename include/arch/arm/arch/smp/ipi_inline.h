@@ -27,9 +27,9 @@ static inline void doRemoteInvalidateTranslationSingle(vptr_t vptr, word_t mask)
     doRemoteMaskOp1Arg(IpiRemoteCall_InvalidateTranslationSingle, vptr, mask);
 }
 
-static inline void doRemoteInvalidateTranslationASID(asid_t asid, word_t mask)
+static inline void doRemoteInvalidateTranslationASID(hw_asid_t hw_asid, word_t mask)
 {
-    doRemoteMaskOp1Arg(IpiRemoteCall_InvalidateTranslationASID, asid, mask);
+    doRemoteMaskOp1Arg(IpiRemoteCall_InvalidateTranslationASID, hw_asid, mask);
 }
 
 static inline void doRemoteInvalidateTranslationAll(word_t mask)

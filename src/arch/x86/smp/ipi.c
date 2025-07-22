@@ -21,16 +21,16 @@ void handleRemoteCall(IpiRemoteCall_t call, word_t arg0, word_t arg1, word_t arg
             ipiStallCoreCallback(irqPath);
             break;
 
-        case IpiRemoteCall_InvalidatePageStructureCacheASID:
-            invalidateLocalPageStructureCacheASID(arg0, arg1);
+        case IpiRemoteCall_InvalidatePageStructureCacheHWASID:
+            invalidateLocalPageStructureCacheHWASID(arg0, (hw_asid_t)arg1);
             break;
 
         case IpiRemoteCall_InvalidateTranslationSingle:
             invalidateLocalTranslationSingle(arg0);
             break;
 
-        case IpiRemoteCall_InvalidateTranslationSingleASID:
-            invalidateLocalTranslationSingleASID(arg0, arg1);
+        case IpiRemoteCall_InvalidateTranslationSingleHWASID:
+            invalidateLocalTranslationSingleHWASID(arg0, (hw_asid_t)arg1);
             break;
 
         case IpiRemoteCall_InvalidateTranslationAll:

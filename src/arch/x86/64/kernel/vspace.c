@@ -1050,26 +1050,27 @@ lookupPDSlot_ret_t lookupPDSlot(vspace_root_t *pml4, vptr_t vptr)
     }
 }
 
-static void flushPD(vspace_root_t *vspace, word_t vptr, pde_t *pd, hw_asid_t hw_asid)
+static void flushPD(vspace_root_t *vspace, word_t vptr, pde_t *pd, vspace_id_t vspaceId)
 {
     /* clearing the entire PCID vs flushing the virtual addresses
      * one by one using invplg.
      * choose the easy way, invalidate the PCID
      */
-    invalidateHWASID(vspace, hw_asid, SMP_TERNARY(tlb_bitmap_get(vspace), 0));
+    invalidateASID(vspace, vspaceId, SMP_TERNARY(tlb_bitmap_get(vspace), 0));
 
 }
 
-static void flushPDPT(vspace_root_t *vspace, word_t vptr, pdpte_t *pdpt, hw_asid_t hw_asid)
+static void flushPDPT(vspace_root_t *vspace, word_t vptr, pdpte_t *pdpt, vspace_id_t vspaceId)
 {
     /* similar here */
-    invalidateHWASID(vspace, hw_asid, SMP_TERNARY(tlb_bitmap_get(vspace), 0));
+    invalidateASID(vspace, vspaceId, SMP_TERNARY(tlb_bitmap_get(vspace), 0));
     return;
 }
 
-void hwASIDInvalidate(hw_asid_t hw_asid, vspace_root_t *vspace)
+/* This function is named funny, it's basically only used from ASID pools (i.e software) */
+void hwASIDInvalidate(vspace_id_t vspaceId, vspace_root_t *vspace)
 {
-    invalidateHWASID(vspace, hw_asid, SMP_TERNARY(tlb_bitmap_get(vspace), 0));
+    invalidateASID(vspace, vspaceId, SMP_TERNARY(tlb_bitmap_get(vspace), 0));
 }
 
 void unmapPageDirectory(vspace_id_t vspaceId, vptr_t vaddr, pde_t *pd)
@@ -1459,8 +1460,7 @@ bool_t modeUnmapPage(vm_page_size_t page_size, vspace_root_t *vroot, vptr_t vadd
 static exception_t updatePDPTE(vspace_id_t vspaceId, pdpte_t pdpte, pdpte_t *pdptSlot, vspace_root_t *vspace)
 {
     *pdptSlot = pdpte;
-    hw_asid_t hw_asid = (hw_asid_t)vspaceId;
-    invalidatePageStructureCacheASID(pptr_to_paddr(vspace), hw_asid,
+    invalidatePageStructureCacheASID(pptr_to_paddr(vspace), vspaceId,
                                      SMP_TERNARY(tlb_bitmap_get(vspace), 0));
     return EXCEPTION_NONE;
 }

@@ -32,7 +32,7 @@ void handleRemoteCall(IpiRemoteCall_t call, word_t arg0, word_t arg1, word_t arg
             break;
 
         case IpiRemoteCall_InvalidateTranslationASID:
-            invalidateTranslationASIDLocal(arg0);
+            invalidateTranslationASIDLocal((hw_asid_t)arg0);
             break;
 
         case IpiRemoteCall_InvalidateTranslationAll:

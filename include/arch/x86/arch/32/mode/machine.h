@@ -23,6 +23,7 @@ static inline void setCurrentPD(paddr_t addr)
     write_cr3(addr);
 }
 
+// XX: pcid => hw_asid_t?
 static inline void setCurrentVSpaceRoot(paddr_t addr, word_t pcid)
 {
     /* pcid is not supported on ia32 and so we should always be passed zero */
@@ -48,7 +49,7 @@ static inline void invalidateLocalPageStructureCache(void)
     invalidateLocalTLBEntry(0);
 }
 
-static inline void invalidateLocalPageStructureCacheASID(paddr_t root, asid_t asid)
+static inline void invalidateLocalPageStructureCacheHWASID(paddr_t root, hw_asid_t hw_asid)
 {
     /* ignore asid */
     invalidateLocalPageStructureCache();
@@ -66,7 +67,7 @@ static inline void invalidateLocalTranslationSingle(vptr_t vptr)
     invalidateLocalTLBEntry(vptr);
 }
 
-static inline void invalidateLocalTranslationSingleASID(vptr_t vptr, asid_t asid)
+static inline void invalidateLocalTranslationSingleHWASID(vptr_t vptr, hw_asid_t pcid)
 {
     /* no asid support in 32-bit, just invalidate TLB */
     invalidateLocalTLBEntry(vptr);

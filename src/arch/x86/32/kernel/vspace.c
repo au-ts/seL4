@@ -394,11 +394,11 @@ static BOOT_CODE cap_t create_it_page_table_cap(cap_t vspace_cap, pptr_t pptr, v
     cap_t cap;
     cap = cap_page_table_cap_new(
               1,    /* capPTIsMapped      */
-              asid, /* capPTMappedASID    */
+              vspaceId, /* capPTMappedASID    */
               vptr, /* capPTMappedAddress */
               pptr  /* capPTBasePtr       */
           );
-    if (asid != vspaceIdInvalid) {
+    if (vspaceId != vspaceIdInvalid) {
         map_it_pt_cap(vspace_cap, cap);
     }
     return cap;
@@ -413,7 +413,7 @@ static BOOT_CODE cap_t create_it_page_directory_cap(cap_t vspace_cap, pptr_t ppt
               vptr,    /* capPDMappedAddress */
               pptr  /* capPDBasePtr    */
           );
-    if (asid != vspaceIdInvalid && cap_get_capType(vspace_cap) != cap_null_cap) {
+    if (vspaceId != vspaceIdInvalid && cap_get_capType(vspace_cap) != cap_null_cap) {
         map_it_pd_cap(vspace_cap, cap);
     }
     return cap;
@@ -477,11 +477,11 @@ static BOOT_CODE cap_t create_it_frame_cap(pptr_t pptr, vptr_t vptr, vspace_id_t
     return
         cap_frame_cap_new(
             frame_size,                    /* capFSize           */
-            ASID_LOW(asid),                /* capFMappedASIDLow  */
+            ASID_LOW(vspaceId),                /* capFMappedASIDLow  */
             vptr,                          /* capFMappedAddress  */
             map_type,                      /* capFMapType        */
             false,                         /* capFIsDevice       */
-            ASID_HIGH(asid),               /* capFMappedASIDHigh */
+            ASID_HIGH(vspaceId),               /* capFMappedASIDHigh */
             wordFromVMRights(VMReadWrite), /* capFVMRights       */
             pptr                           /* capFBasePtr        */
         );
@@ -495,7 +495,7 @@ BOOT_CODE cap_t create_unmapped_it_frame_cap(pptr_t pptr, bool_t use_large)
 BOOT_CODE cap_t create_mapped_it_frame_cap(cap_t vspace_cap, pptr_t pptr, vptr_t vptr, vspace_id_t vspaceId, bool_t use_large,
                                            bool_t executable UNUSED)
 {
-    cap_t cap = create_it_frame_cap(pptr, vptr, asid, use_large, X86_MappingVSpace);
+    cap_t cap = create_it_frame_cap(pptr, vptr, vspaceId, use_large, X86_MappingVSpace);
     map_it_frame_cap(vspace_cap, cap);
     return cap;
 }
@@ -589,7 +589,7 @@ void setVMRoot(tcb_t *tcb)
 {
     cap_t               threadRoot;
     vspace_root_t *vspace_root;
-    vspace_id_t              asid;
+    vspace_id_t              vspaceId;
     findVSpaceForVSpaceId_ret_t find_ret;
 
     threadRoot = TCB_PTR_CTE_PTR(tcb, tcbVTable)->cap;

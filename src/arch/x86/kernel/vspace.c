@@ -705,9 +705,9 @@ void flushTable(vspace_root_t *vspace, word_t vptr, pte_t *pt, vspace_id_t vspac
     for (i = 0; i < BIT(PT_INDEX_BITS); i++) {
         if (pte_get_present(pt[i])) {
             if (config_set(CONFIG_SUPPORT_PCID) || (isValidNativeRoot(threadRoot)
-                                                    && (vspace_root_t *)pptr_of_cap(threadRoot) == vspace)) {
-                hw_asid_t hw_asid = (hw_asid_t)vspaceId;
-                invalidateTranslationSingleASID(vptr + (i << PAGE_BITS), hw_asid,
+                && (vspace_root_t *)pptr_of_cap(threadRoot) == vspace)) {
+                /* XXX: Why does this only run if we support PCID? */
+                invalidateTranslationSingleASID(vptr + (i << PAGE_BITS), vspaceId,
                                                 SMP_TERNARY(tlb_bitmap_get(vspace), 0));
             }
         }
@@ -763,8 +763,7 @@ void unmapPage(vm_page_size_t page_size, vspace_id_t vspaceId, vptr_t vptr, void
         break;
     }
 
-    hw_asid_t hw_asid = (hw_asid_t)vspaceId;
-    invalidateTranslationSingleASID(vptr, hw_asid,
+    invalidateTranslationSingleASID(vptr, vspaceId,
                                     SMP_TERNARY(tlb_bitmap_get(find_ret.vspace_root), 0));
 }
 

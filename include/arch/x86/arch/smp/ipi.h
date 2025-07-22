@@ -14,13 +14,12 @@ typedef enum {
     IpiRemoteCall_ClearCurrentVCPU,
     IpiRemoteCall_VMCheckBoundNotification,
 #endif
-    IpiRemoteCall_InvalidatePageStructureCacheASID,
+    IpiRemoteCall_InvalidatePageStructureCacheHWASID,
     IpiRemoteCall_InvalidateTranslationSingle,
-    IpiRemoteCall_InvalidateTranslationSingleASID,
+    IpiRemoteCall_InvalidateTranslationSingleHWASID,
     IpiRemoteCall_InvalidateTranslationAll,
     IpiRemoteCall_switchFpuOwner,
     IpiNumArchRemoteCall
 } IpiRemoteCall_t;
 
 #endif /* ENABLE_SMP_SUPPORT */
-

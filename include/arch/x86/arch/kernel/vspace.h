@@ -96,7 +96,7 @@ bool_t CONST isValidVTableRoot(cap_t cap);
 bool_t CONST isValidNativeRoot(cap_t cap);
 exception_t checkValidIPCBuffer(vptr_t vptr, cap_t cap);
 vm_rights_t CONST maskVMRights(vm_rights_t vm_rights, seL4_CapRights_t cap_rights_mask);
-void flushTable(vspace_root_t *vspace, word_t vptr, pte_t *pt, asid_t asid);
+void flushTable(vspace_root_t *vspace, word_t vptr, pte_t *pt, hw_asid_t pcid);
 
 exception_t decodeX86MMUInvocation(word_t invLabel, word_t length, cptr_t cptr, cte_t *cte,
                                    cap_t cap, bool_t call, word_t *buffer);

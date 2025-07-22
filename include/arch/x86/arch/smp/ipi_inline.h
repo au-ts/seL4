@@ -20,9 +20,9 @@ static inline void doRemoteswitchFpuOwner(user_fpu_state_t *new_owner, word_t cp
     doRemoteOp1Arg(IpiRemoteCall_switchFpuOwner, (word_t)new_owner, cpu);
 }
 
-static inline void doRemoteInvalidatePageStructureCacheASID(paddr_t root, asid_t asid, word_t mask)
+static inline void doRemoteInvalidatePageStructureCacheHWASID(paddr_t root, hw_asid_t pcid, word_t mask)
 {
-    doRemoteMaskOp2Arg(IpiRemoteCall_InvalidatePageStructureCacheASID, root, asid, mask);
+    doRemoteMaskOp2Arg(IpiRemoteCall_InvalidatePageStructureCacheHWASID, root, pcid, mask);
 }
 
 static inline void doRemoteInvalidateTranslationSingle(vptr_t vptr, word_t mask)
@@ -30,9 +30,9 @@ static inline void doRemoteInvalidateTranslationSingle(vptr_t vptr, word_t mask)
     doRemoteMaskOp1Arg(IpiRemoteCall_InvalidateTranslationSingle, vptr, mask);
 }
 
-static inline void doRemoteInvalidateTranslationSingleASID(vptr_t vptr, asid_t asid, word_t mask)
+static inline void doRemoteInvalidateTranslationSingleHWASID(vptr_t vptr, hw_asid_t pcid, word_t mask)
 {
-    doRemoteMaskOp2Arg(IpiRemoteCall_InvalidateTranslationSingleASID, vptr, asid, mask);
+    doRemoteMaskOp2Arg(IpiRemoteCall_InvalidateTranslationSingleHWASID, vptr, pcid, mask);
 }
 
 static inline void doRemoteInvalidateTranslationAll(word_t mask)

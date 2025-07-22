@@ -27,5 +27,7 @@ typedef word_t dom_t;
 
 typedef uint64_t timestamp_t;
 
-/* XXXX: size. */
+/* XXXX: size.  (follows `word_t pcid` ?)
+    KernelSupportPCID
+*/
 typedef word_t hw_asid_t;

@@ -29,7 +29,7 @@
 #endif
 
 
-static inline cr3_t makeCR3(paddr_t addr, word_t pcid)
+static inline cr3_t makeCR3(paddr_t addr, hw_asid_t pcid)
 {
     return cr3_new(addr, config_set(CONFIG_SUPPORT_PCID) ? pcid : 0);
 }
@@ -108,12 +108,12 @@ static inline void setCurrentUserCR3(cr3_t cr3)
 #endif
 }
 
-static inline void setCurrentVSpaceRoot(paddr_t addr, word_t pcid)
+static inline void setCurrentVSpaceRoot(paddr_t addr, hw_asid_t pcid)
 {
     setCurrentCR3(makeCR3(addr, pcid), 1);
 }
 
-static inline void setCurrentUserVSpaceRoot(paddr_t addr, word_t pcid)
+static inline void setCurrentUserVSpaceRoot(paddr_t addr, hw_asid_t pcid)
 {
 #ifdef CONFIG_KERNEL_SKIM_WINDOW
     setCurrentUserCR3(makeCR3(addr, pcid));
@@ -189,13 +189,13 @@ static inline void invalidateLocalTranslationSingle(vptr_t vptr)
 {
     /* As this may be used to invalidate global mappings by the kernel,
      * and as its only used in boot code, we can just invalidate
-     * absolutely everything form the tlb */
+     * absolutely everything from the tlb */
     invalidateLocalPCID(INVPCID_TYPE_ALL_GLOBAL, (void *)0, 0);
 }
 
-static inline void invalidateLocalTranslationSingleASID(vptr_t vptr, hw_asid_t hw_asid)
+static inline void invalidateLocalTranslationSingleHWASID(vptr_t vptr, hw_asid_t pcid)
 {
-    invalidateLocalPCID(INVPCID_TYPE_ADDR, (void *)vptr, hw_asid);
+    invalidateLocalPCID(INVPCID_TYPE_ADDR, (void *)vptr, pcid);
 }
 
 static inline void invalidateLocalTranslationAll(void)
@@ -203,7 +203,7 @@ static inline void invalidateLocalTranslationAll(void)
     invalidateLocalPCID(INVPCID_TYPE_ALL_GLOBAL, (void *)0, 0);
 }
 
-static inline void invalidateLocalPageStructureCacheASID(paddr_t root, asid_t asid)
+static inline void invalidateLocalPageStructureCacheHWASID(paddr_t root, hw_asid_t pcid)
 {
     if (config_set(CONFIG_SUPPORT_PCID)) {
         /* store our previous cr3 */
@@ -217,7 +217,7 @@ static inline void invalidateLocalPageStructureCacheASID(paddr_t root, asid_t as
             "mov %[new_cr3], %%cr3\n"
             "mov %[old_cr3], %%cr3\n"
             ::
-            [new_cr3] "r"(makeCR3(root, asid).words[0]),
+            [new_cr3] "r"(makeCR3(root, pcid).words[0]),
             [old_cr3] "r"(cr3.words[0] | BIT(63))
         );
     } else {

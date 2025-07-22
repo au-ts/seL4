@@ -32,7 +32,7 @@ static inline void invalidatePCID(word_t type, void *vaddr, hw_asid_t hw_asid, w
     SMP_COND_STATEMENT(doRemoteInvalidatePCID(type, vaddr, hw_asid, mask));
 }
 
-static inline void invalidateHWASID(vspace_root_t *vspace, hw_asid_t hw_asid, word_t mask)
+static inline void invalidateASID(vspace_root_t *vspace, hw_asid_t hw_asid, word_t mask)
 {
     invalidateLocalASID(vspace, hw_asid);
     SMP_COND_STATEMENT(doRemoteInvalidateASID(vspace, hw_asid, mask));
