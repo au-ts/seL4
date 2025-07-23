@@ -72,9 +72,6 @@ typedef pte_t pde_t;
 #define VSPACE_ID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
 
 
-#define ASID_POOL_INDEX_BITS seL4_ASIDPoolIndexBits
-#define ASID_BITS (asidHighBits+asidLowBits)
-#define nASIDs     BIT(ASID_BITS)
 #define nASIDPools BIT(asidHighBits)
 
 #define VSPACE_ID_LOW(a) (a & MASK(asidLowBits))
