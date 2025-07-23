@@ -45,14 +45,14 @@ typedef pde_t vspace_root_t;
 compile_assert(gdt_idt_ptr_packed,
                sizeof(gdt_idt_ptr_t) == sizeof(uint16_t) * 3)
 
-struct asid_pool {
+struct vspace_id_pool {
     asid_map_t array[BIT(asidLowBits)];
 };
 
-typedef struct asid_pool vspace_id_pool_t;
+typedef struct vspace_id_pool vspace_id_pool_t;
 
 #define ASID_POOL_INDEX_BITS    seL4_ASIDPoolIndexBits
-#define ASID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
+#define VSPACE_ID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
 #define ASID_BITS           (asidHighBits + asidLowBits)
 #define nASIDPools          BIT(asidHighBits)
 #define VSPACE_ID_LOW(a)         (a & MASK(asidLowBits))

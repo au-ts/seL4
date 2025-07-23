@@ -206,7 +206,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
         if (final) {
             deleteASIDPool(
                 cap_asid_pool_cap_get_capASIDBase(cap),
-                ASID_POOL_PTR(cap_asid_pool_cap_get_capASIDPool(cap))
+                VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capASIDPool(cap))
             );
         }
         break;

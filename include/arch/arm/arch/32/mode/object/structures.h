@@ -88,13 +88,13 @@ typedef word_t pde_type_t;
 #define LPAE_PT_PTR(r) ((lpae_pte_t *)r)
 #define LPAE_PT_REF(p) ((unsigned int)p)
 
-struct asid_pool {
+struct vspace_id_pool {
     pde_t *array[BIT(asidLowBits)];
 };
 
-typedef struct asid_pool vspace_id_pool_t;
+typedef struct vspace_id_pool vspace_id_pool_t;
 
-#define ASID_POOL_PTR(r) ((vspace_id_pool_t *)r)
+#define VSPACE_ID_POOL_PTR(r) ((vspace_id_pool_t *)r)
 
 #define HW_ASID_SIZE_BITS 1
 
@@ -373,7 +373,7 @@ static inline void *CONST cap_get_archCapPtr(cap_t cap)
         return PD_PTR(cap_page_directory_cap_get_capPDBasePtr(cap));
 
     case cap_asid_pool_cap:
-        return ASID_POOL_PTR(cap_asid_pool_cap_get_capASIDPool(cap));
+        return VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capASIDPool(cap));
 
     case cap_asid_control_cap:
         return NULL;

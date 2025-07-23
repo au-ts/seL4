@@ -58,10 +58,10 @@ typedef pte_t vspace_root_t;
 #define VCPU_PTR(r)       ((struct vcpu *)(r))
 #define VCPU_REF(p)       ((word_t)(p))
 
-struct asid_pool {
+struct vspace_id_pool {
     asid_map_t array[BIT(asidLowBits)];
 };
-typedef struct asid_pool vspace_id_pool_t;
+typedef struct vspace_id_pool vspace_id_pool_t;
 
 /* Generic fastpath.c code expects pde_t for stored_hw_asid
  * that's a workaround in the time being.
@@ -69,7 +69,7 @@ typedef struct asid_pool vspace_id_pool_t;
 typedef pte_t pde_t;
 
 
-#define ASID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
+#define VSPACE_ID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
 
 
 #define ASID_POOL_INDEX_BITS seL4_ASIDPoolIndexBits
@@ -175,7 +175,7 @@ static inline void *CONST cap_get_archCapPtr(cap_t cap)
         return NULL;
 
     case cap_asid_pool_cap:
-        return ASID_POOL_PTR(cap_asid_pool_cap_get_capASIDPool(cap));
+        return VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capASIDPool(cap));
 
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
     case cap_vcpu_cap:

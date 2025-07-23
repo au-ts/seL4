@@ -20,13 +20,13 @@
 
 #define tcbArchCNodeEntries tcbCNodeEntries
 
-struct asid_pool {
+struct vspace_id_pool {
     pte_t *array[BIT(asidLowBits)];
 };
 
-typedef struct asid_pool vspace_id_pool_t;
+typedef struct vspace_id_pool vspace_id_pool_t;
 
-#define ASID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
+#define VSPACE_ID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
 #define ASID_BITS           (asidHighBits + asidLowBits)
 #define nASIDPools          BIT(asidHighBits)
 #define VSPACE_ID_LOW(a)         (a & MASK(asidLowBits))
@@ -133,7 +133,7 @@ static inline void *CONST cap_get_archCapPtr(cap_t cap)
         return NULL;
 
     case cap_asid_pool_cap:
-        return ASID_POOL_PTR(cap_asid_pool_cap_get_capASIDPool(cap));
+        return VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capASIDPool(cap));
 
     default:
         assert(!"Unknown cap type");

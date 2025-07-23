@@ -96,15 +96,15 @@ typedef pml4e_t vspace_root_t;
  * it contains 512 vroots.
  */
 
-struct asid_pool {
+struct vspace_id_pool {
     asid_map_t array[BIT(asidLowBits)];
 };
 
-typedef struct asid_pool vspace_id_pool_t;
+typedef struct vspace_id_pool vspace_id_pool_t;
 
 #define ASID_POOL_INDEX_BITS  seL4_ASIDPoolIndexBits
 #define ASID_POOL_SIZE_BITS (seL4_ASIDPoolBits + WORD_SIZE_BITS)
-#define ASID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
+#define VSPACE_ID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
 #define ASID_BITS           (asidHighBits + asidLowBits)
 #define nASIDPools          BIT(asidHighBits)
 #define VSPACE_ID_LOW(a)         (a & MASK(asidLowBits))
