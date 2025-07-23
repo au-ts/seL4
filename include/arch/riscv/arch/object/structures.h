@@ -30,8 +30,8 @@ typedef struct asid_pool vspace_id_pool_t;
 #define ASID_POOL_REF(p)    ((word_t)p)
 #define ASID_BITS           (asidHighBits + asidLowBits)
 #define nASIDPools          BIT(asidHighBits)
-#define ASID_LOW(a)         (a & MASK(asidLowBits))
-#define ASID_HIGH(a)        ((a >> asidLowBits) & MASK(asidHighBits))
+#define VSPACE_ID_LOW(a)         (a & MASK(asidLowBits))
+#define VSPACE_ID_HIGH(a)        ((a >> asidLowBits) & MASK(asidHighBits))
 
 typedef struct arch_tcb {
     user_context_t tcbContext;

@@ -311,8 +311,8 @@ BOOT_CODE void activate_kernel_vspace(void)
 BOOT_CODE void write_it_asid_pool(cap_t it_ap_cap, cap_t it_lvl1pt_cap)
 {
     vspace_id_pool_t *ap = ASID_POOL_PTR(pptr_of_cap(it_ap_cap));
-    ap->array[ASID_LOW(IT_ASID)] = PTE_PTR(pptr_of_cap(it_lvl1pt_cap));
-    riscvKSASIDTable[ASID_HIGH(IT_ASID)] = ap;
+    ap->array[VSPACE_ID_LOW(IT_ASID)] = PTE_PTR(pptr_of_cap(it_lvl1pt_cap));
+    riscvKSASIDTable[VSPACE_ID_HIGH(IT_ASID)] = ap;
 }
 
 /* ==================== BOOT CODE FINISHES HERE ==================== */
@@ -323,7 +323,7 @@ static findVSpaceForVSpaceId_ret_t findVSpaceForVSpaceId(vspace_id_t vspaceId)
     vspace_id_pool_t        *poolPtr;
     pte_t     *vspace_root;
 
-    poolPtr = riscvKSASIDTable[ASID_HIGH(vspaceId)];
+    poolPtr = riscvKSASIDTable[VSPACE_ID_HIGH(vspaceId)];
     if (!poolPtr) {
         current_lookup_fault = lookup_fault_invalid_root_new();
 
@@ -332,7 +332,7 @@ static findVSpaceForVSpaceId_ret_t findVSpaceForVSpaceId(vspace_id_t vspaceId)
         return ret;
     }
 
-    vspace_root = poolPtr->array[ASID_LOW(vspaceId)];
+    vspace_root = poolPtr->array[VSPACE_ID_LOW(vspaceId)];
     if (!vspace_root) {
         current_lookup_fault = lookup_fault_invalid_root_new();
 
@@ -489,7 +489,7 @@ static exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace_id_poo
 
     copyGlobalMappings(regionBase);
 
-    poolPtr->array[ASID_LOW(vspaceId)] = regionBase;
+    poolPtr->array[VSPACE_ID_LOW(vspaceId)] = regionBase;
 
     return EXCEPTION_NONE;
 }
@@ -498,11 +498,11 @@ void deleteASID(vspace_id_t vspaceId, pte_t *vspace)
 {
     vspace_id_pool_t *poolPtr;
 
-    poolPtr = riscvKSASIDTable[ASID_HIGH(vspaceId)];
-    if (poolPtr != NULL && poolPtr->array[ASID_LOW(vspaceId)] == vspace) {
+    poolPtr = riscvKSASIDTable[VSPACE_ID_HIGH(vspaceId)];
+    if (poolPtr != NULL && poolPtr->array[VSPACE_ID_LOW(vspaceId)] == vspace) {
         hw_asid_t hw_asid = (hw_asid_t){vspaceId};
         hwASIDFlush(hw_asid);
-        poolPtr->array[ASID_LOW(vspaceId)] = NULL;
+        poolPtr->array[VSPACE_ID_LOW(vspaceId)] = NULL;
         setVMRoot(NODE_STATE(ksCurThread));
     }
 }

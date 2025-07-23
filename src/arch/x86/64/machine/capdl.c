@@ -317,7 +317,7 @@ void print_cap_arch(cap_t cap)
 static void obj_asidpool_print_attrs(cap_t asid_cap)
 {
     vspace_id_t vspaceId = cap_asid_pool_cap_get_capASIDBase(asid_cap);
-    printf("(vspaceId_high: 0x%lx)\n", ASID_HIGH(vspaceId));
+    printf("(vspaceId_high: 0x%lx)\n", VSPACE_ID_HIGH(vspaceId));
 }
 
 void print_object_arch(cap_t cap)

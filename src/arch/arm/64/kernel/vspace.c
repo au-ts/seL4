@@ -567,8 +567,8 @@ BOOT_CODE void write_it_asid_pool(cap_t it_ap_cap, cap_t it_vspace_cap)
                               , 0, false
 #endif
                           );
-    ap->array[ASID_LOW(IT_ASID)] = asid_map;
-    armKSASIDTable[ASID_HIGH(IT_ASID)] = ap;
+    ap->array[VSPACE_ID_LOW(IT_ASID)] = asid_map;
+    armKSASIDTable[VSPACE_ID_HIGH(IT_ASID)] = ap;
 }
 
 /* ==================== BOOT CODE FINISHES HERE ==================== */
@@ -577,12 +577,12 @@ asid_map_t findMapForASID(vspace_id_t vspaceId)
 {
     vspace_id_pool_t *poolPtr;
 
-    poolPtr = armKSASIDTable[ASID_HIGH(vspaceId)];
+    poolPtr = armKSASIDTable[VSPACE_ID_HIGH(vspaceId)];
     if (!poolPtr) {
         return asid_map_asid_map_none_new();
     }
 
-    return poolPtr->array[ASID_LOW(vspaceId)];
+    return poolPtr->array[VSPACE_ID_LOW(vspaceId)];
 }
 
 static findVSpaceForVSpaceId_ret_t findVSpaceForVSpaceId(vspace_id_t vspaceId)
@@ -811,19 +811,19 @@ static bool_t setVMRootForFlush(vspace_root_t *vspace, vspace_id_t vspaceId)
 
 static inline vspace_id_pool_t *getPoolPtr(vspace_id_t vspaceId)
 {
-    return armKSASIDTable[ASID_HIGH(vspaceId)];
+    return armKSASIDTable[VSPACE_ID_HIGH(vspaceId)];
 }
 
 static inline asid_map_t getASIDMap(vspace_id_pool_t *poolPtr, vspace_id_t vspaceId)
 {
     assert(poolPtr != NULL);
-    return poolPtr->array[ASID_LOW(vspaceId)];
+    return poolPtr->array[VSPACE_ID_LOW(vspaceId)];
 }
 
 static inline void setASIDMap(vspace_id_pool_t *poolPtr, vspace_id_t vspaceId, asid_map_t asid_map)
 {
     assert(poolPtr != NULL);
-    poolPtr->array[ASID_LOW(vspaceId)] = asid_map;
+    poolPtr->array[VSPACE_ID_LOW(vspaceId)] = asid_map;
 }
 
 static void invalidateASID(vspace_id_t vspaceId)
@@ -922,10 +922,10 @@ static word_t getASIDBindCB(vspace_id_t vspaceId)
 {
     vspace_id_pool_t *asidPool;
 
-    asidPool = armKSASIDTable[ASID_HIGH(vspaceId)];
+    asidPool = armKSASIDTable[VSPACE_ID_HIGH(vspaceId)];
     assert(asidPool);
 
-    asid_map_t asid_map = asidPool->array[ASID_LOW(vspaceId)];
+    asid_map_t asid_map = asidPool->array[VSPACE_ID_LOW(vspaceId)];
     assert(asid_map_get_type(asid_map) == asid_map_asid_map_vspace);
 
     return asid_map_asid_map_vspace_get_bind_cb(asid_map);
@@ -935,7 +935,7 @@ void increaseASIDBindCB(vspace_id_t vspaceId)
 {
     vspace_id_pool_t *asidPool;
 
-    asidPool = armKSASIDTable[ASID_HIGH(vspaceId)];
+    asidPool = armKSASIDTable[VSPACE_ID_HIGH(vspaceId)];
     assert(asidPool);
 
     asid_map_t *asid_map = &asidPool->array[asid & MASK(asidLowBits)];
@@ -948,7 +948,7 @@ void decreaseASIDBindCB(vspace_id_t vspaceId)
 {
     vspace_id_pool_t *asidPool;
 
-    asidPool = armKSASIDTable[ASID_HIGH(vspaceId)];
+    asidPool = armKSASIDTable[VSPACE_ID_HIGH(vspaceId)];
     assert(asidPool);
 
     asid_map_t *asid_map = &asidPool->array[asid & MASK(asidLowBits)];
@@ -1073,17 +1073,17 @@ void deleteASID(vspace_id_t vspaceId, vspace_root_t *vspace)
 {
     vspace_id_pool_t *poolPtr;
 
-    poolPtr = armKSASIDTable[ASID_HIGH(vspaceId)];
+    poolPtr = armKSASIDTable[VSPACE_ID_HIGH(vspaceId)];
 
     if (poolPtr != NULL) {
-        asid_map_t asid_map = poolPtr->array[ASID_LOW(vspaceId)];
+        asid_map_t asid_map = poolPtr->array[VSPACE_ID_LOW(vspaceId)];
         if (asid_map_get_type(asid_map) == asid_map_asid_map_vspace &&
             (vspace_root_t *)asid_map_asid_map_vspace_get_vspace_root(asid_map) == vspace) {
             invalidateTLBByASID(vspaceId);
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
             invalidateASIDEntry(vspaceId);
 #endif
-            poolPtr->array[ASID_LOW(vspaceId)] = asid_map_asid_map_none_new();
+            poolPtr->array[VSPACE_ID_LOW(vspaceId)] = asid_map_asid_map_none_new();
             setVMRoot(NODE_STATE(ksCurThread));
         }
     }

@@ -104,13 +104,13 @@ typedef struct asid_pool vspace_id_pool_t;
 
 #define nASIDPools BIT(asidHighBits)
 
-#define ASID_LOW(a) (a & MASK(asidLowBits))
-#define ASID_HIGH(a) ((a >> asidLowBits) & MASK(asidHighBits))
+#define VSPACE_ID_LOW(a) (a & MASK(asidLowBits))
+#define VSPACE_ID_HIGH(a) ((a >> asidLowBits) & MASK(asidHighBits))
 
 static inline cap_t CONST cap_small_frame_cap_set_capFMappedASID(cap_t cap, vspace_id_t vspaceId)
 {
-    cap = cap_small_frame_cap_set_capFMappedASIDLow(cap, ASID_LOW(vspaceId));
-    return cap_small_frame_cap_set_capFMappedASIDHigh(cap, ASID_HIGH(vspaceId));
+    cap = cap_small_frame_cap_set_capFMappedASIDLow(cap, VSPACE_ID_LOW(vspaceId));
+    return cap_small_frame_cap_set_capFMappedASIDHigh(cap, VSPACE_ID_HIGH(vspaceId));
 }
 
 static inline word_t CONST cap_small_frame_cap_get_capFMappedASID(cap_t cap)
@@ -121,8 +121,8 @@ static inline word_t CONST cap_small_frame_cap_get_capFMappedASID(cap_t cap)
 
 static inline cap_t CONST cap_frame_cap_set_capFMappedASID(cap_t cap, vspace_id_t vspaceId)
 {
-    cap = cap_frame_cap_set_capFMappedASIDLow(cap, ASID_LOW(vspaceId));
-    return cap_frame_cap_set_capFMappedASIDHigh(cap, ASID_HIGH(vspaceId));
+    cap = cap_frame_cap_set_capFMappedASIDLow(cap, VSPACE_ID_LOW(vspaceId));
+    return cap_frame_cap_set_capFMappedASIDHigh(cap, VSPACE_ID_HIGH(vspaceId));
 }
 
 static inline word_t CONST cap_frame_cap_get_capFMappedASID(cap_t cap)

@@ -423,24 +423,24 @@ static BOOT_CODE cap_t create_it_frame_cap(pptr_t pptr, vptr_t vptr, vspace_id_t
         return
             cap_frame_cap_new(
                 ARMSection,                    /* capFSize           */
-                ASID_LOW(vspaceId),                /* capFMappedASIDLow  */
+                VSPACE_ID_LOW(vspaceId),                /* capFMappedASIDLow  */
                 wordFromVMRights(VMReadWrite), /* capFVMRights       */
                 vptr,                          /* capFMappedAddress  */
                 false,                         /* capFIsDevice       */
-                ASID_HIGH(vspaceId),               /* capFMappedASIDHigh */
+                VSPACE_ID_HIGH(vspaceId),               /* capFMappedASIDHigh */
                 pptr                           /* capFBasePtr        */
             );
     else
         return
             cap_small_frame_cap_new(
-                ASID_LOW(vspaceId),                /* capFMappedASIDLow  */
+                VSPACE_ID_LOW(vspaceId),                /* capFMappedASIDLow  */
                 wordFromVMRights(VMReadWrite), /* capFVMRights       */
                 vptr,                          /* capFMappedAddress  */
                 false,                         /* capFIsDevice       */
 #ifdef CONFIG_TK1_SMMU
                 0,                             /* IOSpace            */
 #endif
-                ASID_HIGH(vspaceId),               /* capFMappedASIDHigh */
+                VSPACE_ID_HIGH(vspaceId),               /* capFMappedASIDHigh */
                 pptr                           /* capFBasePtr        */
             );
 }
@@ -591,8 +591,8 @@ BOOT_CODE void activate_kernel_vspace(void)
 BOOT_CODE void write_it_asid_pool(cap_t it_ap_cap, cap_t it_pd_cap)
 {
     vspace_id_pool_t *ap = ASID_POOL_PTR(pptr_of_cap(it_ap_cap));
-    ap->array[ASID_LOW(IT_ASID)] = PDE_PTR(pptr_of_cap(it_pd_cap));
-    armKSASIDTable[ASID_HIGH(IT_ASID)] = ap;
+    ap->array[VSPACE_ID_LOW(IT_ASID)] = PDE_PTR(pptr_of_cap(it_pd_cap));
+    armKSASIDTable[VSPACE_ID_HIGH(IT_ASID)] = ap;
 }
 
 /* ==================== BOOT CODE FINISHES HERE ==================== */
@@ -603,7 +603,7 @@ findVSpaceForVSpaceId_ret_t findVSpaceForVSpaceId(vspace_id_t vspaceId)
     vspace_id_pool_t *poolPtr;
     pde_t *pd;
 
-    poolPtr = armKSASIDTable[ASID_HIGH(vspaceId)];
+    poolPtr = armKSASIDTable[VSPACE_ID_HIGH(vspaceId)];
     if (unlikely(!poolPtr)) {
         current_lookup_fault = lookup_fault_invalid_root_new();
 
@@ -612,7 +612,7 @@ findVSpaceForVSpaceId_ret_t findVSpaceForVSpaceId(vspace_id_t vspaceId)
         return ret;
     }
 
-    pd = poolPtr->array[ASID_LOW(vspaceId)];
+    pd = poolPtr->array[VSPACE_ID_LOW(vspaceId)];
     if (unlikely(!pd)) {
         current_lookup_fault = lookup_fault_invalid_root_new();
 
@@ -1075,10 +1075,10 @@ static void invalidateASID(vspace_id_t vspaceId)
     vspace_id_pool_t *asidPool;
     pde_t *pd;
 
-    asidPool = armKSASIDTable[ASID_HIGH(vspaceId)];
+    asidPool = armKSASIDTable[VSPACE_ID_HIGH(vspaceId)];
     assert(asidPool);
 
-    pd = asidPool->array[ASID_LOW(vspaceId)];
+    pd = asidPool->array[VSPACE_ID_LOW(vspaceId)];
     assert(pd);
 
     pd[PD_ASID_SLOT] = pde_pde_invalid_new(0, false);
@@ -1089,10 +1089,10 @@ static pde_t PURE loadHWASID(vspace_id_t vspaceId)
     vspace_id_pool_t *asidPool;
     pde_t *pd;
 
-    asidPool = armKSASIDTable[ASID_HIGH(vspaceId)];
+    asidPool = armKSASIDTable[VSPACE_ID_HIGH(vspaceId)];
     assert(asidPool);
 
-    pd = asidPool->array[ASID_LOW(vspaceId)];
+    pd = asidPool->array[VSPACE_ID_LOW(vspaceId)];
     assert(pd);
 
     return pd[PD_ASID_SLOT];
@@ -1103,10 +1103,10 @@ static void storeHWASID(vspace_id_t vspaceId, hw_asid_t hw_asid)
     vspace_id_pool_t *asidPool;
     pde_t *pd;
 
-    asidPool = armKSASIDTable[ASID_HIGH(vspaceId)];
+    asidPool = armKSASIDTable[VSPACE_ID_HIGH(vspaceId)];
     assert(asidPool);
 
-    pd = asidPool->array[ASID_LOW(vspaceId)];
+    pd = asidPool->array[VSPACE_ID_LOW(vspaceId)];
     assert(pd);
 
     /* Store HW ASID in the last entry
@@ -1298,12 +1298,12 @@ void deleteASID(vspace_id_t vspaceId, pde_t *pd)
 {
     vspace_id_pool_t *poolPtr;
 
-    poolPtr = armKSASIDTable[ASID_HIGH(vspaceId)];
+    poolPtr = armKSASIDTable[VSPACE_ID_HIGH(vspaceId)];
 
-    if (poolPtr != NULL && poolPtr->array[ASID_LOW(vspaceId)] == pd) {
+    if (poolPtr != NULL && poolPtr->array[VSPACE_ID_LOW(vspaceId)] == pd) {
         flushSpace(vspaceId);
         invalidateASIDEntry(vspaceId);
-        poolPtr->array[ASID_LOW(vspaceId)] = NULL;
+        poolPtr->array[VSPACE_ID_LOW(vspaceId)] = NULL;
         setVMRoot(NODE_STATE(ksCurThread));
     }
 }
@@ -1969,7 +1969,7 @@ static exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace_id_poo
 {
     cap_page_directory_cap_ptr_set_capPDMappedASID(&pdCapSlot->cap, vspaceId);
     cap_page_directory_cap_ptr_set_capPDIsMapped(&pdCapSlot->cap, 1);
-    poolPtr->array[ASID_LOW(vspaceId)] =
+    poolPtr->array[VSPACE_ID_LOW(vspaceId)] =
         PDE_PTR(cap_page_directory_cap_get_capPDBasePtr(pdCapSlot->cap));
 
     return EXCEPTION_NONE;

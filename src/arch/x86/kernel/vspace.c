@@ -81,15 +81,15 @@ void deleteASID(vspace_id_t vspaceId, vspace_root_t *vspace)
 {
     vspace_id_pool_t *poolPtr;
 
-    poolPtr = x86KSASIDTable[ASID_HIGH(vspaceId)];
+    poolPtr = x86KSASIDTable[VSPACE_ID_HIGH(vspaceId)];
     if (poolPtr != NULL) {
-        asid_map_t asid_map = poolPtr->array[ASID_LOW(vspaceId)];
+        asid_map_t asid_map = poolPtr->array[VSPACE_ID_LOW(vspaceId)];
         if (asid_map_get_type(asid_map) == asid_map_asid_map_vspace &&
             (vspace_root_t *)asid_map_asid_map_vspace_get_vspace_root(asid_map) == vspace) {
 
             /* XXX: not hw ASID. */
             hwASIDInvalidate(vspaceId, vspace);
-            poolPtr->array[ASID_LOW(vspaceId)] = asid_map_asid_map_none_new();
+            poolPtr->array[VSPACE_ID_LOW(vspaceId)] = asid_map_asid_map_none_new();
             setVMRoot(NODE_STATE(ksCurThread));
         }
     }
@@ -531,20 +531,20 @@ BOOT_CODE bool_t init_pat_msr(void)
 BOOT_CODE void write_it_asid_pool(cap_t it_ap_cap, cap_t it_vspace_cap)
 {
     vspace_id_pool_t *ap = ASID_POOL_PTR(pptr_of_cap(it_ap_cap));
-    ap->array[ASID_LOW(IT_ASID)] = asid_map_asid_map_vspace_new(pptr_of_cap(it_vspace_cap));
-    x86KSASIDTable[ASID_HIGH(IT_ASID)] = ap;
+    ap->array[VSPACE_ID_LOW(IT_ASID)] = asid_map_asid_map_vspace_new(pptr_of_cap(it_vspace_cap));
+    x86KSASIDTable[VSPACE_ID_HIGH(IT_ASID)] = ap;
 }
 
 asid_map_t findMapForASID(vspace_id_t vspaceId)
 {
     vspace_id_pool_t        *poolPtr;
 
-    poolPtr = x86KSASIDTable[ASID_HIGH(vspaceId)];
+    poolPtr = x86KSASIDTable[VSPACE_ID_HIGH(vspaceId)];
     if (!poolPtr) {
         return asid_map_asid_map_none_new();
     }
 
-    return poolPtr->array[ASID_LOW(vspaceId)];
+    return poolPtr->array[VSPACE_ID_LOW(vspaceId)];
 }
 
 findVSpaceForVSpaceId_ret_t findVSpaceForVSpaceId(vspace_id_t vspaceId)

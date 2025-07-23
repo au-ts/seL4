@@ -78,8 +78,8 @@ typedef pte_t pde_t;
 #define nASIDs     BIT(ASID_BITS)
 #define nASIDPools BIT(asidHighBits)
 
-#define ASID_LOW(a) (a & MASK(asidLowBits))
-#define ASID_HIGH(a) ((a >> asidLowBits) & MASK(asidHighBits))
+#define VSPACE_ID_LOW(a) (a & MASK(asidLowBits))
+#define VSPACE_ID_HIGH(a) ((a >> asidLowBits) & MASK(asidHighBits))
 
 static inline word_t CONST cap_get_archCapSizeBits(cap_t cap)
 {

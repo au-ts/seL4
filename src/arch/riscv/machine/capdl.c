@@ -27,7 +27,7 @@ static void cap_frame_print_attrs_pt(pte_t *ptSlot);
 static void obj_asidpool_print_attrs(cap_t asid_cap)
 {
     vspace_id_t vspaceId = cap_asid_pool_cap_get_capASIDBase(asid_cap);
-    printf("(vspaceId/asid_high: 0x%lx)\n", ASID_HIGH(vspaceId));
+    printf("(vspaceId/asid_high: 0x%lx)\n", VSPACE_ID_HIGH(vspaceId));
 }
 
 void print_ipc_buffer_slot(tcb_t *tcb)

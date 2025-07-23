@@ -429,12 +429,12 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                 addrFromPPtr(regionBase));
         }
         return cap_small_frame_cap_new(
-                   ASID_LOW(vspaceIdInvalid), VMReadWrite,
+                   VSPACE_ID_LOW(vspaceIdInvalid), VMReadWrite,
                    0, !!deviceMemory,
 #ifdef CONFIG_TK1_SMMU
                    0,
 #endif
-                   ASID_HIGH(vspaceIdInvalid),
+                   VSPACE_ID_HIGH(vspaceIdInvalid),
                    (word_t)regionBase);
 
     case seL4_ARM_LargePageObject:
@@ -455,8 +455,8 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                 addrFromPPtr(regionBase));
         }
         return cap_frame_cap_new(
-                   ARMLargePage, ASID_LOW(vspaceIdInvalid), VMReadWrite,
-                   0, !!deviceMemory, ASID_HIGH(vspaceIdInvalid),
+                   ARMLargePage, VSPACE_ID_LOW(vspaceIdInvalid), VMReadWrite,
+                   0, !!deviceMemory, VSPACE_ID_HIGH(vspaceIdInvalid),
                    (word_t)regionBase);
 
     case seL4_ARM_SectionObject:
@@ -487,8 +487,8 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                 addrFromPPtr(regionBase));
         }
         return cap_frame_cap_new(
-                   ARMSection, ASID_LOW(vspaceIdInvalid), VMReadWrite,
-                   0, !!deviceMemory, ASID_HIGH(vspaceIdInvalid),
+                   ARMSection, VSPACE_ID_LOW(vspaceIdInvalid), VMReadWrite,
+                   0, !!deviceMemory, VSPACE_ID_HIGH(vspaceIdInvalid),
                    (word_t)regionBase);
 
     case seL4_ARM_SuperSectionObject:
@@ -519,8 +519,8 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                 addrFromPPtr(regionBase));
         }
         return cap_frame_cap_new(
-                   ARMSuperSection, ASID_LOW(vspaceIdInvalid), VMReadWrite,
-                   0, !!deviceMemory, ASID_HIGH(vspaceIdInvalid),
+                   ARMSuperSection, VSPACE_ID_LOW(vspaceIdInvalid), VMReadWrite,
+                   0, !!deviceMemory, VSPACE_ID_HIGH(vspaceIdInvalid),
                    (word_t)regionBase);
 
     case seL4_ARM_PageTableObject:
