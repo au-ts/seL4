@@ -1089,7 +1089,7 @@ void deleteASID(vspace_id_t vspaceId, vspace_root_t *vspace)
     }
 }
 
-void deleteASIDPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
+void deleteVspaceIdPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
 {
     word_t offset;
 
@@ -1287,7 +1287,7 @@ static exception_t performASIDControlInvocation(void *frame, cte_t *slot,
     cap_untyped_cap_ptr_set_capFreeIndex(&(parent->cap),
                                          MAX_FREE_INDEX(cap_untyped_cap_get_capBlockSize(parent->cap)));
 
-    memzero(frame, BIT(seL4_ASIDPoolBits));
+    memzero(frame, BIT(seL4_VspaceIdPoolBits));
     /** AUXUPD: "(True, ptr_retyps 1 (Ptr (ptr_val \<acute>frame) :: asid_pool_C ptr))" */
 
     cteInsert(
@@ -1761,7 +1761,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
         vspaceId_base = i << vspaceIdLowBits;
 
         if (unlikely(cap_get_capType(untyped) != cap_untyped_cap ||
-                     cap_untyped_cap_get_capBlockSize(untyped) != seL4_ASIDPoolBits ||
+                     cap_untyped_cap_get_capBlockSize(untyped) != seL4_VspaceIdPoolBits ||
                      cap_untyped_cap_get_capIsDevice(untyped))) {
             current_syscall_error.type = seL4_InvalidCapability;
             current_syscall_error.invalidCapNumber = 1;

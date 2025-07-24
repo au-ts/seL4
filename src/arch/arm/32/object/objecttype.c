@@ -154,7 +154,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     switch (cap_get_capType(cap)) {
     case cap_vspace_id_pool_cap:
         if (final) {
-            deleteASIDPool(cap_vspace_id_pool_cap_get_capVSpaceIdBase(cap),
+            deleteVspaceIdPool(cap_vspace_id_pool_cap_get_capVSpaceIdBase(cap),
                            VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVspaceIdPool(cap)));
         }
         break;

@@ -40,9 +40,9 @@
 #define seL4_PageTableBits     12
 #define seL4_VSpaceBits        seL4_PageTableBits
 
-#define seL4_NumASIDPoolsBits   7
-#define seL4_ASIDPoolIndexBits  9
-#define seL4_ASIDPoolBits       12
+#define seL4_NumVSpaceIdPoolsBits   7
+#define seL4_VSpaceIdPoolIndexBits  9
+#define seL4_VspaceIdPoolBits       12
 
 /* Untyped size limits */
 #define seL4_MinUntypedBits     4

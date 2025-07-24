@@ -44,7 +44,7 @@ exception_t handleVMFault(tcb_t *thread, vm_fault_type_t vm_faultType);
 void unmapPageTable(vspace_id_t vspaceId, vptr_t vaddr, pte_t *pt);
 void unmapPage(vm_page_size_t page_size, vspace_id_t vspaceId, vptr_t vptr, pptr_t pptr);
 void deleteASID(vspace_id_t vspaceId, pte_t *vspace);
-void deleteASIDPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool);
+void deleteVspaceIdPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool);
 bool_t CONST isValidVTableRoot(cap_t cap);
 exception_t checkValidIPCBuffer(vptr_t vptr, cap_t cap);
 vm_rights_t CONST maskVMRights(vm_rights_t vm_rights,

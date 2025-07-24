@@ -56,9 +56,10 @@
 #define seL4_IOPageTableBits    12
 #define seL4_LargePageBits      21
 #define seL4_HugePageBits       30
-#define seL4_NumASIDPoolsBits    3
-#define seL4_ASIDPoolBits       12
-#define seL4_ASIDPoolIndexBits 9
+#define seL4_NumVSpaceIdPoolsBits    3
+#define seL4_VspaceIdPoolBits       12
+#define seL4_VSpaceIdPoolIndexBits 9
+
 
 /* Untyped size limits */
 #define seL4_MinUntypedBits 4
@@ -70,7 +71,7 @@ SEL4_SIZE_SANITY(seL4_PageTableEntryBits, seL4_PageTableIndexBits, seL4_PageTabl
 SEL4_SIZE_SANITY(seL4_PageDirEntryBits, seL4_PageDirIndexBits, seL4_PageDirBits);
 SEL4_SIZE_SANITY(seL4_PDPTEntryBits, seL4_PDPTIndexBits, seL4_PDPTBits);
 SEL4_SIZE_SANITY(seL4_PML4EntryBits, seL4_PML4IndexBits, seL4_PML4Bits);
-SEL4_SIZE_SANITY(seL4_WordSizeBits, seL4_ASIDPoolIndexBits, seL4_ASIDPoolBits);
+SEL4_SIZE_SANITY(seL4_WordSizeBits, seL4_VSpaceIdPoolIndexBits, seL4_VspaceIdPoolBits);
 
 typedef enum {
     seL4_VMFault_IP,
@@ -155,4 +156,3 @@ typedef enum {
 
 /* First address in the virtual address space that is not accessible to user level */
 #define seL4_UserTop 0x00007ffffffff000
-

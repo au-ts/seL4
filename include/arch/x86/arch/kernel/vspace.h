@@ -82,7 +82,7 @@ void unmapPageTable(vspace_id_t, vptr_t vaddr, pte_t *pt);
 exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot);
 exception_t performASIDControlInvocation(void *frame, cte_t *slot, cte_t *parent, vspace_id_t vspaceId_base);
 void hwASIDInvalidate(vspace_id_t vspaceId, vspace_root_t *vspace);
-void deleteASIDPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool);
+void deleteVspaceIdPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool);
 void deleteASID(vspace_id_t vspaceId, vspace_root_t *vspace);
 findVSpaceForVSpaceId_ret_t findVSpaceForVSpaceId(vspace_id_t vspaceId);
 

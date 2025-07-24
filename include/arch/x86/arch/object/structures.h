@@ -169,7 +169,7 @@ static inline word_t CONST cap_get_archCapSizeBits(cap_t cap)
         return 0;
 
     case cap_vspace_id_pool_cap:
-        return seL4_ASIDPoolBits;
+        return seL4_VspaceIdPoolBits;
 
 #ifdef CONFIG_VTX
     case cap_vcpu_cap:
