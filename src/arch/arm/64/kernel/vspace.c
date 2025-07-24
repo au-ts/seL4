@@ -826,7 +826,7 @@ static inline void setASIDMap(vspace_id_pool_t *poolPtr, vspace_id_t vspaceId, a
     poolPtr->array[VSPACE_ID_LOW(vspaceId)] = asid_map;
 }
 
-static void invalidateASID(vspace_id_t vspaceId)
+static void invalidateHWASIDForVSpaceId(vspace_id_t vspaceId)
 {
     vspace_id_pool_t *poolPtr;
     asid_map_t asid_map;
@@ -875,7 +875,7 @@ static hw_asid_t findFreeHWASID(void)
     hw_asid = armKSNextASID;
 
     /* If we've scanned the table without finding a free ASID */
-    invalidateASID(armKSHWASIDTable[hw_asid]);
+    invalidateHWASIDForVSpaceId(armKSHWASIDTable[hw_asid]);
 
     /* Flush TLB */
     invalidateTranslationASID(hw_asid);
@@ -912,7 +912,7 @@ static void invalidateVSpaceIdEntry(vspace_id_t vspaceId)
         armKSHWASIDTable[asid_map_asid_map_vspace_get_stored_hw_vmid(asid_map)] =
             vspaceIdInvalid;
     }
-    invalidateASID(asid);
+    invalidateHWASIDForVSpaceId(asid);
 }
 
 #endif

@@ -1070,7 +1070,8 @@ pde_t *pageTableMapped(vspace_id_t vspaceId, vptr_t vaddr, pte_t *pt)
     }
 }
 
-static void invalidateASID(vspace_id_t vspaceId)
+/* invalidates HW ASID associated with VSpaceID. */
+static void invalidateHWASIDForVSpaceId(vspace_id_t vspaceId)
 {
     vspace_id_pool_t *asidPool;
     pde_t *pd;
@@ -1134,7 +1135,7 @@ hw_asid_t findFreeHWASID(void)
     hw_asid = armKSNextASID;
 
     /* If we've scanned the table without finding a free ASID */
-    invalidateASID(armKSHWASIDTable[hw_asid.v]);
+    invalidateHWASIDForVSpaceId(armKSHWASIDTable[hw_asid.v]);
 
     /* Flush TLB */
     invalidateTranslationASID(hw_asid);
@@ -1171,7 +1172,7 @@ static void invalidateVSpaceIdEntry(vspace_id_t vspaceId)
         armKSHWASIDTable[pde_pde_invalid_get_stored_hw_asid(stored_hw_asid)] =
             vspaceIdInvalid;
     }
-    invalidateASID(vspaceId);
+    invalidateHWASIDForVSpaceId(vspaceId);
 }
 
 void unmapPageTable(vspace_id_t vspaceId, vptr_t vaddr, pte_t *pt)

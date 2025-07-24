@@ -11,6 +11,8 @@
 #include <mode/smp/ipi.h>
 #include <arch/kernel/tlb_bitmap.h>
 
+// XX: Uncertain whether these should be hardware or software.
+
 /*
  * This is a wrapper around invalidatePCID that can be used to invalidate
  * an ASID and, in the case of SMP, potentially clear a vspace of having
