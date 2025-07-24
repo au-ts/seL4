@@ -18,7 +18,7 @@
 #endif
 
 
-vspace_id_pool_t *armKSASIDTable[BIT(vspaceIdHighBits)];
+vspace_id_pool_t *armKSVspaceIdTable[BIT(vspaceIdHighBits)];
 
 /* AArch64 Memory map explanation:
  *

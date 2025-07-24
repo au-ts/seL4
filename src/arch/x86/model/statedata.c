@@ -23,7 +23,7 @@ UP_STATE_DEFINE(interrupt_t, x86KSPendingInterrupt);
 x86_arch_global_state_t x86KSGlobalState[CONFIG_MAX_NUM_NODES] ALIGN(L1_CACHE_LINE_SIZE) SKIM_BSS;
 
 /* The top level ASID table */
-vspace_id_pool_t *x86KSASIDTable[BIT(vspaceIdHighBits)];
+vspace_id_pool_t *x86KSVSpaceIdTable[BIT(vspaceIdHighBits)];
 
 /* Current user value of the fs/gs base */
 UP_STATE_DEFINE(word_t, x86KSCurrentFSBase);

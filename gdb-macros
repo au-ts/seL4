@@ -392,7 +392,7 @@ end
 
 define pd_for_vspace_id
   set $vspaceId = $arg0
-  set $poolPtr = x86KSASIDTable[$vspaceId >> vspaceIdLowBits];
+  set $poolPtr = x86KSVSpaceIdTable[$vspaceId >> vspaceIdLowBits];
   set $pd = poolPtr->array[$vspaceId & ((1<<vspaceIdLowBits)-1)];
   if( !$vspaceId || !$poolPtr )
     printf "Something went wrong\n"
