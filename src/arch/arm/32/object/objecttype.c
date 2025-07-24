@@ -65,12 +65,12 @@ deriveCap_ret_t Arch_deriveCap(cte_t *slot, cap_t cap)
     /* This is a deviation from haskell, which has only
      * one frame cap type on ARM */
     case cap_small_frame_cap:
-        ret.cap = cap_small_frame_cap_set_capFMappedASID(cap, vspaceIdInvalid);
+        ret.cap = cap_small_frame_cap_set_capFMappedVSpaceId(cap, vspaceIdInvalid);
         ret.status = EXCEPTION_NONE;
         return ret;
 
     case cap_frame_cap:
-        ret.cap = cap_frame_cap_set_capFMappedASID(cap, vspaceIdInvalid);
+        ret.cap = cap_frame_cap_set_capFMappedVSpaceId(cap, vspaceIdInvalid);
         ret.status = EXCEPTION_NONE;
         return ret;
 
@@ -176,7 +176,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
         break;
 
     case cap_small_frame_cap:
-        if (cap_small_frame_cap_get_capFMappedASID(cap)) {
+        if (cap_small_frame_cap_get_capFMappedVSpaceId(cap)) {
 #ifdef CONFIG_TK1_SMMU
             if (isIOSpaceFrameCap(cap)) {
                 unmapIOPage(cap);
@@ -185,14 +185,14 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
 #endif
 
             unmapPage(ARMSmallPage,
-                      cap_small_frame_cap_get_capFMappedASID(cap),
+                      cap_small_frame_cap_get_capFMappedVSpaceId(cap),
                       cap_small_frame_cap_get_capFMappedAddress(cap),
                       (void *)cap_small_frame_cap_get_capFBasePtr(cap));
         }
         break;
 
     case cap_frame_cap:
-        if (cap_frame_cap_get_capFMappedASID(cap)) {
+        if (cap_frame_cap_get_capFMappedVSpaceId(cap)) {
 #ifdef CONFIG_KERNEL_LOG_BUFFER
             /* If the last cap to the user-level log buffer frame is being revoked,
              * reset the ksLog so that the kernel doesn't log anymore
@@ -218,7 +218,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
 #endif /* CONFIG_BENCHMARK_KERNEL_LOG_BUFFER */
 
             unmapPage(cap_frame_cap_get_capFSize(cap),
-                      cap_frame_cap_get_capFMappedASID(cap),
+                      cap_frame_cap_get_capFMappedVSpaceId(cap),
                       cap_frame_cap_get_capFMappedAddress(cap),
                       (void *)cap_frame_cap_get_capFBasePtr(cap));
         }

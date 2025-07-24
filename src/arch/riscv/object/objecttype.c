@@ -33,7 +33,7 @@ deriveCap_ret_t Arch_deriveCap(cte_t *slot, cap_t cap)
 
     case cap_frame_cap:
         cap = cap_frame_cap_set_capFMappedAddress(cap, 0);
-        ret.cap = cap_frame_cap_set_capFMappedASID(cap, vspaceIdInvalid);
+        ret.cap = cap_frame_cap_set_capFMappedVSpaceId(cap, vspaceIdInvalid);
         ret.status = EXCEPTION_NONE;
         return ret;
 
@@ -75,9 +75,9 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     switch (cap_get_capType(cap)) {
     case cap_frame_cap:
 
-        if (cap_frame_cap_get_capFMappedASID(cap)) {
+        if (cap_frame_cap_get_capFMappedVSpaceId(cap)) {
             unmapPage(cap_frame_cap_get_capFSize(cap),
-                      cap_frame_cap_get_capFMappedASID(cap),
+                      cap_frame_cap_get_capFMappedVSpaceId(cap),
                       cap_frame_cap_get_capFMappedAddress(cap),
                       cap_frame_cap_get_capFBasePtr(cap));
         }
@@ -210,7 +210,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
                                                     (unat RISCVPageBits))" */
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,                    /* capFMappedASID       */
+                   vspaceIdInvalid,                    /* capFMappedVSpaceId       */
                    (word_t) regionBase,            /* capFBasePtr          */
                    RISCV_4K_Page,                  /* capFSize             */
                    wordFromVMRights(VMReadWrite),  /* capFVMRights         */
@@ -233,7 +233,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
                                                     (unat RISCVMegaPageBits))" */
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,                    /* capFMappedASID       */
+                   vspaceIdInvalid,                    /* capFMappedVSpaceId       */
                    (word_t) regionBase,            /* capFBasePtr          */
                    RISCV_Mega_Page,                  /* capFSize             */
                    wordFromVMRights(VMReadWrite),  /* capFVMRights         */
@@ -258,7 +258,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
                                                     (unat RISCVGigaPageBits))" */
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,                    /* capFMappedASID       */
+                   vspaceIdInvalid,                    /* capFMappedVSpaceId       */
                    (word_t) regionBase,            /* capFBasePtr          */
                    RISCV_Giga_Page,                  /* capFSize             */
                    wordFromVMRights(VMReadWrite),  /* capFVMRights         */

@@ -65,7 +65,7 @@ deriveCap_ret_t Mode_deriveCap(cte_t *slot, cap_t cap)
 
     case cap_frame_cap:
         cap = cap_frame_cap_set_capFMapType(cap, X86_MappingNone);
-        ret.cap = cap_frame_cap_set_capFMappedASID(cap, vspaceIdInvalid);
+        ret.cap = cap_frame_cap_set_capFMappedVSpaceId(cap, vspaceIdInvalid);
         ret.status = EXCEPTION_NONE;
         return ret;
 
@@ -100,13 +100,13 @@ finaliseCap_ret_t Mode_finaliseCap(cap_t cap, bool_t final)
         break;
 
     case cap_frame_cap:
-        if (cap_frame_cap_get_capFMappedASID(cap)) {
+        if (cap_frame_cap_get_capFMappedVSpaceId(cap)) {
             switch (cap_frame_cap_get_capFMapType(cap)) {
 #ifdef CONFIG_VTX
             case X86_MappingEPT:
                 unmapEPTPage(
                     cap_frame_cap_get_capFSize(cap),
-                    cap_frame_cap_get_capFMappedASID(cap),
+                    cap_frame_cap_get_capFMappedVSpaceId(cap),
                     cap_frame_cap_get_capFMappedAddress(cap),
                     (void *)cap_frame_cap_get_capFBasePtr(cap)
                 );
@@ -120,7 +120,7 @@ finaliseCap_ret_t Mode_finaliseCap(cap_t cap, bool_t final)
             case X86_MappingVSpace:
                 unmapPage(
                     cap_frame_cap_get_capFSize(cap),
-                    cap_frame_cap_get_capFMappedASID(cap),
+                    cap_frame_cap_get_capFMappedVSpaceId(cap),
                     cap_frame_cap_get_capFMappedAddress(cap),
                     (void *)cap_frame_cap_get_capFBasePtr(cap)
                 );
@@ -196,7 +196,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                                     (unat X64SmallPageBits))" */
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,        /* capFMappedASID           */
+                   vspaceIdInvalid,        /* capFMappedVSpaceId           */
                    (word_t)regionBase, /* capFBasePtr              */
                    X86_SmallPage,      /* capFSize                 */
                    X86_MappingNone,    /* capFMapType              */
@@ -220,7 +220,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                                     (unat X64LargePageBits))" */
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,        /* capFMappedASID           */
+                   vspaceIdInvalid,        /* capFMappedVSpaceId           */
                    (word_t)regionBase, /* capFBasePtr              */
                    X86_LargePage,      /* capFSize                 */
                    X86_MappingNone,    /* capFMapType              */
@@ -244,7 +244,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                                     (unat X64HugePageBits))" */
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,        /* capFMappedASID           */
+                   vspaceIdInvalid,        /* capFMappedVSpaceId           */
                    (word_t)regionBase, /* capFBasePtr              */
                    X64_HugePage,       /* capFSize                 */
                    X86_MappingNone,    /* capFMapType              */

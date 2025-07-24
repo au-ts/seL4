@@ -17,11 +17,11 @@ base 64(48,1)
 -- we need the structures to be visible here when building
 -- the capType
 #include <object/structures_64.bf>
- 
+
 ---- ARM-specific caps
 
 block frame_cap {
-    field capFMappedASID             16
+    field capFMappedVSpaceId             16
     field_high capFBasePtr           48
 
     field capType                    5

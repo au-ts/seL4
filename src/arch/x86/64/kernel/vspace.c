@@ -533,7 +533,7 @@ BOOT_CODE void map_it_frame_cap(cap_t pd_cap, cap_t frame_cap)
     void *pptr = (void *)cap_frame_cap_get_capFBasePtr(frame_cap);
 
     assert(cap_frame_cap_get_capFMapType(frame_cap) == X86_MappingVSpace);
-    assert(cap_frame_cap_get_capFMappedASID(frame_cap) != vspaceIdInvalid);
+    assert(cap_frame_cap_get_capFMappedVSpaceId(frame_cap) != vspaceIdInvalid);
     pml4 += GET_PML4_INDEX(vptr);
     assert(pml4e_ptr_get_present(pml4));
     pdpt = paddr_to_pptr(pml4e_ptr_get_pdpt_base_address(pml4));
@@ -772,7 +772,7 @@ static BOOT_CODE cap_t create_it_frame_cap(pptr_t pptr, vptr_t vptr, vspace_id_t
 
     return
         cap_frame_cap_new(
-            vspaceId,                          /* capFMappedASID     */
+            vspaceId,                          /* capFMappedVSpaceId     */
             pptr,                          /* capFBasePtr        */
             frame_size,                    /* capFSize           */
             map_type,                      /* capFMapType        */
@@ -1465,7 +1465,7 @@ static exception_t updatePDPTE(vspace_id_t vspaceId, pdpte_t pdpte, pdpte_t *pdp
 static exception_t performX64ModeMap(cap_t cap, cte_t *ctSlot, pdpte_t pdpte, pdpte_t *pdptSlot, vspace_root_t *vspace)
 {
     ctSlot->cap = cap;
-    return updatePDPTE(cap_frame_cap_get_capFMappedASID(cap), pdpte, pdptSlot, vspace);
+    return updatePDPTE(cap_frame_cap_get_capFMappedVSpaceId(cap), pdpte, pdptSlot, vspace);
 }
 
 struct create_mapping_pdpte_return {

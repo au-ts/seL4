@@ -57,13 +57,13 @@ exception_t performX86EPTPageInvocationUnmap(cap_t cap, cte_t *ctSlot)
 {
     unmapEPTPage(
         cap_frame_cap_get_capFSize(cap),
-        cap_frame_cap_get_capFMappedASID(cap),
+        cap_frame_cap_get_capFMappedVSpaceId(cap),
         cap_frame_cap_get_capFMappedAddress(cap),
         (void *)cap_frame_cap_get_capFBasePtr(cap)
     );
 
     cap_frame_cap_ptr_set_capFMappedAddress(&ctSlot->cap, 0);
-    cap_frame_cap_ptr_set_capFMappedASID(&ctSlot->cap, vspaceIdInvalid);
+    cap_frame_cap_ptr_set_capFMappedVSpaceId(&ctSlot->cap, vspaceIdInvalid);
     cap_frame_cap_ptr_set_capFMapType(&ctSlot->cap, X86_MappingNone);
 
     return EXCEPTION_NONE;
@@ -808,7 +808,7 @@ exception_t decodeX86EPTPageMap(
 
     capVMRights = cap_frame_cap_get_capFVMRights(cap);
 
-    if (cap_frame_cap_get_capFMappedASID(cap) != vspaceIdInvalid) {
+    if (cap_frame_cap_get_capFMappedVSpaceId(cap) != vspaceIdInvalid) {
         userError("X86EPTPageMap: Frame already mapped.");
         current_syscall_error.type = seL4_InvalidCapability;
         current_syscall_error.invalidCapNumber = 0;
@@ -856,7 +856,7 @@ exception_t decodeX86EPTPageMap(
 
     paddr = pptr_to_paddr((void *)cap_frame_cap_get_capFBasePtr(cap));
 
-    cap = cap_frame_cap_set_capFMappedASID(cap, asid);
+    cap = cap_frame_cap_set_capFMappedVSpaceId(cap, asid);
     cap = cap_frame_cap_set_capFMappedAddress(cap, vaddr);
     cap = cap_frame_cap_set_capFMapType(cap, X86_MappingEPT);
 

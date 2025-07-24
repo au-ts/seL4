@@ -20,7 +20,7 @@ base 64(48,1)
 block frame_cap {
     -- The ASID doubles as the PCI bus/dev/fun when used in an IOMMU context
     -- so it is 16 instead of 12
-    field       capFMappedASID      16
+    field       capFMappedVSpaceId      16
     field_high  capFBasePtr         48
 
     field       capType             5

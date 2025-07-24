@@ -224,7 +224,7 @@ BOOT_CODE void map_it_frame_cap(cap_t vspace_cap, cap_t frame_cap)
 BOOT_CODE cap_t create_unmapped_it_frame_cap(pptr_t pptr, bool_t use_large)
 {
     cap_t cap = cap_frame_cap_new(
-                    vspaceIdInvalid,                     /* capFMappedASID       */
+                    vspaceIdInvalid,                     /* capFMappedVSpaceId       */
                     pptr,                            /* capFBasePtr          */
                     0,                               /* capFSize             */
                     0,                               /* capFVMRights         */
@@ -870,7 +870,7 @@ static exception_t decodeRISCVFrameInvocation(word_t label, word_t length,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        vspace_id_t frame_vspace_id = cap_frame_cap_get_capFMappedASID(cap);
+        vspace_id_t frame_vspace_id = cap_frame_cap_get_capFMappedVSpaceId(cap);
         if (unlikely(frame_vspace_id != vspaceIdInvalid)) {
             /* this frame is already mapped */
             if (frame_vspace_id != page_table_vspace_id) {
@@ -904,7 +904,7 @@ static exception_t decodeRISCVFrameInvocation(word_t label, word_t length,
 
         vm_rights_t vmRights = maskVMRights(capVMRights, rightsFromWord(w_rightsMask));
         paddr_t frame_paddr = addrFromPPtr((void *) cap_frame_cap_get_capFBasePtr(cap));
-        cap = cap_frame_cap_set_capFMappedASID(cap, page_table_vspace_id);
+        cap = cap_frame_cap_set_capFMappedVSpaceId(cap, page_table_vspace_id);
         cap = cap_frame_cap_set_capFMappedAddress(cap,  vaddr);
 
         bool_t executable = !vm_attributes_get_riscvExecuteNever(attr);
@@ -1150,9 +1150,9 @@ exception_t performPageInvocationMapPTE(cap_t cap, cte_t *ctSlot,
 
 exception_t performPageInvocationUnmap(cap_t cap, cte_t *ctSlot)
 {
-    if (cap_frame_cap_get_capFMappedASID(cap) != vspaceIdInvalid) {
+    if (cap_frame_cap_get_capFMappedVSpaceId(cap) != vspaceIdInvalid) {
         unmapPage(cap_frame_cap_get_capFSize(cap),
-                  cap_frame_cap_get_capFMappedASID(cap),
+                  cap_frame_cap_get_capFMappedVSpaceId(cap),
                   cap_frame_cap_get_capFMappedAddress(cap),
                   cap_frame_cap_get_capFBasePtr(cap)
                  );
@@ -1160,7 +1160,7 @@ exception_t performPageInvocationUnmap(cap_t cap, cte_t *ctSlot)
 
     cap_t slotCap = ctSlot->cap;
     slotCap = cap_frame_cap_set_capFMappedAddress(slotCap, 0);
-    slotCap = cap_frame_cap_set_capFMappedASID(slotCap, vspaceIdInvalid);
+    slotCap = cap_frame_cap_set_capFMappedVSpaceId(slotCap, vspaceIdInvalid);
     ctSlot->cap = slotCap;
 
     return EXCEPTION_NONE;

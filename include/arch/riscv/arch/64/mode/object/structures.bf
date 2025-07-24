@@ -22,7 +22,7 @@ base 64(39,1)
 
 -- frames
 block frame_cap {
-    field       capFMappedASID      16
+    field       capFMappedVSpaceId      16
     field_high  capFBasePtr         39
     padding                         9
 

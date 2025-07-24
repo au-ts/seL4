@@ -384,7 +384,7 @@ static BOOT_CODE void map_it_frame_cap(cap_t pd_cap, cap_t frame_cap, bool_t exe
     void  *frame = (void *)generic_frame_cap_get_capFBasePtr(frame_cap);
     vptr_t vptr  = generic_frame_cap_get_capFMappedAddress(frame_cap);
 
-    assert(generic_frame_cap_get_capFMappedASID(frame_cap) != 0);
+    assert(generic_frame_cap_get_capFMappedVSpaceId(frame_cap) != 0);
 
     pd += (vptr >> pageBitsForSize(ARMSection));
     pt = ptrFromPAddr(pde_pde_coarse_ptr_get_address(pd));
@@ -423,24 +423,24 @@ static BOOT_CODE cap_t create_it_frame_cap(pptr_t pptr, vptr_t vptr, vspace_id_t
         return
             cap_frame_cap_new(
                 ARMSection,                    /* capFSize           */
-                VSPACE_ID_LOW(vspaceId),                /* capFMappedASIDLow  */
+                VSPACE_ID_LOW(vspaceId),                /* capFMappedVSpaceIdLow  */
                 wordFromVMRights(VMReadWrite), /* capFVMRights       */
                 vptr,                          /* capFMappedAddress  */
                 false,                         /* capFIsDevice       */
-                VSPACE_ID_HIGH(vspaceId),               /* capFMappedASIDHigh */
+                VSPACE_ID_HIGH(vspaceId),               /* capFMappedVSpaceIdHigh */
                 pptr                           /* capFBasePtr        */
             );
     else
         return
             cap_small_frame_cap_new(
-                VSPACE_ID_LOW(vspaceId),                /* capFMappedASIDLow  */
+                VSPACE_ID_LOW(vspaceId),                /* capFMappedVSpaceIdLow  */
                 wordFromVMRights(VMReadWrite), /* capFVMRights       */
                 vptr,                          /* capFMappedAddress  */
                 false,                         /* capFIsDevice       */
 #ifdef CONFIG_TK1_SMMU
                 0,                             /* IOSpace            */
 #endif
-                VSPACE_ID_HIGH(vspaceId),               /* capFMappedASIDHigh */
+                VSPACE_ID_HIGH(vspaceId),               /* capFMappedVSpaceIdHigh */
                 pptr                           /* capFBasePtr        */
             );
 }
@@ -1916,7 +1916,7 @@ static exception_t performPageInvocationUnmap(cap_t cap, cte_t *ctSlot)
 {
     if (generic_frame_cap_get_capFIsMapped(cap)) {
         unmapPage(generic_frame_cap_get_capFSize(cap),
-                  generic_frame_cap_get_capFMappedASID(cap),
+                  generic_frame_cap_get_capFMappedVSpaceId(cap),
                   generic_frame_cap_get_capFMappedAddress(cap),
                   (void *)generic_frame_cap_get_capFBasePtr(cap));
     }
@@ -2273,7 +2273,7 @@ static exception_t decodeARMFrameInvocation(word_t invLabel, word_t length,
         vspaceId = cap_page_directory_cap_get_capPDMappedASID(pdCap);
 
         if (generic_frame_cap_get_capFIsMapped(cap)) {
-            if (generic_frame_cap_get_capFMappedASID(cap) != vspaceId) {
+            if (generic_frame_cap_get_capFMappedVSpaceId(cap) != vspaceId) {
                 current_syscall_error.type = seL4_InvalidCapability;
                 current_syscall_error.invalidCapNumber = 1;
 
@@ -2415,7 +2415,7 @@ static exception_t decodeARMFrameInvocation(word_t invLabel, word_t length,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        vspaceId = generic_frame_cap_get_capFMappedASID(cap);
+        vspaceId = generic_frame_cap_get_capFMappedVSpaceId(cap);
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
         /* Must use kernel vaddr in hyp mode. */
         vaddr = generic_frame_cap_get_capFBasePtr(cap);

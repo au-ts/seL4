@@ -802,7 +802,7 @@ static exception_t performX86PageInvocationMapPTE(cap_t cap, cte_t *ctSlot, pte_
 {
     ctSlot->cap = cap;
     *ptSlot = pte;
-    invalidatePageStructureCacheASID(pptr_to_paddr(vspace), cap_frame_cap_get_capFMappedASID(cap),
+    invalidatePageStructureCacheASID(pptr_to_paddr(vspace), cap_frame_cap_get_capFMappedVSpaceId(cap),
                                      SMP_TERNARY(tlb_bitmap_get(vspace), 0));
     return EXCEPTION_NONE;
 }
@@ -812,7 +812,7 @@ static exception_t performX86PageInvocationMapPDE(cap_t cap, cte_t *ctSlot, pde_
 {
     ctSlot->cap = cap;
     *pdSlot = pde;
-    invalidatePageStructureCacheASID(pptr_to_paddr(vspace), cap_frame_cap_get_capFMappedASID(cap),
+    invalidatePageStructureCacheASID(pptr_to_paddr(vspace), cap_frame_cap_get_capFMappedVSpaceId(cap),
                                      SMP_TERNARY(tlb_bitmap_get(vspace), 0));
     return EXCEPTION_NONE;
 }
@@ -820,22 +820,22 @@ static exception_t performX86PageInvocationMapPDE(cap_t cap, cte_t *ctSlot, pde_
 
 static exception_t performX86PageInvocationUnmap(cap_t cap, cte_t *ctSlot)
 {
-    assert(cap_frame_cap_get_capFMappedASID(cap));
+    assert(cap_frame_cap_get_capFMappedVSpaceId(cap));
     assert(cap_frame_cap_get_capFMapType(cap) == X86_MappingVSpace);
     // We have this `if` for something we just asserted to be true for simplicity of verification
     // This has no performance implications as when this function is inlined this `if` will be
     // inside an identical `if` and will therefore be elided
-    if (cap_frame_cap_get_capFMappedASID(cap)) {
+    if (cap_frame_cap_get_capFMappedVSpaceId(cap)) {
         unmapPage(
             cap_frame_cap_get_capFSize(cap),
-            cap_frame_cap_get_capFMappedASID(cap),
+            cap_frame_cap_get_capFMappedVSpaceId(cap),
             cap_frame_cap_get_capFMappedAddress(cap),
             (void *)cap_frame_cap_get_capFBasePtr(cap)
         );
     }
 
     cap_frame_cap_ptr_set_capFMappedAddress(&ctSlot->cap, 0);
-    cap_frame_cap_ptr_set_capFMappedASID(&ctSlot->cap, vspaceIdInvalid);
+    cap_frame_cap_ptr_set_capFMappedVSpaceId(&ctSlot->cap, vspaceIdInvalid);
     cap_frame_cap_ptr_set_capFMapType(&ctSlot->cap, X86_MappingNone);
 
     return EXCEPTION_NONE;
@@ -843,7 +843,7 @@ static exception_t performX86PageInvocationUnmap(cap_t cap, cte_t *ctSlot)
 
 static exception_t performX86FrameInvocationUnmap(cap_t cap, cte_t *cte)
 {
-    if (cap_frame_cap_get_capFMappedASID(cap) != vspaceIdInvalid) {
+    if (cap_frame_cap_get_capFMappedVSpaceId(cap) != vspaceIdInvalid) {
         switch (cap_frame_cap_get_capFMapType(cap)) {
         case X86_MappingVSpace:
             return performX86PageInvocationUnmap(cap, cte);
@@ -979,8 +979,8 @@ exception_t decodeX86FrameInvocation(
         vspace = (vspace_root_t *)pptr_of_cap(vspaceCap);
         vspaceId = cap_get_capMappedASID(vspaceCap);
 
-        if (cap_frame_cap_get_capFMappedASID(cap) != vspaceIdInvalid) {
-            if (cap_frame_cap_get_capFMappedASID(cap) != vspaceId) {
+        if (cap_frame_cap_get_capFMappedVSpaceId(cap) != vspaceIdInvalid) {
+            if (cap_frame_cap_get_capFMappedVSpaceId(cap) != vspaceId) {
                 current_syscall_error.type = seL4_InvalidCapability;
                 current_syscall_error.invalidCapNumber = 1;
 
@@ -1043,7 +1043,7 @@ exception_t decodeX86FrameInvocation(
 
         paddr = pptr_to_paddr((void *)cap_frame_cap_get_capFBasePtr(cap));
 
-        cap = cap_frame_cap_set_capFMappedASID(cap, vspaceId);
+        cap = cap_frame_cap_set_capFMappedVSpaceId(cap, vspaceId);
         cap = cap_frame_cap_set_capFMappedAddress(cap, vaddr);
         cap = cap_frame_cap_set_capFMapType(cap, X86_MappingVSpace);
 

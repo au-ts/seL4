@@ -312,7 +312,7 @@ static BOOT_CODE void map_it_frame_cap(cap_t vspace_cap, cap_t frame_cap, bool_t
     vptr_t vptr = cap_frame_cap_get_capFMappedAddress(frame_cap);
     void *pptr = (void *)cap_frame_cap_get_capFBasePtr(frame_cap);
 
-    assert(cap_frame_cap_get_capFMappedASID(frame_cap) != 0);
+    assert(cap_frame_cap_get_capFMappedVSpaceId(frame_cap) != 0);
 
 #ifdef AARCH64_VSPACE_S2_START_L1
     pud = vspaceRoot;
@@ -356,7 +356,7 @@ static BOOT_CODE cap_t create_it_frame_cap(pptr_t pptr, vptr_t vptr, vspace_id_t
     }
     return
         cap_frame_cap_new(
-            vspaceId,                          /* capFMappedASID */
+            vspaceId,                          /* capFMappedVSpaceId */
             pptr,                          /* capFBasePtr */
             frame_size,                    /* capFSize */
             vptr,                          /* capFMappedAddress */
@@ -1216,17 +1216,17 @@ static exception_t performPageInvocationMap(vspace_id_t vspaceId, cap_t cap, cte
 
 static exception_t performPageInvocationUnmap(cap_t cap, cte_t *ctSlot)
 {
-    if (cap_frame_cap_get_capFMappedASID(cap) != 0) {
+    if (cap_frame_cap_get_capFMappedVSpaceId(cap) != 0) {
 
         unmapPage(cap_frame_cap_get_capFSize(cap),
-                  cap_frame_cap_get_capFMappedASID(cap),
+                  cap_frame_cap_get_capFMappedVSpaceId(cap),
                   cap_frame_cap_get_capFMappedAddress(cap),
                   cap_frame_cap_get_capFBasePtr(cap));
     }
 
     cap_t slotCap = ctSlot->cap;
     slotCap = cap_frame_cap_set_capFMappedAddress(slotCap, 0);
-    slotCap = cap_frame_cap_set_capFMappedASID(slotCap, vspaceIdInvalid);
+    slotCap = cap_frame_cap_set_capFMappedVSpaceId(slotCap, vspaceIdInvalid);
     ctSlot->cap = slotCap;
 
 
@@ -1563,7 +1563,7 @@ static exception_t decodeARMFrameInvocation(word_t invLabel, word_t length,
         }
 
         /* In the case of remap, the cap should have a valid asid */
-        frame_vspaceId = cap_frame_cap_get_capFMappedASID(cap);
+        frame_vspaceId = cap_frame_cap_get_capFMappedVSpaceId(cap);
 
         if (frame_vspaceId != vspaceIdInvalid) {
             if (frame_vspaceId != vspaceId) {
@@ -1586,7 +1586,7 @@ static exception_t decodeARMFrameInvocation(word_t invLabel, word_t length,
             }
         }
 
-        cap = cap_frame_cap_set_capFMappedASID(cap, vspaceId);
+        cap = cap_frame_cap_set_capFMappedVSpaceId(cap, vspaceId);
         cap = cap_frame_cap_set_capFMappedAddress(cap, vaddr);
 
         base = pptr_to_paddr((void *)cap_frame_cap_get_capFBasePtr(cap));
@@ -1624,14 +1624,14 @@ static exception_t decodeARMFrameInvocation(word_t invLabel, word_t length,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        if (unlikely(cap_frame_cap_get_capFMappedASID(cap) == 0)) {
+        if (unlikely(cap_frame_cap_get_capFMappedVSpaceId(cap) == 0)) {
             userError("Page Flush: Frame is not mapped.");
             current_syscall_error.type = seL4_IllegalOperation;
             return EXCEPTION_SYSCALL_ERROR;
         }
 
         vaddr = cap_frame_cap_get_capFMappedAddress(cap);
-        vspaceId = cap_frame_cap_get_capFMappedASID(cap);
+        vspaceId = cap_frame_cap_get_capFMappedVSpaceId(cap);
 
         find_ret = findVSpaceForVSpaceId(vspaceId);
         if (unlikely(find_ret.status != EXCEPTION_NONE)) {

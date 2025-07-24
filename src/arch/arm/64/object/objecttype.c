@@ -57,7 +57,7 @@ deriveCap_ret_t Arch_deriveCap(cte_t *slot, cap_t cap)
         return ret;
 
     case cap_frame_cap:
-        ret.cap = cap_frame_cap_set_capFMappedASID(cap, vspaceIdInvalid);
+        ret.cap = cap_frame_cap_set_capFMappedVSpaceId(cap, vspaceIdInvalid);
         ret.status = EXCEPTION_NONE;
         return ret;
 
@@ -170,9 +170,9 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
         break;
 
     case cap_frame_cap:
-        if (cap_frame_cap_get_capFMappedASID(cap)) {
+        if (cap_frame_cap_get_capFMappedVSpaceId(cap)) {
             unmapPage(cap_frame_cap_get_capFSize(cap),
-                      cap_frame_cap_get_capFMappedASID(cap),
+                      cap_frame_cap_get_capFMappedVSpaceId(cap),
                       cap_frame_cap_get_capFMappedAddress(cap),
                       cap_frame_cap_get_capFBasePtr(cap));
         }
@@ -386,7 +386,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                 addrFromPPtr(regionBase));
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,           /* capFMappedASID */
+                   vspaceIdInvalid,           /* capFMappedVSpaceId */
                    (word_t)regionBase,    /* capFBasePtr */
                    ARMSmallPage,          /* capFSize */
                    0,                     /* capFMappedAddress */
@@ -412,7 +412,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                 addrFromPPtr(regionBase));
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,           /* capFMappedASID */
+                   vspaceIdInvalid,           /* capFMappedVSpaceId */
                    (word_t)regionBase,    /* capFBasePtr */
                    ARMLargePage,          /* capFSize */
                    0,                     /* capFMappedAddress */
@@ -438,7 +438,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                 addrFromPPtr(regionBase));
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,           /* capFMappedASID */
+                   vspaceIdInvalid,           /* capFMappedVSpaceId */
                    (word_t)regionBase,    /* capFBasePtr */
                    ARMHugePage,           /* capFSize */
                    0,                     /* capFMappedAddress */

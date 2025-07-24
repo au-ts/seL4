@@ -39,7 +39,7 @@ deriveCap_ret_t Mode_deriveCap(cte_t *slot, cap_t cap)
     switch (cap_get_capType(cap)) {
     case cap_frame_cap:
         cap = cap_frame_cap_set_capFMapType(cap, X86_MappingNone);
-        ret.cap = cap_frame_cap_set_capFMappedASID(cap, vspaceIdInvalid);
+        ret.cap = cap_frame_cap_set_capFMappedVSpaceId(cap, vspaceIdInvalid);
         ret.status = EXCEPTION_NONE;
         return ret;
 
@@ -57,13 +57,13 @@ finaliseCap_ret_t Mode_finaliseCap(cap_t cap, bool_t final)
     switch (cap_get_capType(cap)) {
 
     case cap_frame_cap:
-        if (cap_frame_cap_get_capFMappedASID(cap)) {
+        if (cap_frame_cap_get_capFMappedVSpaceId(cap)) {
             switch (cap_frame_cap_get_capFMapType(cap)) {
 #ifdef CONFIG_VTX
             case X86_MappingEPT:
                 unmapEPTPage(
                     cap_frame_cap_get_capFSize(cap),
-                    cap_frame_cap_get_capFMappedASID(cap),
+                    cap_frame_cap_get_capFMappedVSpaceId(cap),
                     cap_frame_cap_get_capFMappedAddress(cap),
                     (void *)cap_frame_cap_get_capFBasePtr(cap)
                 );
@@ -93,7 +93,7 @@ finaliseCap_ret_t Mode_finaliseCap(cap_t cap, bool_t final)
 
                 unmapPage(
                     cap_frame_cap_get_capFSize(cap),
-                    cap_frame_cap_get_capFMappedASID(cap),
+                    cap_frame_cap_get_capFMappedVSpaceId(cap),
                     cap_frame_cap_get_capFMappedAddress(cap),
                     (void *)cap_frame_cap_get_capFBasePtr(cap)
                 );
@@ -136,11 +136,11 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
     case seL4_X86_4K:
         return cap_frame_cap_new(
                    X86_SmallPage,          /* capFSize             */
-                   VSPACE_ID_LOW(vspaceIdInvalid),  /* capFMappedASIDLow    */
+                   VSPACE_ID_LOW(vspaceIdInvalid),  /* capFMappedVSpaceIdLow    */
                    false,                  /* capFMappedAddress    */
                    X86_MappingNone,        /* capFMapType          */
                    deviceMemory,           /* capFIsDevice         */
-                   VSPACE_ID_HIGH(vspaceIdInvalid), /* capFMappedASIDHigh   */
+                   VSPACE_ID_HIGH(vspaceIdInvalid), /* capFMappedVSpaceIdHigh   */
                    VMReadWrite,            /* capFVMRights         */
                    (word_t)regionBase      /* capFBasePtr          */
                );
@@ -148,11 +148,11 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
     case seL4_X86_LargePageObject:
         return cap_frame_cap_new(
                    X86_LargePage,          /* capFSize             */
-                   VSPACE_ID_LOW(vspaceIdInvalid),  /* capFMappedASIDLow    */
+                   VSPACE_ID_LOW(vspaceIdInvalid),  /* capFMappedVSpaceIdLow    */
                    false,                  /* capFMappedAddress    */
                    X86_MappingNone,        /* capFMapType          */
                    deviceMemory,           /* capFIsDevice         */
-                   VSPACE_ID_HIGH(vspaceIdInvalid), /* capFMappedASIDHigh   */
+                   VSPACE_ID_HIGH(vspaceIdInvalid), /* capFMappedVSpaceIdHigh   */
                    VMReadWrite,            /* capFVMRights         */
                    (word_t)regionBase      /* capFBasePtr          */
                );

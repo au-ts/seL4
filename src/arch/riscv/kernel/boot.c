@@ -45,7 +45,7 @@ BOOT_CODE cap_t create_mapped_it_frame_cap(cap_t pd_cap, pptr_t pptr, vptr_t vpt
     }
 
     cap = cap_frame_cap_new(
-              vspaceId,                            /* capFMappedASID       */
+              vspaceId,                            /* capFMappedVSpaceId       */
               pptr,                            /* capFBasePtr          */
               frame_size,                      /* capFSize             */
               wordFromVMRights(VMReadWrite),   /* capFVMRights         */

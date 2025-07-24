@@ -297,14 +297,14 @@ void print_cap_arch(cap_t cap)
     }
     case cap_small_frame_cap: {
         vptr_t vptr = cap_small_frame_cap_get_capFMappedAddress(cap);
-        findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(cap_small_frame_cap_get_capFMappedASID(cap));
+        findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(cap_small_frame_cap_get_capFMappedVSpaceId(cap));
         assert(find_ret.status == EXCEPTION_NONE);
         cap_frame_print_attrs_vptr(vptr, find_ret.pd);
         break;
     }
     case cap_frame_cap: {
         vptr_t vptr = cap_frame_cap_get_capFMappedAddress(cap);
-        findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(cap_frame_cap_get_capFMappedASID(cap));
+        findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(cap_frame_cap_get_capFMappedVSpaceId(cap));
         assert(find_ret.status == EXCEPTION_NONE);
         cap_frame_print_attrs_vptr(vptr, find_ret.pd);
         break;

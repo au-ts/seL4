@@ -477,11 +477,11 @@ static BOOT_CODE cap_t create_it_frame_cap(pptr_t pptr, vptr_t vptr, vspace_id_t
     return
         cap_frame_cap_new(
             frame_size,                    /* capFSize           */
-            VSPACE_ID_LOW(vspaceId),                /* capFMappedASIDLow  */
+            VSPACE_ID_LOW(vspaceId),                /* capFMappedVSpaceIdLow  */
             vptr,                          /* capFMappedAddress  */
             map_type,                      /* capFMapType        */
             false,                         /* capFIsDevice       */
-            VSPACE_ID_HIGH(vspaceId),               /* capFMappedASIDHigh */
+            VSPACE_ID_HIGH(vspaceId),               /* capFMappedVSpaceIdHigh */
             wordFromVMRights(VMReadWrite), /* capFVMRights       */
             pptr                           /* capFBasePtr        */
         );

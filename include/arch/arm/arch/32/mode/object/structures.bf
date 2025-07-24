@@ -18,16 +18,16 @@ base 32
 -- 4k frame (these have a separate cap type as there is no room to
 -- store their size)
 block small_frame_cap {
-    field capFMappedASIDLow  10
+    field capFMappedVSpaceIdLow  10
     field capFVMRights       2
     field_high capFMappedAddress 20
 
     field capFIsDevice       1
 #ifdef CONFIG_TK1_SMMU
     field capFIsIOSpace      1
-    field capFMappedASIDHigh 6
+    field capFMappedVSpaceIdHigh 6
 #else
-    field capFMappedASIDHigh 7
+    field capFMappedVSpaceIdHigh 7
 #endif
     field_high capFBasePtr  20
     field capType            4
@@ -36,13 +36,13 @@ block small_frame_cap {
 -- 64k, 1M, 16M frames
 block frame_cap {
     field capFSize           2
-    field capFMappedASIDLow  10
+    field capFMappedVSpaceIdLow  10
     field capFVMRights       2
     field_high capFMappedAddress 18
 
     padding                  2
     field capFIsDevice       1
-    field capFMappedASIDHigh 7
+    field capFMappedVSpaceIdHigh 7
     field_high capFBasePtr  18
     field capType            4
 }
