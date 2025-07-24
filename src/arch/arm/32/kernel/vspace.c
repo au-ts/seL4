@@ -60,6 +60,18 @@ struct resolve_ret {
 };
 typedef struct resolve_ret resolve_ret_t;
 
+struct pde_range {
+    pde_t *base;
+    word_t length;
+};
+typedef struct pde_range pde_range_t;
+
+struct pte_range {
+    pte_t *base;
+    word_t length;
+};
+typedef struct pte_range pte_range_t;
+
 #ifndef CONFIG_ARM_HYPERVISOR_SUPPORT
 static bool_t PURE pteCheckIfMapped(pte_t *pte);
 static bool_t PURE pdeCheckIfMapped(pde_t *pde);

@@ -26,7 +26,7 @@ void NORETURN fastpath_call(word_t cptr, word_t msgInfo)
     word_t badge;
     cap_t newVTable;
     vspace_root_t *cap_pd;
-    pde_t stored_hw_asid;
+    hw_asid_t stored_hw_asid;
     word_t fault_type;
     dom_t dom;
 
@@ -82,18 +82,24 @@ void NORETURN fastpath_call(word_t cptr, word_t msgInfo)
     }
 
 #ifdef CONFIG_ARCH_AARCH32
-    /* Get HW ASID */
-    stored_hw_asid = cap_pd[PD_ASID_SLOT];
+    /* Get HWASID */
+    pde_t pd_hw_asid = cap_pd[PD_ASID_SLOT];
+    /* Ensure the HWASID is valid. */
+    if (unlikely(!pde_pde_invalid_get_stored_asid_valid(pd_hw_asid))) {
+        slowpath(SysReplyRecv);
+    }
+    stored_hw_asid = (hw_asid_t){pde_pde_invalid_get_stored_hw_asid(pd_hw_asid)};
 #endif
 
 #ifdef CONFIG_ARCH_X86_64
     /* borrow the stored_hw_asid for PCID */
-    stored_hw_asid.words[0] = cap_pml4_cap_get_capPML4MappedVSpaceId_fp(newVTable);
+    /* the asid is the 12-bit PCID */
+    stored_hw_asid = (hw_asid_t){cap_pml4_cap_get_capPML4MappedVSpaceId_fp(newVTable) & 0xfff};
 #endif
 
 #ifdef CONFIG_ARCH_IA32
     /* stored_hw_asid is unused on ia32 fastpath, but gets passed into a function below. */
-    stored_hw_asid.words[0] = 0;
+    stored_hw_asid = (hw_asid_t){0};
 #endif
 #ifdef CONFIG_ARCH_AARCH64
     /* Need to test that the ASID is still valid */
@@ -109,16 +115,15 @@ void NORETURN fastpath_call(word_t cptr, word_t msgInfo)
         slowpath(SysCall);
     }
     /* vmids are the tags used instead of hw_asids in hyp mode */
-    stored_hw_asid.words[0] = asid_map_asid_map_vspace_get_stored_hw_vmid(asid_map);
+    stored_hw_asid = (hw_asid_t){asid_map_asid_map_vspace_get_stored_hw_vmid(asid_map)};
 #else
-    // XX:: ??
-    stored_hw_asid.words[0] = (hw_asid_t){vspaceId}.v;
+    stored_hw_asid = (hw_asid_t){vspaceId};
 #endif
 #endif
 
 #ifdef CONFIG_ARCH_RISCV
     /* Get HW(???) ASID */
-    stored_hw_asid.words[0] = (hw_asid_t){cap_page_table_cap_get_capPTMappedVSpaceId(newVTable)}.v;
+    stored_hw_asid = (hw_asid_t){cap_page_table_cap_get_capPTMappedVSpaceId(newVTable)};
 #endif
 
     /* let gcc optimise this out for 1 domain */
@@ -135,12 +140,6 @@ void NORETURN fastpath_call(word_t cptr, word_t msgInfo)
                  !cap_endpoint_cap_get_capCanGrantReply(ep_cap))) {
         slowpath(SysCall);
     }
-
-#ifdef CONFIG_ARCH_AARCH32
-    if (unlikely(!pde_pde_invalid_get_stored_asid_valid(stored_hw_asid))) {
-        slowpath(SysCall);
-    }
-#endif
 
     /* Ensure the original caller is in the current domain and can be scheduled directly. */
     if (unlikely(dest->tcbDomain != ksCurDomain && 0 < maxDom)) {
@@ -254,7 +253,7 @@ void NORETURN fastpath_reply_recv(word_t cptr, word_t msgInfo)
 
     cap_t newVTable;
     vspace_root_t *cap_pd;
-    pde_t stored_hw_asid;
+    hw_asid_t stored_hw_asid;
     dom_t dom;
 
     /* Get message info and length */
@@ -363,15 +362,22 @@ void NORETURN fastpath_reply_recv(word_t cptr, word_t msgInfo)
 
 #ifdef CONFIG_ARCH_AARCH32
     /* Get HWASID. */
-    stored_hw_asid = cap_pd[PD_ASID_SLOT];
+    pde_t pd_hw_asid = cap_pd[PD_ASID_SLOT];
+    /* Ensure the HWASID is valid. */
+    if (unlikely(!pde_pde_invalid_get_stored_asid_valid(pd_hw_asid))) {
+        slowpath(SysReplyRecv);
+    }
+    stored_hw_asid = (hw_asid_t){pde_pde_invalid_get_stored_hw_asid(pd_hw_asid)};
 #endif
 
 #ifdef CONFIG_ARCH_X86_64
-    stored_hw_asid.words[0] = cap_pml4_cap_get_capPML4MappedVSpaceId(newVTable);
+    /* borrow the stored_hw_asid for PCID */
+    /* the asid is the 12-bit PCID */
+    stored_hw_asid = (hw_asid_t){cap_pml4_cap_get_capPML4MappedVSpaceId_fp(newVTable) & 0xfff};
 #endif
 #ifdef CONFIG_ARCH_IA32
     /* stored_hw_asid is unused on ia32 fastpath, but gets passed into a function below. */
-    stored_hw_asid.words[0] = 0;
+    stored_hw_asid = (hw_asid_t){0};
 #endif
 #ifdef CONFIG_ARCH_AARCH64
     /* Need to test that the ASID is still valid */
@@ -388,14 +394,14 @@ void NORETURN fastpath_reply_recv(word_t cptr, word_t msgInfo)
     }
 
     /* vmids are the tags used instead of hw_asids in hyp mode */
-    stored_hw_asid.words[0] = asid_map_asid_map_vspace_get_stored_hw_vmid(asid_map);
+    stored_hw_asid = (hw_asid_t){asid_map_asid_map_vspace_get_stored_hw_vmid(asid_map)};
 #else
-    stored_hw_asid.words[0] = (hw_asid_t){vspaceId}.v;
+    stored_hw_asid = (hw_asid_t){vspaceId};
 #endif
 #endif
 
 #ifdef CONFIG_ARCH_RISCV
-    stored_hw_asid.words[0] = cap_page_table_cap_get_capPTMappedVSpaceId(newVTable);
+    stored_hw_asid = (hw_asid_t){cap_page_table_cap_get_capPTMappedVSpaceId(newVTable)};
 #endif
 
     /* Ensure the original caller can be scheduled directly. */
@@ -403,13 +409,6 @@ void NORETURN fastpath_reply_recv(word_t cptr, word_t msgInfo)
     if (unlikely(!isHighestPrio(dom, caller->tcbPriority))) {
         slowpath(SysReplyRecv);
     }
-
-#ifdef CONFIG_ARCH_AARCH32
-    /* Ensure the HWASID is valid. */
-    if (unlikely(!pde_pde_invalid_get_stored_asid_valid(stored_hw_asid))) {
-        slowpath(SysReplyRecv);
-    }
-#endif
 
     /* Ensure the original caller is in the current domain and can be scheduled directly. */
     if (unlikely(caller->tcbDomain != ksCurDomain && 0 < maxDom)) {
@@ -788,9 +787,9 @@ void NORETURN fastpath_vm_fault(vm_fault_type_t type)
     }
 
     /* vmids are the tags used instead of hw_asids in hyp mode */
-    stored_hw_asid.words[0] = asid_map_asid_map_vspace_get_stored_hw_vmid(asid_map);
+    stored_hw_asid = (hw_asid_t){asid_map_asid_map_vspace_get_stored_hw_vmid(asid_map)};
 #else
-    stored_hw_asid.words[0] = asid;
+    stored_hw_asid = (hw_asid_t){vspaceId};
 #endif
 #endif
 

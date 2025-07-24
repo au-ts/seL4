@@ -24,7 +24,13 @@ typedef word_t cpu_id_t;
 typedef word_t dom_t;
 
 typedef struct {
+#if defined(CONFIG_ARCH_AARCH64)
+    uint32_t v;
+#elif defined(CONFIG_ARCH_AARCH32)
     uint8_t v;
+#else
+#error "a"
+#endif
 } hw_asid_t;
 
 enum hwASIDConstants {

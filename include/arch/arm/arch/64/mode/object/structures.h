@@ -63,14 +63,7 @@ struct vspace_id_pool {
 };
 typedef struct vspace_id_pool vspace_id_pool_t;
 
-/* Generic fastpath.c code expects pde_t for stored_hw_asid
- * that's a workaround in the time being.
- */
-typedef pte_t pde_t;
-
-
 #define VSPACE_ID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
-
 
 #define nVSpaceIdPools BIT(vspaceIdHighBits)
 
