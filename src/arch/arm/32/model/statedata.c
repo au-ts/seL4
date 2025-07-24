@@ -15,7 +15,7 @@
 #include <plat/machine/hardware.h>
 
 /* The top level asid mapping table */
-vspace_id_pool_t *armKSASIDTable[BIT(asidHighBits)];
+vspace_id_pool_t *armKSASIDTable[BIT(vspaceIdHighBits)];
 
 /* XXXX: ASID -> VSPaceId */
 

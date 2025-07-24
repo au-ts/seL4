@@ -443,10 +443,10 @@ exception_t handleVMFault(tcb_t *thread, vm_fault_type_t vm_faultType)
 void deleteASIDPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
 {
     /* Haskell error: "ASID pool's base must be aligned" */
-    assert(IS_ALIGNED(vspaceId_base, asidLowBits));
+    assert(IS_ALIGNED(vspaceId_base, vspaceIdLowBits));
 
-    if (riscvKSASIDTable[vspaceId_base >> asidLowBits] == pool) {
-        riscvKSASIDTable[vspaceId_base >> asidLowBits] = NULL;
+    if (riscvKSASIDTable[vspaceId_base >> vspaceIdLowBits] == pool) {
+        riscvKSASIDTable[vspaceId_base >> vspaceIdLowBits] = NULL;
         setVMRoot(NODE_STATE(ksCurThread));
     }
 }
@@ -471,8 +471,8 @@ static exception_t performASIDControlInvocation(void *frame, cte_t *slot, cte_t 
         slot
     );
     /* Haskell error: "ASID pool's base must be aligned" */
-    assert((vspace_id_base & MASK(asidLowBits)) == 0);
-    riscvKSASIDTable[vspace_id_base >> asidLowBits] = (vspace_id_pool_t *)frame;
+    assert((vspace_id_base & MASK(vspaceIdLowBits)) == 0);
+    riscvKSASIDTable[vspace_id_base >> vspaceIdLowBits] = (vspace_id_pool_t *)frame;
 
     return EXCEPTION_NONE;
 }
@@ -990,7 +990,7 @@ exception_t decodeRISCVMMUInvocation(word_t label, word_t length, cptr_t cptr,
         }
 
         /* XXX: vspace_id_high and vspace_id_low */
-        vspace_id_base = i << asidLowBits;
+        vspace_id_base = i << vspaceIdLowBits;
 
         if (cap_get_capType(untyped) != cap_untyped_cap ||
             cap_untyped_cap_get_capBlockSize(untyped) != seL4_ASIDPoolBits ||
@@ -1054,7 +1054,7 @@ exception_t decodeRISCVMMUInvocation(word_t label, word_t length, cptr_t cptr,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        pool = riscvKSASIDTable[cap_asid_pool_cap_get_capASIDBase(cap) >> asidLowBits];
+        pool = riscvKSASIDTable[cap_asid_pool_cap_get_capASIDBase(cap) >> vspaceIdLowBits];
         if (!pool) {
             current_syscall_error.type = seL4_FailedLookup;
             current_syscall_error.failedLookupWasSource = false;
@@ -1071,9 +1071,9 @@ exception_t decodeRISCVMMUInvocation(word_t label, word_t length, cptr_t cptr,
         // XXX: Base.
         /* Find first free ASID */
         vspaceId = cap_asid_pool_cap_get_capASIDBase(cap);
-        for (i = 0; i < BIT(asidLowBits) && (vspaceId + i == 0 || pool->array[i]); i++);
+        for (i = 0; i < BIT(vspaceIdLowBits) && (vspaceId + i == 0 || pool->array[i]); i++);
 
-        if (i == BIT(asidLowBits)) {
+        if (i == BIT(vspaceIdLowBits)) {
             current_syscall_error.type = seL4_DeleteFirst;
 
             return EXCEPTION_SYSCALL_ERROR;

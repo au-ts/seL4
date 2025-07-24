@@ -89,7 +89,7 @@ typedef word_t pde_type_t;
 #define LPAE_PT_REF(p) ((unsigned int)p)
 
 struct vspace_id_pool {
-    pde_t *array[BIT(asidLowBits)];
+    pde_t *array[BIT(vspaceIdLowBits)];
 };
 
 typedef struct vspace_id_pool vspace_id_pool_t;
@@ -98,10 +98,10 @@ typedef struct vspace_id_pool vspace_id_pool_t;
 
 #define HW_ASID_SIZE_BITS 1
 
-#define nVSpaceIdPools BIT(asidHighBits)
+#define nVSpaceIdPools BIT(vspaceIdHighBits)
 
-#define VSPACE_ID_LOW(a) (a & MASK(asidLowBits))
-#define VSPACE_ID_HIGH(a) ((a >> asidLowBits) & MASK(asidHighBits))
+#define VSPACE_ID_LOW(a) (a & MASK(vspaceIdLowBits))
+#define VSPACE_ID_HIGH(a) ((a >> vspaceIdLowBits) & MASK(vspaceIdHighBits))
 
 static inline cap_t CONST cap_small_frame_cap_set_capFMappedVSpaceId(cap_t cap, vspace_id_t vspaceId)
 {
@@ -111,7 +111,7 @@ static inline cap_t CONST cap_small_frame_cap_set_capFMappedVSpaceId(cap_t cap, 
 
 static inline word_t CONST cap_small_frame_cap_get_capFMappedVSpaceId(cap_t cap)
 {
-    return (cap_small_frame_cap_get_capFMappedVSpaceIdHigh(cap) << asidLowBits) +
+    return (cap_small_frame_cap_get_capFMappedVSpaceIdHigh(cap) << vspaceIdLowBits) +
            cap_small_frame_cap_get_capFMappedVSpaceIdLow(cap);
 }
 
@@ -123,7 +123,7 @@ static inline cap_t CONST cap_frame_cap_set_capFMappedVSpaceId(cap_t cap, vspace
 
 static inline word_t CONST cap_frame_cap_get_capFMappedVSpaceId(cap_t cap)
 {
-    return (cap_frame_cap_get_capFMappedVSpaceIdHigh(cap) << asidLowBits) +
+    return (cap_frame_cap_get_capFMappedVSpaceIdHigh(cap) << vspaceIdLowBits) +
            cap_frame_cap_get_capFMappedVSpaceIdLow(cap);
 }
 

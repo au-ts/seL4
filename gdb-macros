@@ -19,7 +19,7 @@ document sel4
   This is a set of macros to interpret sel4 data structures. Available commands:
 
   runqueues
-  currthread 
+  currthread
   sched_action
   current_lookup_fault
   current_fault
@@ -95,7 +95,7 @@ end
 define sched_action
   if(ksSchedulerAction == 0x0)
     printf "ResumeCurrentThread\n"
-  else 
+  else
     if (ksSchedulerAction == ~0x0)
       printf "ChooseNewThread\n"
     else
@@ -119,7 +119,7 @@ define current_lookup_fault
     else
       if ((current_lookup_fault.words[0] & 0x3)==lookup_fault_depth_mismatch)
         printf "depth mismatch\n"
-      else 
+      else
         if((current_lookup_fault.words[0] & 0x3)==lookup_fault_guard_mismatch)
           printf "guard mismatch\n"
         else
@@ -392,8 +392,8 @@ end
 
 define pd_for_vspace_id
   set $vspaceId = $arg0
-  set $poolPtr = x86KSASIDTable[$vspaceId >> asidLowBits];
-  set $pd = poolPtr->array[$vspaceId & ((1<<asidLowBits)-1)];
+  set $poolPtr = x86KSASIDTable[$vspaceId >> vspaceIdLowBits];
+  set $pd = poolPtr->array[$vspaceId & ((1<<vspaceIdLowBits)-1)];
   if( !$vspaceId || !$poolPtr )
     printf "Something went wrong\n"
   else
@@ -406,7 +406,7 @@ define resolve_cap
   set $capptr = (int)$arg1
   set $n_bits = (int)$arg2
 
-  while(1) 
+  while(1)
 #printf "loop: remaining: %d\n", $n_bits
     #test cap type
     if((( $nodeCap.words[0]>>28)&0xf) != cap_cnode_cap)
@@ -419,7 +419,7 @@ define resolve_cap
     set $capGuard = ($nodeCap.words[1] & 0x3ffff) >> 0
 
     set $guard = ($capptr >> ($n_bits - $guardBits)) & ((1<<$guardBits)-1)
-    
+
     if( ($guardBits > $n_bits) || ($guard != $capGuard))
       printf "levelbits: %d, radixbits: %d, guardbits: %d, n_bits: %d\n", $levelBits, $radixBits, $guardBits, $n_bits
       printf "guard: %x, capguard: %x", $guard, $capGuard
@@ -484,7 +484,7 @@ define dump_cnode
     set $slot = ((cte_t *)(($nodeCap.words[0] & 0x7ffffff) << 5)) + $count
     if((($slot->cap.words[0]>>28)&0xf) != cap_null_cap)
       printf "offset: %d\n", $count
-      disp_cap $slot->cap 
+      disp_cap $slot->cap
       printf "\n"
     end
     set $count = $count+1
@@ -525,7 +525,7 @@ end
 define finish_irq
   set $current_sel4_thread = ksCurThread
 #set $current = ((struct thread_info *)per_cpu___l4_current_tinfo)->task
-  tbreak *0xf012102a if (ksCurThread==$current_sel4_thread)  
+  tbreak *0xf012102a if (ksCurThread==$current_sel4_thread)
   continue
   stepi
 end
@@ -569,14 +569,14 @@ document print_vtd_root_entry
   "Print the fields of an earlier decoded vtd root entry"
 end
 
-define print_vtd_root_table 
+define print_vtd_root_table
   set $vtd_root_entry_ptr = x86KSvtdRootTable
   set $count = 0
   while($count < 256)
-    decode_vtd_root_entry $vtd_root_entry_ptr[$count] 
+    decode_vtd_root_entry $vtd_root_entry_ptr[$count]
     if($vtd_re_present)
       printf "Index: %x\n", $count
-      print_vtd_root_entry 
+      print_vtd_root_entry
     end
     set $count++
   end
@@ -605,7 +605,7 @@ define print_vtd_context_entry
   printf "present: %x\n", $vtd_ce_present
 end
 
-document print_vtd_context_entry 
+document print_vtd_context_entry
   "Print the fields of an earlier decoded vtd context entry"
 end
 
@@ -643,7 +643,7 @@ define print_vtd_page_table_entry
   printf "read: %x\n", $vtd_pte_read
 end
 
-document print_vtd_page_table_entry 
+document print_vtd_page_table_entry
   "Print the fields of an earlier decoded vtd page table entry"
 end
 
@@ -654,7 +654,7 @@ define print_vtd_page_table
     decode_vtd_page_table_entry $vtd_pte_ptr[$count]
     if($vtd_pte_read || $vtd_pte_write)
       printf "index: %x\n", $count
-      print_vtd_page_table_entry 
+      print_vtd_page_table_entry
     end
     set $count++
   end
@@ -732,15 +732,15 @@ define walk_vtd_pgtables
 #TODO check for superpages
         set $count++
         if($count==3)
-          printf "Translation complete. Physical address: %llx\n", $vtd_pte_addr 
+          printf "Translation complete. Physical address: %llx\n", $vtd_pte_addr
           loop_break
         else
           set $pg_tab = (vtd_pte_t *)$vtd_pte_addr
         end
-      else 
+      else
         printf "Error: Page table entry not present\n"
         printf "Page table: "
-        print_vtd_page_table_entry 
+        print_vtd_page_table_entry
         loop_break
       end
     end

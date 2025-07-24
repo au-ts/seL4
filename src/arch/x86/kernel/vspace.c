@@ -37,17 +37,17 @@ static exception_t performPageGetAddress(void *vbase_ptr, bool_t call)
 void deleteASIDPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
 {
     /* Haskell error: "ASID pool's base must be aligned" */
-    assert(IS_ALIGNED(vspaceId_base, asidLowBits));
+    assert(IS_ALIGNED(vspaceId_base, vspaceIdLowBits));
 
-    if (x86KSASIDTable[vspaceId_base >> asidLowBits] == pool) {
-        for (unsigned int offset = 0; offset < BIT(asidLowBits); offset++) {
+    if (x86KSASIDTable[vspaceId_base >> vspaceIdLowBits] == pool) {
+        for (unsigned int offset = 0; offset < BIT(vspaceIdLowBits); offset++) {
             asid_map_t asid_map = pool->array[offset];
             if (asid_map_get_type(asid_map) == asid_map_asid_map_vspace) {
                 vspace_root_t *vspace = (vspace_root_t *)asid_map_asid_map_vspace_get_vspace_root(asid_map);
                 hwASIDInvalidate(vspaceId_base + offset, vspace);
             }
         }
-        x86KSASIDTable[vspaceId_base >> asidLowBits] = NULL;
+        x86KSASIDTable[vspaceId_base >> vspaceIdLowBits] = NULL;
         setVMRoot(NODE_STATE(ksCurThread));
     }
 }
@@ -71,8 +71,8 @@ exception_t performASIDControlInvocation(void *frame, cte_t *slot, cte_t *parent
         slot
     );
     /* Haskell error: "ASID pool's base must be aligned" */
-    assert((vspaceId_base & MASK(asidLowBits)) == 0);
-    x86KSASIDTable[vspaceId_base >> asidLowBits] = (vspace_id_pool_t *)frame;
+    assert((vspaceId_base & MASK(vspaceIdLowBits)) == 0);
+    x86KSASIDTable[vspaceId_base >> vspaceIdLowBits] = (vspace_id_pool_t *)frame;
 
     return EXCEPTION_NONE;
 }
@@ -1313,7 +1313,7 @@ exception_t decodeX86MMUInvocation(
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        vspaceId_base = i << asidLowBits;
+        vspaceId_base = i << vspaceIdLowBits;
 
 
         if (cap_get_capType(untyped) != cap_untyped_cap ||
@@ -1377,7 +1377,7 @@ exception_t decodeX86MMUInvocation(
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        pool = x86KSASIDTable[cap_asid_pool_cap_get_capASIDBase(cap) >> asidLowBits];
+        pool = x86KSASIDTable[cap_asid_pool_cap_get_capASIDBase(cap) >> vspaceIdLowBits];
         if (!pool) {
             current_syscall_error.type = seL4_FailedLookup;
             current_syscall_error.failedLookupWasSource = false;
@@ -1393,10 +1393,10 @@ exception_t decodeX86MMUInvocation(
 
         /* Find first free ASID */
         vspaceId = cap_asid_pool_cap_get_capASIDBase(cap);
-        for (i = 0; i < BIT(asidLowBits) && (vspaceId + i == 0
+        for (i = 0; i < BIT(vspaceIdLowBits) && (vspaceId + i == 0
                                              || asid_map_get_type(pool->array[i]) != asid_map_asid_map_none); i++);
 
-        if (i == BIT(asidLowBits)) {
+        if (i == BIT(vspaceIdLowBits)) {
             current_syscall_error.type = seL4_DeleteFirst;
 
             return EXCEPTION_SYSCALL_ERROR;

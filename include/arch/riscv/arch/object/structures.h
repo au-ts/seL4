@@ -21,15 +21,15 @@
 #define tcbArchCNodeEntries tcbCNodeEntries
 
 struct vspace_id_pool {
-    pte_t *array[BIT(asidLowBits)];
+    pte_t *array[BIT(vspaceIdLowBits)];
 };
 
 typedef struct vspace_id_pool vspace_id_pool_t;
 
 #define VSPACE_ID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
-#define nVSpaceIdPools          BIT(asidHighBits)
-#define VSPACE_ID_LOW(a)         (a & MASK(asidLowBits))
-#define VSPACE_ID_HIGH(a)        ((a >> asidLowBits) & MASK(asidHighBits))
+#define nVSpaceIdPools          BIT(vspaceIdHighBits)
+#define VSPACE_ID_LOW(a)         (a & MASK(vspaceIdLowBits))
+#define VSPACE_ID_HIGH(a)        ((a >> vspaceIdLowBits) & MASK(vspaceIdHighBits))
 
 typedef struct arch_tcb {
     user_context_t tcbContext;

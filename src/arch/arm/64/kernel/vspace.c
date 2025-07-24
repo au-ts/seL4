@@ -938,7 +938,7 @@ void increaseASIDBindCB(vspace_id_t vspaceId)
     asidPool = armKSASIDTable[VSPACE_ID_HIGH(vspaceId)];
     assert(asidPool);
 
-    asid_map_t *asid_map = &asidPool->array[asid & MASK(asidLowBits)];
+    asid_map_t *asid_map = &asidPool->array[asid & MASK(vspaceIdLowBits)];
     assert(asid_map_ptr_get_type(asid_map) == asid_map_asid_map_vspace);
 
     asid_map_asid_map_vspace_ptr_set_bind_cb(asid_map, asid_map_asid_map_vspace_ptr_get_bind_cb(asid_map) + 1);
@@ -951,7 +951,7 @@ void decreaseASIDBindCB(vspace_id_t vspaceId)
     asidPool = armKSASIDTable[VSPACE_ID_HIGH(vspaceId)];
     assert(asidPool);
 
-    asid_map_t *asid_map = &asidPool->array[asid & MASK(asidLowBits)];
+    asid_map_t *asid_map = &asidPool->array[asid & MASK(vspaceIdLowBits)];
     assert(asid_map_ptr_get_type(asid_map) == asid_map_asid_map_vspace);
 
     asid_map_asid_map_vspace_ptr_set_bind_cb(asid_map, asid_map_asid_map_vspace_ptr_get_bind_cb(asid_map) - 1);
@@ -1093,10 +1093,10 @@ void deleteASIDPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
 {
     word_t offset;
 
-    assert((vspaceId_base & MASK(asidLowBits)) == 0);
+    assert((vspaceId_base & MASK(vspaceIdLowBits)) == 0);
 
-    if (armKSASIDTable[vspaceId_base >> asidLowBits] == pool) {
-        for (offset = 0; offset < BIT(asidLowBits); offset++) {
+    if (armKSASIDTable[vspaceId_base >> vspaceIdLowBits] == pool) {
+        for (offset = 0; offset < BIT(vspaceIdLowBits); offset++) {
             asid_map_t asid_map = pool->array[offset];
             if (asid_map_get_type(asid_map) == asid_map_asid_map_vspace) {
                 invalidateTLBByASID(vspaceId_base + offset);
@@ -1105,7 +1105,7 @@ void deleteASIDPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
 #endif
             }
         }
-        armKSASIDTable[vspaceId_base >> asidLowBits] = NULL;
+        armKSASIDTable[vspaceId_base >> vspaceIdLowBits] = NULL;
         setVMRoot(NODE_STATE(ksCurThread));
     }
 }
@@ -1296,8 +1296,8 @@ static exception_t performASIDControlInvocation(void *frame, cte_t *slot,
             WORD_REF(frame)    /* capASIDPool  */
         ), parent, slot);
 
-    assert((vspaceId_base & MASK(asidLowBits)) == 0);
-    armKSASIDTable[vspaceId_base >> asidLowBits] = (vspace_id_pool_t *)frame;
+    assert((vspaceId_base & MASK(vspaceIdLowBits)) == 0);
+    armKSASIDTable[vspaceId_base >> vspaceIdLowBits] = (vspace_id_pool_t *)frame;
 
     return EXCEPTION_NONE;
 }
@@ -1758,7 +1758,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        vspaceId_base = i << asidLowBits;
+        vspaceId_base = i << vspaceIdLowBits;
 
         if (unlikely(cap_get_capType(untyped) != cap_untyped_cap ||
                      cap_untyped_cap_get_capBlockSize(untyped) != seL4_ASIDPoolBits ||
@@ -1820,7 +1820,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        pool = armKSASIDTable[cap_asid_pool_cap_get_capASIDBase(cap) >> asidLowBits];
+        pool = armKSASIDTable[cap_asid_pool_cap_get_capASIDBase(cap) >> vspaceIdLowBits];
 
         if (unlikely(!pool)) {
             current_syscall_error.type = seL4_FailedLookup;
@@ -1840,10 +1840,10 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
         /* Find first free ASID */
         /* XXX: base?? */
         vspaceId = cap_asid_pool_cap_get_capASIDBase(cap);
-        for (i = 0; i < (1 << asidLowBits) && (vspaceId + i == 0
+        for (i = 0; i < (1 << vspaceIdLowBits) && (vspaceId + i == 0
                                                || (asid_map_get_type(pool->array[i]) != asid_map_asid_map_none)); i++);
 
-        if (unlikely(i == 1 << asidLowBits)) {
+        if (unlikely(i == 1 << vspaceIdLowBits)) {
             current_syscall_error.type = seL4_DeleteFirst;
 
             return EXCEPTION_SYSCALL_ERROR;

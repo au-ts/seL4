@@ -32,9 +32,9 @@ typedef struct dschedule {
     word_t length;
 } dschedule_t;
 
-enum asidSizeConstants {
-    asidHighBits = seL4_NumASIDPoolsBits,
-    asidLowBits = seL4_ASIDPoolIndexBits
+enum vspaceIdSizeConstants {
+    vspaceIdHighBits = seL4_NumASIDPoolsBits,
+    vspaceIdLowBits = seL4_ASIDPoolIndexBits
 };
 
 /* Arch-independent object types */
@@ -424,4 +424,3 @@ isArchCap(cap_t cap)
 {
     return (cap_get_capType(cap) % 2);
 }
-

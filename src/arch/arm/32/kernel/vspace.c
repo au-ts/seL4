@@ -1280,16 +1280,16 @@ void deleteASIDPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
     unsigned int offset;
 
     /* Haskell error: "ASID pool's base must be aligned" */
-    assert((vspaceId_base & MASK(asidLowBits)) == 0);
+    assert((vspaceId_base & MASK(vspaceIdLowBits)) == 0);
 
-    if (armKSASIDTable[vspaceId_base >> asidLowBits] == pool) {
-        for (offset = 0; offset < BIT(asidLowBits); offset++) {
+    if (armKSASIDTable[vspaceId_base >> vspaceIdLowBits] == pool) {
+        for (offset = 0; offset < BIT(vspaceIdLowBits); offset++) {
             if (pool->array[offset]) {
                 flushSpace(vspaceId_base + offset);
                 invalidateASIDEntry(vspaceId_base + offset);
             }
         }
-        armKSASIDTable[vspaceId_base >> asidLowBits] = NULL;
+        armKSASIDTable[vspaceId_base >> vspaceIdLowBits] = NULL;
         setVMRoot(NODE_STATE(ksCurThread));
     }
 }
@@ -1990,8 +1990,8 @@ static exception_t performASIDControlInvocation(void *frame, cte_t *slot,
     cteInsert(cap_asid_pool_cap_new(vspaceId_base, WORD_REF(frame)),
               parent, slot);
     /* Haskell error: "ASID pool's base must be aligned" */
-    assert((vspaceId_base & MASK(asidLowBits)) == 0);
-    armKSASIDTable[vspaceId_base >> asidLowBits] = (vspace_id_pool_t *)frame;
+    assert((vspaceId_base & MASK(vspaceIdLowBits)) == 0);
+    armKSASIDTable[vspaceId_base >> vspaceIdLowBits] = (vspace_id_pool_t *)frame;
 
     return EXCEPTION_NONE;
 }
@@ -2553,7 +2553,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        vspaceId_base = i << asidLowBits;
+        vspaceId_base = i << vspaceIdLowBits;
 
         if (unlikely(cap_get_capType(untyped) != cap_untyped_cap ||
                      cap_untyped_cap_get_capBlockSize(untyped) !=
@@ -2626,7 +2626,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
         }
 
         pool = armKSASIDTable[cap_asid_pool_cap_get_capASIDBase(cap) >>
-                                                                     asidLowBits];
+                                                                     vspaceIdLowBits];
         if (unlikely(!pool)) {
             userError("ASIDPoolAssign: Failed to lookup pool.");
             current_syscall_error.type = seL4_FailedLookup;
@@ -2646,9 +2646,9 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
 
         /* Find first free ASID */
         vspaceId = cap_asid_pool_cap_get_capASIDBase(cap);
-        for (i = 0; i < (1 << asidLowBits) && (vspaceId + i == 0 || pool->array[i]); i++);
+        for (i = 0; i < (1 << vspaceIdLowBits) && (vspaceId + i == 0 || pool->array[i]); i++);
 
-        if (unlikely(i == 1 << asidLowBits)) {
+        if (unlikely(i == 1 << vspaceIdLowBits)) {
             userError("ASIDPoolAssign: No free ASID.");
             current_syscall_error.type = seL4_DeleteFirst;
 

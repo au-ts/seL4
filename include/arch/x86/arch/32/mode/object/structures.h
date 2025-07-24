@@ -46,20 +46,20 @@ compile_assert(gdt_idt_ptr_packed,
                sizeof(gdt_idt_ptr_t) == sizeof(uint16_t) * 3)
 
 struct vspace_id_pool {
-    asid_map_t array[BIT(asidLowBits)];
+    asid_map_t array[BIT(vspaceIdLowBits)];
 };
 
 typedef struct vspace_id_pool vspace_id_pool_t;
 
 #define VSPACE_ID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
-#define nVSpaceIdPools          BIT(asidHighBits)
-#define VSPACE_ID_LOW(a)         (a & MASK(asidLowBits))
-#define VSPACE_ID_HIGH(a)        ((a >> asidLowBits) & MASK(asidHighBits))
+#define nVSpaceIdPools          BIT(vspaceIdHighBits)
+#define VSPACE_ID_LOW(a)         (a & MASK(vspaceIdLowBits))
+#define VSPACE_ID_HIGH(a)        ((a >> vspaceIdLowBits) & MASK(vspaceIdHighBits))
 
 static inline vspace_id_t CONST cap_frame_cap_get_capFMappedVSpaceId(cap_t cap)
 {
     return
-        (cap_frame_cap_get_capFMappedVSpaceIdHigh(cap) << asidLowBits) +
+        (cap_frame_cap_get_capFMappedVSpaceIdHigh(cap) << vspaceIdLowBits) +
         cap_frame_cap_get_capFMappedVSpaceIdLow(cap);
 }
 
