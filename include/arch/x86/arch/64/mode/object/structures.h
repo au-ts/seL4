@@ -116,7 +116,7 @@ static inline vspace_id_t PURE cap_get_capMappedASID(cap_t cap)
     switch (ctag) {
 
     case cap_pml4_cap:
-        return cap_pml4_cap_get_capPML4MappedASID(cap);
+        return cap_pml4_cap_get_capPML4MappedVspaceId(cap);
 
     case cap_pdpt_cap:
         return cap_pdpt_cap_get_capPDPTMappedASID(cap);
@@ -126,7 +126,7 @@ static inline vspace_id_t PURE cap_get_capMappedASID(cap_t cap)
 
 #ifdef CONFIG_VTX
     case cap_ept_pml4_cap:
-        return cap_ept_pml4_cap_get_capPML4MappedASID(cap);
+        return cap_ept_pml4_cap_get_capPML4MappedVspaceId(cap);
 #endif
 
     default:

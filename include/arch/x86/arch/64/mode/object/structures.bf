@@ -71,13 +71,13 @@ block pdpt_cap {
     padding                          48
 }
 
-block pml4_cap(capPML4MappedASID, capPML4BasePtr, capType, capPML4IsMapped) {
+block pml4_cap(capPML4MappedVspaceId, capPML4BasePtr, capType, capPML4IsMapped) {
     field       capPML4BasePtr      64
 
     field       capType             5
     field       capPML4IsMapped     1
     padding                         46
-    field       capPML4MappedASID   12
+    field       capPML4MappedVspaceId   12
 }
 
 -- Cap to the table of 2^6 ASID pools
@@ -201,14 +201,14 @@ block ept_pdpt_cap (capType, capPDPTMappedAddress, capPDPTIsMapped, capPDPTMappe
 }
 
 -- First-level EPT pml4
-block ept_pml4_cap (capType, capPML4IsMapped, capPML4MappedASID, capPML4BasePtr) {
+block ept_pml4_cap (capType, capPML4IsMapped, capPML4MappedVspaceId, capPML4BasePtr) {
     field       capPML4BasePtr      64
 
     field       capType             5
     field       capPML4IsMapped     1
     padding                         42
 
-    field       capPML4MappedASID   16
+    field       capPML4MappedVspaceId   16
 }
 
 #endif

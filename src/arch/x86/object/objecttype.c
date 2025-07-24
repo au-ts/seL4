@@ -247,7 +247,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
         break;
     case cap_ept_pml4_cap:
         if (final && cap_ept_pml4_cap_get_capPML4IsMapped(cap)) {
-            deleteEPTASID(cap_ept_pml4_cap_get_capPML4MappedASID(cap),
+            deleteEPTASID(cap_ept_pml4_cap_get_capPML4MappedVspaceId(cap),
                           (ept_pml4e_t *)cap_ept_pml4_cap_get_capPML4BasePtr(cap));
         }
         break;
@@ -469,7 +469,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
     case seL4_X86_EPTPML4Object:
         return cap_ept_pml4_cap_new(
                    0,                  /* capPML4IsMapped      */
-                   VPID_INVALID,       /* capPML4MappedASID    */
+                   VPID_INVALID,       /* capPML4MappedVspaceId    */
                    (word_t)regionBase  /* capPML4BasePtr       */
                );
     case seL4_X86_EPTPDPTObject:

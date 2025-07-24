@@ -199,7 +199,7 @@ exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *po
     asid_map_t asid_map;
 #ifdef CONFIG_VTX
     if (cap_get_capType(vspaceCapSlot->cap) == cap_ept_pml4_cap) {
-        cap_ept_pml4_cap_ptr_set_capPML4MappedASID(&vspaceCapSlot->cap, vspaceId);
+        cap_ept_pml4_cap_ptr_set_capPML4MappedVspaceId(&vspaceCapSlot->cap, vspaceId);
         cap_ept_pml4_cap_ptr_set_capPML4IsMapped(&vspaceCapSlot->cap, 1);
         asid_map = asid_map_asid_map_ept_new(cap_ept_pml4_cap_get_capPML4BasePtr(vspaceCapSlot->cap));
     } else

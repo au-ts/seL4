@@ -174,7 +174,7 @@ block ept_pdpt_cap {
 block ept_pml4_cap {
     padding                         15
     field       capPML4IsMapped     1
-    field       capPML4MappedASID   16
+    field       capPML4MappedVspaceId   16
 
     field_high  capPML4BasePtr      20
     padding                         4

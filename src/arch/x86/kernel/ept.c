@@ -69,9 +69,9 @@ exception_t performX86EPTPageInvocationUnmap(cap_t cap, cte_t *ctSlot)
     return EXCEPTION_NONE;
 }
 
-findEPTForASID_ret_t findEPTForASID(vspace_id_t vspaceId)
+findEPTForVSpaceId_ret_t findEPTForVSpaceId(vspace_id_t vspaceId)
 {
-    findEPTForASID_ret_t ret;
+    findEPTForVSpaceId_ret_t ret;
     asid_map_t asid_map;
 
     asid_map = findMapForASID(asid);
@@ -193,10 +193,10 @@ static ept_cache_options_t eptCacheFromVmAttr(vm_attributes_t vmAttr)
 EPTPDPTMapped_ret_t EPTPDPTMapped(vspace_id_t vspaceId, vptr_t vptr, ept_pdpte_t *pdpt)
 {
     EPTPDPTMapped_ret_t ret;
-    findEPTForASID_ret_t asid_ret;
+    findEPTForVSpaceId_ret_t asid_ret;
     ept_pml4e_t *pml4Slot;
 
-    asid_ret = findEPTForASID(asid);
+    asid_ret = findEPTForVSpaceId(asid);
     if (asid_ret.status != EXCEPTION_NONE) {
         ret.pml4 = NULL;
         ret.pml4Slot = NULL;
@@ -271,7 +271,7 @@ static exception_t decodeX86EPTPDPTInvocation(
     ept_pml4e_t     pml4e;
     paddr_t         paddr;
     vspace_id_t          asid;
-    findEPTForASID_ret_t find_ret;
+    findEPTForVSpaceId_ret_t find_ret;
     ept_pml4e_t    *pml4Slot;
 
     if (invLabel == X86EPTPDPTUnmap) {
@@ -319,9 +319,9 @@ static exception_t decodeX86EPTPDPTInvocation(
     }
 
     pml4 = (ept_pml4e_t *)cap_ept_pml4_cap_get_capPML4BasePtr(pml4Cap);
-    vspaceId = cap_ept_pml4_cap_get_capPML4MappedASID(pml4Cap);
+    vspaceId = cap_ept_pml4_cap_get_capPML4MappedVspaceId(pml4Cap);
 
-    find_ret = findEPTForASID(asid);
+    find_ret = findEPTForVSpaceId(asid);
     if (find_ret.status != EXCEPTION_NONE) {
         current_syscall_error.type = seL4_FailedLookup;
         current_syscall_error.failedLookupWasSource = false;
@@ -385,9 +385,9 @@ EPTPageDirectoryMapped_ret_t EPTPageDirectoryMapped(vspace_id_t vspaceId, vptr_t
 {
     EPTPageDirectoryMapped_ret_t ret;
     lookupEPTPDPTSlot_ret_t find_ret;
-    findEPTForASID_ret_t asid_ret;
+    findEPTForVSpaceId_ret_t asid_ret;
 
-    asid_ret = findEPTForASID(asid);
+    asid_ret = findEPTForVSpaceId(asid);
     if (asid_ret.status != EXCEPTION_NONE) {
         ret.pml4 = NULL;
         ret.pdptSlot = NULL;
@@ -474,7 +474,7 @@ exception_t decodeX86EPTPDInvocation(
     ept_pdpte_t     pdpte;
     paddr_t         paddr;
     vspace_id_t          asid;
-    findEPTForASID_ret_t find_ret;
+    findEPTForVSpaceId_ret_t find_ret;
     lookupEPTPDPTSlot_ret_t lu_ret;
 
     if (invLabel == X86EPTPDUnmap) {
@@ -520,9 +520,9 @@ exception_t decodeX86EPTPDInvocation(
     }
 
     pml4 = (ept_pml4e_t *)cap_ept_pml4_cap_get_capPML4BasePtr(pml4Cap);
-    vspaceId = cap_ept_pml4_cap_get_capPML4MappedASID(pml4Cap);
+    vspaceId = cap_ept_pml4_cap_get_capPML4MappedVspaceId(pml4Cap);
 
-    find_ret = findEPTForASID(asid);
+    find_ret = findEPTForVSpaceId(asid);
     if (find_ret.status != EXCEPTION_NONE) {
         userError("X86EPTPDMap: EPT PML4 is not mapped.");
         current_syscall_error.type = seL4_FailedLookup;
@@ -573,9 +573,9 @@ EPTPageTableMapped_ret_t EPTPageTableMapped(vspace_id_t vspaceId, vptr_t vaddr, 
 {
     EPTPageTableMapped_ret_t ret;
     lookupEPTPDSlot_ret_t find_ret;
-    findEPTForASID_ret_t asid_ret;
+    findEPTForVSpaceId_ret_t asid_ret;
 
-    asid_ret = findEPTForASID(asid);
+    asid_ret = findEPTForVSpaceId(asid);
     if (asid_ret.status != EXCEPTION_NONE) {
         ret.pml4 = NULL;
         ret.pdSlot = NULL;
@@ -661,7 +661,7 @@ exception_t decodeX86EPTPTInvocation(
     ept_pde_t       pde;
     paddr_t         paddr;
     vspace_id_t          asid;
-    findEPTForASID_ret_t find_ret;
+    findEPTForVSpaceId_ret_t find_ret;
     lookupEPTPDSlot_ret_t lu_ret;
 
     if (invLabel == X86EPTPTUnmap) {
@@ -708,9 +708,9 @@ exception_t decodeX86EPTPTInvocation(
     }
 
     pml4 = (ept_pml4e_t *)(cap_ept_pml4_cap_get_capPML4BasePtr(pml4Cap));
-    vspaceId = cap_ept_pml4_cap_get_capPML4MappedASID(pml4Cap);
+    vspaceId = cap_ept_pml4_cap_get_capPML4MappedVspaceId(pml4Cap);
 
-    find_ret = findEPTForASID(asid);
+    find_ret = findEPTForVSpaceId(asid);
     if (find_ret.status != EXCEPTION_NONE) {
         current_syscall_error.type = seL4_FailedLookup;
         current_syscall_error.failedLookupWasSource = false;
@@ -828,9 +828,9 @@ exception_t decodeX86EPTPageMap(
     }
 
     pml4 = (ept_pml4e_t *)(cap_ept_pml4_cap_get_capPML4BasePtr(pml4Cap));
-    vspaceId = cap_ept_pml4_cap_get_capPML4MappedASID(pml4Cap);
+    vspaceId = cap_ept_pml4_cap_get_capPML4MappedVspaceId(pml4Cap);
 
-    findEPTForASID_ret_t find_ret = findEPTForASID(asid);
+    findEPTForVSpaceId_ret_t find_ret = findEPTForVSpaceId(asid);
     if (find_ret.status != EXCEPTION_NONE) {
         current_syscall_error.type = seL4_FailedLookup;
         current_syscall_error.failedLookupWasSource = false;
@@ -961,10 +961,10 @@ exception_t decodeX86EPTPageMap(
 
 void unmapEPTPage(vm_page_size_t page_size, vspace_id_t vspaceId, vptr_t vptr, void *pptr)
 {
-    findEPTForASID_ret_t find_ret;
+    findEPTForVSpaceId_ret_t find_ret;
     paddr_t addr = addrFromPPtr(pptr);
 
-    find_ret = findEPTForASID(asid);
+    find_ret = findEPTForVSpaceId(asid);
     if (find_ret.status != EXCEPTION_NONE) {
         return;
     }
