@@ -1304,9 +1304,9 @@ exception_t decodeX86MMUInvocation(
         root = current_extra_caps.excaprefs[1]->cap;
 
         /* Find first free pool */
-        for (i = 0; i < nASIDPools && x86KSASIDTable[i]; i++);
+        for (i = 0; i < nVSpaceIdPools && x86KSASIDTable[i]; i++);
 
-        if (i == nASIDPools) {
+        if (i == nVSpaceIdPools) {
             userError("ASIDControlMakePool: No unallocated pools found.");
             current_syscall_error.type = seL4_DeleteFirst;
 

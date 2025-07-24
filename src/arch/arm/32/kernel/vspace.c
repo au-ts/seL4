@@ -2544,9 +2544,9 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
         root = current_extra_caps.excaprefs[1]->cap;
 
         /* Find first free pool */
-        for (i = 0; i < nASIDPools && armKSASIDTable[i]; i++);
+        for (i = 0; i < nVSpaceIdPools && armKSASIDTable[i]; i++);
 
-        if (unlikely(i == nASIDPools)) {
+        if (unlikely(i == nVSpaceIdPools)) {
             userError("ASIDControlMakePool: No unallocated pools found.");
             current_syscall_error.type = seL4_DeleteFirst;
 

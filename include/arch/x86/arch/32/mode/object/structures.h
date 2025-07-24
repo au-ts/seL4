@@ -52,7 +52,7 @@ struct vspace_id_pool {
 typedef struct vspace_id_pool vspace_id_pool_t;
 
 #define VSPACE_ID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
-#define nASIDPools          BIT(asidHighBits)
+#define nVSpaceIdPools          BIT(asidHighBits)
 #define VSPACE_ID_LOW(a)         (a & MASK(asidLowBits))
 #define VSPACE_ID_HIGH(a)        ((a >> asidLowBits) & MASK(asidHighBits))
 

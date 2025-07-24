@@ -98,7 +98,7 @@ typedef struct vspace_id_pool vspace_id_pool_t;
 
 #define HW_ASID_SIZE_BITS 1
 
-#define nASIDPools BIT(asidHighBits)
+#define nVSpaceIdPools BIT(asidHighBits)
 
 #define VSPACE_ID_LOW(a) (a & MASK(asidLowBits))
 #define VSPACE_ID_HIGH(a) ((a >> asidLowBits) & MASK(asidHighBits))
