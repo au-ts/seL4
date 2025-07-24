@@ -247,7 +247,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
         break;
     case cap_ept_pml4_cap:
         if (final && cap_ept_pml4_cap_get_capPML4IsMapped(cap)) {
-            deleteEPTASID(cap_ept_pml4_cap_get_capPML4MappedVSpaceId(cap),
+            deleteEPTVSpaceId(cap_ept_pml4_cap_get_capPML4MappedVSpaceId(cap),
                           (ept_pml4e_t *)cap_ept_pml4_cap_get_capPML4BasePtr(cap));
         }
         break;

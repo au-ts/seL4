@@ -39,7 +39,7 @@ enum ept_cache_options {
 };
 typedef enum ept_cache_options ept_cache_options_t;
 
-void deleteEPTASID(vspace_id_t vspaceId, ept_pml4e_t *ept)
+void deleteEPTVSpaceId(vspace_id_t vspaceId, ept_pml4e_t *ept)
 {
     vspace_id_pool_t *poolPtr;
 

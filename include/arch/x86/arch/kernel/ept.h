@@ -43,7 +43,7 @@ EPTPageDirectoryMapped_ret_t EPTPageDirectoryMapped(vspace_id_t vspaceId, vptr_t
 EPTPageTableMapped_ret_t EPTPageTableMapped(vspace_id_t vspaceId, vptr_t vaddr, ept_pte_t *pt);
 findEPTForVSpaceId_ret_t findEPTForVSpaceId(vspace_id_t vspaceId);
 
-void deleteEPTASID(vspace_id_t vspaceId, ept_pml4e_t *ept);
+void deleteEPTVSpaceId(vspace_id_t vspaceId, ept_pml4e_t *ept);
 exception_t decodeX86EPTInvocation(word_t invLabel, word_t length, cptr_t cptr, cte_t *cte, cap_t cap,
                                    word_t *buffer);
 exception_t decodeX86EPTPDInvocation(word_t invLabel, word_t length, cte_t *cte, cap_t cap, word_t *buffer);
