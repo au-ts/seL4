@@ -62,7 +62,7 @@ block vspace_id_control_cap {
     field   capType     4
 }
 
--- Cap to a pool of 2^10 ASIDs
+-- Cap to a pool of 2^10 VspaceIds
 block vspace_id_pool_cap {
     padding                     20
     field       capVSpaceIdBase     12
@@ -163,7 +163,7 @@ block ept_pdpt_cap {
     field_high  capPDPTMappedAddress 1
     padding                         14
     field       capPDPTIsMapped     1
-    field       capPDPTMappedASID   16
+    field       capPDPTMappedVSpaceId   16
 
     field_high  capPDPTBasePtr      20
     padding                         4

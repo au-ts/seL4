@@ -54,7 +54,7 @@ block vspace_id_control_cap {
     padding             59
 }
 
--- Cap to a pool of 2^10 ASIDs
+-- Cap to a pool of 2^10 VspaceIds
 block vspace_id_pool_cap {
     padding 64
 

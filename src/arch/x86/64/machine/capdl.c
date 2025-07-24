@@ -247,7 +247,7 @@ void print_cap_arch(cap_t cap)
         break;
     }
     case cap_pdpt_cap: {
-        vspace_id_t vspaceId = cap_pdpt_cap_get_capPDPTMappedASID(cap);
+        vspace_id_t vspaceId = cap_pdpt_cap_get_capPDPTMappedVSpaceId(cap);
         findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
         vptr_t vptr = cap_pdpt_cap_get_capPDPTMappedAddress(cap);
         if (vspaceId != vspaceIdInvalid) {

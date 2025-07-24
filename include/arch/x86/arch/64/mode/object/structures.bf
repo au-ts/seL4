@@ -62,7 +62,7 @@ block page_directory_cap {
 
 block pdpt_cap {
     padding                          4
-    field       capPDPTMappedASID    12
+    field       capPDPTMappedVSpaceId    12
     field_high  capPDPTBasePtr       48
 
     field       capType              5
@@ -189,14 +189,14 @@ block ept_pd_cap (capType, capPDMappedAddress, capPDIsMapped, capPDMappedVSpaceI
 }
 
 -- Second-level EPT page table (page directory pointer table)
-block ept_pdpt_cap (capType, capPDPTMappedAddress, capPDPTIsMapped, capPDPTMappedASID, capPDPTBasePtr) {
+block ept_pdpt_cap (capType, capPDPTMappedAddress, capPDPTIsMapped, capPDPTMappedVSpaceId, capPDPTBasePtr) {
     field       capPDPTBasePtr      64
 
     field       capType             5
     field       capPDPTIsMapped     1
     padding                         9
     field_high  capPDPTMappedAddress 18
-    field       capPDPTMappedASID   16
+    field       capPDPTMappedVSpaceId   16
     padding                         15
 }
 

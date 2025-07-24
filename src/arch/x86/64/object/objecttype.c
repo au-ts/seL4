@@ -92,7 +92,7 @@ finaliseCap_ret_t Mode_finaliseCap(cap_t cap, bool_t final)
     case cap_pdpt_cap:
         if (final && cap_pdpt_cap_get_capPDPTIsMapped(cap)) {
             unmapPDPT(
-                cap_pdpt_cap_get_capPDPTMappedASID(cap),
+                cap_pdpt_cap_get_capPDPTMappedVSpaceId(cap),
                 cap_pdpt_cap_get_capPDPTMappedAddress(cap),
                 PDPTE_PTR(cap_pdpt_cap_get_capPDPTBasePtr(cap))
             );
@@ -277,7 +277,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
         /** AUXUPD: "(True, ptr_retyps 1
               (Ptr (ptr_val \<acute>regionBase) :: (pdpte_C[512]) ptr))" */
         return cap_pdpt_cap_new(
-                   vspaceIdInvalid,                /* capPDPTMappedASID    */
+                   vspaceIdInvalid,                /* capPDPTMappedVSpaceId    */
                    (word_t)regionBase,         /* capPDPTBasePtr       */
                    0,                          /* capPDPTIsMapped      */
                    0                           /* capPDPTMappedAddress */

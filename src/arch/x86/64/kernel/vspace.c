@@ -641,7 +641,7 @@ static BOOT_CODE cap_t create_it_pdpt_cap(cap_t vspace_cap, pptr_t pptr, vptr_t 
 {
     cap_t cap;
     cap = cap_pdpt_cap_new(
-              vspaceId,   /* capPDPTMappedASID    */
+              vspaceId,   /* capPDPTMappedVSpaceId    */
               pptr,   /* capPDPTBasePtr       */
               1,      /* capPDPTIsMapped      */
               vptr    /* capPDPTMappedAddress */
@@ -1274,7 +1274,7 @@ static exception_t performX64PDPTInvocationUnmap(cap_t cap, cte_t *ctSlot)
 {
     if (cap_pdpt_cap_get_capPDPTIsMapped(cap)) {
         pdpte_t *pdpt = PDPTE_PTR(cap_pdpt_cap_get_capPDPTBasePtr(cap));
-        unmapPDPT(cap_pdpt_cap_get_capPDPTMappedASID(cap),
+        unmapPDPT(cap_pdpt_cap_get_capPDPTMappedVSpaceId(cap),
                   cap_pdpt_cap_get_capPDPTMappedAddress(cap),
                   pdpt);
         clearMemory((void *)pdpt, cap_get_capSizeBits(cap));
@@ -1290,7 +1290,7 @@ static exception_t performX64PDPTInvocationMap(cap_t cap, cte_t *ctSlot, pml4e_t
 {
     ctSlot->cap = cap;
     *pml4Slot = pml4e;
-    invalidatePageStructureCacheASID(pptr_to_paddr(vspace), cap_pdpt_cap_get_capPDPTMappedASID(cap),
+    invalidatePageStructureCacheASID(pptr_to_paddr(vspace), cap_pdpt_cap_get_capPDPTMappedVSpaceId(cap),
                                      SMP_TERNARY(tlb_bitmap_get(vspace), 0));
 
     return EXCEPTION_NONE;
@@ -1395,7 +1395,7 @@ static exception_t decodeX64PDPTInvocation(
     pml4e = makeUserPML4E(paddr, attr);
 
     cap = cap_pdpt_cap_set_capPDPTIsMapped(cap, 1);
-    cap = cap_pdpt_cap_set_capPDPTMappedASID(cap, vspaceId);
+    cap = cap_pdpt_cap_set_capPDPTMappedVSpaceId(cap, vspaceId);
     cap = cap_pdpt_cap_set_capPDPTMappedAddress(cap, vaddr);
 
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);

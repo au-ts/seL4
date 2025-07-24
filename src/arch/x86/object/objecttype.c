@@ -255,7 +255,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     case cap_ept_pdpt_cap:
         if (final && cap_ept_pdpt_cap_get_capPDPTIsMapped(cap)) {
             unmapEPTPDPT(
-                cap_ept_pdpt_cap_get_capPDPTMappedASID(cap),
+                cap_ept_pdpt_cap_get_capPDPTMappedVSpaceId(cap),
                 cap_ept_pdpt_cap_get_capPDPTMappedAddress(cap),
                 (ept_pdpte_t *)cap_ept_pdpt_cap_get_capPDPTBasePtr(cap));
         }
@@ -476,7 +476,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
         return cap_ept_pdpt_cap_new(
                    0,                  /* capPDPTMappedAddress */
                    0,                  /* capPDPTIsMapped      */
-                   VPID_INVALID,       /* capPDPTMappedASID    */
+                   VPID_INVALID,       /* capPDPTMappedVSpaceId    */
                    (word_t)regionBase   /* capPDPTBasePtr      */
                );
     case seL4_X86_EPTPDObject:
