@@ -235,7 +235,7 @@ void print_cap_arch(cap_t cap)
         break;
     }
     case cap_page_directory_cap: {
-        vspace_id_t vspaceId = cap_page_directory_cap_get_capPDMappedASID(cap);
+        vspace_id_t vspaceId = cap_page_directory_cap_get_capPDMappedVSpaceId(cap);
         findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
         vptr_t vptr = cap_page_directory_cap_get_capPDMappedAddress(cap);
         if (vspaceId != vspaceIdInvalid) {

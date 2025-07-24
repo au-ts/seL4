@@ -122,7 +122,7 @@ static inline vspace_id_t PURE cap_get_capMappedASID(cap_t cap)
         return cap_pdpt_cap_get_capPDPTMappedASID(cap);
 
     case cap_page_directory_cap:
-        return cap_page_directory_cap_get_capPDMappedASID(cap);
+        return cap_page_directory_cap_get_capPDMappedVSpaceId(cap);
 
 #ifdef CONFIG_VTX
     case cap_ept_pml4_cap:

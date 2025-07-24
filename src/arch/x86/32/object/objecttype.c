@@ -169,7 +169,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
         copyGlobalMappings(regionBase);
         return cap_page_directory_cap_new(
                    0,                  /* capPDIsMapped      */
-                   vspaceIdInvalid,        /* capPDMappedASID    */
+                   vspaceIdInvalid,        /* capPDMappedVSpaceId    */
                    0,                  /* capPDMappedAddress */
                    (word_t)regionBase  /* capPDBasePtr       */
                );

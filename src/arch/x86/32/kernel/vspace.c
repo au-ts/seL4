@@ -409,7 +409,7 @@ static BOOT_CODE cap_t create_it_page_directory_cap(cap_t vspace_cap, pptr_t ppt
     cap_t cap;
     cap = cap_page_directory_cap_new(
               true,    /* capPDIsMapped   */
-              IT_ASID, /* capPDMappedASID */
+              IT_ASID, /* capPDMappedVSpaceId */
               vptr,    /* capPDMappedAddress */
               pptr  /* capPDBasePtr    */
           );

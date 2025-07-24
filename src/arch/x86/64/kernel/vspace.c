@@ -654,7 +654,7 @@ static BOOT_CODE cap_t create_it_pd_cap(cap_t vspace_cap, pptr_t pptr, vptr_t vp
 {
     cap_t cap;
     cap = cap_page_directory_cap_new(
-              vspaceId,   /* capPDMappedASID      */
+              vspaceId,   /* capPDMappedVSpaceId      */
               pptr,   /* capPDBasePtr         */
               1,      /* capPDIsMapped        */
               vptr    /* capPDMappedAddress   */
@@ -1109,7 +1109,7 @@ static exception_t performX64PageDirectoryInvocationUnmap(cap_t cap, cte_t *ctSl
     if (cap_page_directory_cap_get_capPDIsMapped(cap)) {
         pde_t *pd = PDE_PTR(cap_page_directory_cap_get_capPDBasePtr(cap));
         unmapPageDirectory(
-            cap_page_directory_cap_get_capPDMappedASID(cap),
+            cap_page_directory_cap_get_capPDMappedVSpaceId(cap),
             cap_page_directory_cap_get_capPDMappedAddress(cap),
             pd
         );
@@ -1126,7 +1126,7 @@ static exception_t performX64PageDirectoryInvocationMap(cap_t cap, cte_t *ctSlot
 {
     ctSlot->cap = cap;
     *pdptSlot = pdpte;
-    invalidatePageStructureCacheASID(pptr_to_paddr(vspace), cap_page_directory_cap_get_capPDMappedASID(cap),
+    invalidatePageStructureCacheASID(pptr_to_paddr(vspace), cap_page_directory_cap_get_capPDMappedVSpaceId(cap),
                                      SMP_TERNARY(tlb_bitmap_get(vspace), 0));
     return EXCEPTION_NONE;
 }
@@ -1240,7 +1240,7 @@ static exception_t decodeX64PageDirectoryInvocation(
     pdpte = makeUserPDPTEPageDirectory(paddr, vm_attr);
 
     cap = cap_page_directory_cap_set_capPDIsMapped(cap, 1);
-    cap = cap_page_directory_cap_set_capPDMappedASID(cap, vspaceId);
+    cap = cap_page_directory_cap_set_capPDMappedVSpaceId(cap, vspaceId);
     cap = cap_page_directory_cap_set_capPDMappedAddress(cap, vaddr);
 
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);

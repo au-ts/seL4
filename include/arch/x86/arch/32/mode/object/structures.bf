@@ -47,7 +47,7 @@ block page_table_cap {
 block page_directory_cap {
     padding                         17
     field       capPDIsMapped       1
-    field       capPDMappedASID     12
+    field       capPDMappedVSpaceId     12
     field_high  capPDMappedAddress  2
 
     padding                         8
@@ -151,7 +151,7 @@ block ept_pd_cap {
     field_high  capPDMappedAddress  3
     padding                         12
     field       capPDIsMapped       1
-    field       capPDMappedASID     16
+    field       capPDMappedVSpaceId     16
 
     field_high  capPDBasePtr        20
     padding                         4

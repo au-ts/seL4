@@ -502,7 +502,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
     cap_t pd_cap =
         cap_page_directory_cap_new(
             true,    /* capPDIsMapped   */
-            IT_ASID, /* capPDMappedASID */
+            IT_ASID, /* capPDMappedVSpaceId */
             rootserver.vspace  /* capPDBasePtr    */
         );
     slot_pos_before = ndks_boot.slot_pos_cur;
@@ -1017,7 +1017,7 @@ void setVMRoot(tcb_t *tcb)
     }
 
     pd = PDE_PTR(cap_page_directory_cap_get_capPDBasePtr(threadRoot));
-    vspaceId = cap_page_directory_cap_get_capPDMappedASID(threadRoot);
+    vspaceId = cap_page_directory_cap_get_capPDMappedVSpaceId(threadRoot);
     find_ret = findVSpaceForVSpaceId(vspaceId);
     if (unlikely(find_ret.status != EXCEPTION_NONE || find_ret.pd != pd)) {
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
@@ -1967,7 +1967,7 @@ static exception_t performPageGetAddress(void *vbase_ptr, bool_t call)
 static exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr,
                                              cte_t *pdCapSlot)
 {
-    cap_page_directory_cap_ptr_set_capPDMappedASID(&pdCapSlot->cap, vspaceId);
+    cap_page_directory_cap_ptr_set_capPDMappedVSpaceId(&pdCapSlot->cap, vspaceId);
     cap_page_directory_cap_ptr_set_capPDIsMapped(&pdCapSlot->cap, 1);
     poolPtr->array[VSPACE_ID_LOW(vspaceId)] =
         PDE_PTR(cap_page_directory_cap_get_capPDBasePtr(pdCapSlot->cap));
@@ -2047,7 +2047,7 @@ static exception_t decodeARMPageDirectoryInvocation(word_t invLabel, word_t leng
 
         /* Make sure that the supplied pd is ok */
         pd = PDE_PTR(cap_page_directory_cap_get_capPDBasePtr(cap));
-        vspaceId = cap_page_directory_cap_get_capPDMappedASID(cap);
+        vspaceId = cap_page_directory_cap_get_capPDMappedVSpaceId(cap);
 
         find_ret = findVSpaceForVSpaceId(vspaceId);
         if (unlikely(find_ret.status != EXCEPTION_NONE)) {
@@ -2167,7 +2167,7 @@ static exception_t decodeARMPageTableInvocation(word_t invLabel, word_t length,
     }
 
     pd = PDE_PTR(cap_page_directory_cap_get_capPDBasePtr(pdCap));
-    vspaceId = cap_page_directory_cap_get_capPDMappedASID(pdCap);
+    vspaceId = cap_page_directory_cap_get_capPDMappedVSpaceId(pdCap);
 
     if (unlikely(vaddr >= USER_TOP)) {
         userError("ARMPageTableMap: Virtual address cannot be in kernel window. vaddr: 0x%08lx, USER_TOP: 0x%08x", vaddr,
@@ -2270,7 +2270,7 @@ static exception_t decodeARMFrameInvocation(word_t invLabel, word_t length,
         }
         pd = PDE_PTR(cap_page_directory_cap_get_capPDBasePtr(
                          pdCap));
-        vspaceId = cap_page_directory_cap_get_capPDMappedASID(pdCap);
+        vspaceId = cap_page_directory_cap_get_capPDMappedVSpaceId(pdCap);
 
         if (generic_frame_cap_get_capFIsMapped(cap)) {
             if (generic_frame_cap_get_capFMappedVSpaceId(cap) != vspaceId) {

@@ -65,10 +65,10 @@ block page_table_cap {
 }
 
 -- First-level page table (page directory)
-block page_directory_cap(capPDMappedASID, capPDIsMapped,
+block page_directory_cap(capPDMappedVSpaceId, capPDIsMapped,
                          capPDBasePtr, capType) {
     padding                 15
-    field capPDMappedASID   17
+    field capPDMappedVSpaceId   17
 
     field_high capPDBasePtr 18
     padding                  9

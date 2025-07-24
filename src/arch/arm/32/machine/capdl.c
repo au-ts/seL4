@@ -258,7 +258,7 @@ static void cap_frame_print_attrs_vptr(word_t vptr, pde_t *pd)
 void print_ipc_buffer_slot(tcb_t *tcb)
 {
     word_t vptr = tcb->tcbIPCBuffer;
-    vspace_id_t vspaceId = cap_page_directory_cap_get_capPDMappedASID(TCB_PTR_CTE_PTR(tcb, tcbVTable)->cap);
+    vspace_id_t vspaceId = cap_page_directory_cap_get_capPDMappedVSpaceId(TCB_PTR_CTE_PTR(tcb, tcbVTable)->cap);
     findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
     printf("ipc_buffer_slot: ");
     cap_frame_print_attrs_vptr(vptr, find_ret.pd);
@@ -280,7 +280,7 @@ void print_cap_arch(cap_t cap)
         break;
     }
     case cap_page_directory_cap: {
-        vspace_id_t vspaceId = cap_page_directory_cap_get_capPDMappedASID(cap);
+        vspace_id_t vspaceId = cap_page_directory_cap_get_capPDMappedVSpaceId(cap);
         findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
         if (vspaceId != vspaceIdInvalid) {
             printf("%p_pd (vspaceId: %lu)\n",

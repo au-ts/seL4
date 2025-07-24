@@ -185,7 +185,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     case cap_page_directory_cap:
         if (final && cap_page_directory_cap_get_capPDIsMapped(cap)) {
             unmapPageDirectory(
-                cap_page_directory_cap_get_capPDMappedASID(cap),
+                cap_page_directory_cap_get_capPDMappedVSpaceId(cap),
                 cap_page_directory_cap_get_capPDMappedAddress(cap),
                 PDE_PTR(cap_page_directory_cap_get_capPDBasePtr(cap))
             );
@@ -264,7 +264,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     case cap_ept_pd_cap:
         if (final && cap_ept_pd_cap_get_capPDIsMapped(cap)) {
             unmapEPTPageDirectory(
-                cap_ept_pd_cap_get_capPDMappedASID(cap),
+                cap_ept_pd_cap_get_capPDMappedVSpaceId(cap),
                 cap_ept_pd_cap_get_capPDMappedAddress(cap),
                 (ept_pde_t *)cap_ept_pd_cap_get_capPDBasePtr(cap));
         }
@@ -483,7 +483,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
         return cap_ept_pd_cap_new(
                    0,                  /* capPDMappedAddress   */
                    0,                  /* capPDIsMapped        */
-                   VPID_INVALID,       /* capPDMappedASID      */
+                   VPID_INVALID,       /* capPDMappedVSpaceId      */
                    (word_t)regionBase  /* capPDBasePtr         */
                );
     case seL4_X86_EPTPTObject:
