@@ -39,7 +39,7 @@ static const region_t BOOT_RODATA *mode_reserved_region = NULL;
 #define PAR_EL1_MASK 0x0000fffffffff000ul
 #define GET_PAR_ADDR(x) ((x) & PAR_EL1_MASK)
 
-static inline exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot)
+static inline exception_t performVSpaceIdPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot)
 {
     cap_t cap = vspaceCapSlot->cap;
     asid_map_t asid_map = asid_map_asid_map_vspace_new(

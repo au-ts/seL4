@@ -1964,7 +1964,7 @@ static exception_t performPageGetAddress(void *vbase_ptr, bool_t call)
     return EXCEPTION_NONE;
 }
 
-static exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr,
+static exception_t performVSpaceIdPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr,
                                              cte_t *pdCapSlot)
 {
     cap_page_directory_cap_ptr_set_capPDMappedVSpaceId(&pdCapSlot->cap, vspaceId);
@@ -1975,7 +1975,7 @@ static exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace_id_poo
     return EXCEPTION_NONE;
 }
 
-static exception_t performASIDControlInvocation(void *frame, cte_t *slot,
+static exception_t performVSpaceIdControlInvocationInvocation(void *frame, cte_t *slot,
                                                 cte_t *parent, vspace_id_t vspaceId_base)
 {
 
@@ -2587,7 +2587,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
         }
 
         setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
-        return performASIDControlInvocation(frame, destSlot,
+        return performVSpaceIdControlInvocationInvocation(frame, destSlot,
                                             parentSlot, vspaceId_base);
     }
 
@@ -2658,7 +2658,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
         vspaceId += i;
 
         setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
-        return performASIDPoolInvocation(vspaceId, pool, pdCapSlot);
+        return performVSpaceIdPoolInvocation(vspaceId, pool, pdCapSlot);
     }
 
     default:

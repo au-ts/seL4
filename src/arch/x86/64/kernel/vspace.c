@@ -799,7 +799,7 @@ BOOT_CODE cap_t create_mapped_it_frame_cap(cap_t vspace_cap, pptr_t pptr, vptr_t
 
 
 
-exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot)
+exception_t performVSpaceIdPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot)
 {
     asid_map_t asid_map;
 #ifdef CONFIG_VTX

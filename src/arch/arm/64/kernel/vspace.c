@@ -1279,7 +1279,7 @@ static exception_t performPageGetAddress(pptr_t base_ptr, bool_t call)
     return EXCEPTION_NONE;
 }
 
-static exception_t performASIDControlInvocation(void *frame, cte_t *slot,
+static exception_t performVSpaceIdControlInvocationInvocation(void *frame, cte_t *slot,
                                                 cte_t *parent, vspace_id_t vspaceId_base)
 {
     /** AUXUPD: "(True, typ_region_bytes (ptr_val \<acute>frame) 12)" */
@@ -1788,7 +1788,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
         }
 
         setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
-        return performASIDControlInvocation(frame, destSlot, parentSlot, vspaceId_base);
+        return performVSpaceIdControlInvocationInvocation(frame, destSlot, parentSlot, vspaceId_base);
     }
 
     case cap_vspace_id_pool_cap: {
@@ -1852,7 +1852,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
         vspaceId += i;
 
         setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
-        return performASIDPoolInvocation(vspaceId, pool, vspaceCapSlot);
+        return performVSpaceIdPoolInvocation(vspaceId, pool, vspaceCapSlot);
     }
 
     default:

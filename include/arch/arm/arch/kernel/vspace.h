@@ -12,7 +12,7 @@
 #include <object/structures.h>
 #include <mode/kernel/vspace.h>
 
-#define IT_VSPACE_ID 1 /* initial thread's ASID */
+#define IT_VSPACE_ID 1 /* initial thread's VSpaceId */
 
 cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_reg);
 cap_t create_unmapped_it_frame_cap(pptr_t pptr, bool_t use_large);

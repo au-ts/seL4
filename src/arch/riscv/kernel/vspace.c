@@ -452,7 +452,7 @@ void deleteVSpaceIdPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
 }
 
 /* XXX: base. */
-static exception_t performASIDControlInvocation(void *frame, cte_t *slot, cte_t *parent, vspace_id_t vspace_id_base)
+static exception_t performVSpaceIdControlInvocationInvocation(void *frame, cte_t *slot, cte_t *parent, vspace_id_t vspace_id_base)
 {
     /** AUXUPD: "(True, typ_region_bytes (ptr_val \<acute>frame) 12)" */
     /** GHOSTUPD: "(True, gs_clear_region (ptr_val \<acute>frame) 12)" */
@@ -478,7 +478,7 @@ static exception_t performASIDControlInvocation(void *frame, cte_t *slot, cte_t 
 }
 
 /* XXX: RENAME */
-static exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot)
+static exception_t performVSpaceIdPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot)
 {
     cap_t cap = vspaceCapSlot->cap;
     pte_t *regionBase = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
@@ -1020,7 +1020,7 @@ exception_t decodeRISCVMMUInvocation(word_t label, word_t length, cptr_t cptr,
         }
 
         setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
-        return performASIDControlInvocation(frame, destSlot, parentSlot, vspace_id_base);
+        return performVSpaceIdControlInvocationInvocation(frame, destSlot, parentSlot, vspace_id_base);
     }
 
     case cap_vspace_id_pool_cap: {
@@ -1082,7 +1082,7 @@ exception_t decodeRISCVMMUInvocation(word_t label, word_t length, cptr_t cptr,
         vspaceId += i;
 
         setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
-        return performASIDPoolInvocation(vspaceId, pool, vspaceCapSlot);
+        return performVSpaceIdPoolInvocation(vspaceId, pool, vspaceCapSlot);
     }
     default:
         fail("Invalid arch cap type");

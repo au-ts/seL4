@@ -194,7 +194,7 @@ void copyGlobalMappings(vspace_root_t *new_vspace)
     }
 }
 
-exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot)
+exception_t performVSpaceIdPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot)
 {
     asid_map_t asid_map;
 #ifdef CONFIG_VTX
