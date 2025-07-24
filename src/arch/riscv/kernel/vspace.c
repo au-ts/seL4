@@ -494,7 +494,7 @@ static exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace_id_poo
     return EXCEPTION_NONE;
 }
 
-void deleteASID(vspace_id_t vspaceId, pte_t *vspace)
+void deleteVSpaceId(vspace_id_t vspaceId, pte_t *vspace)
 {
     vspace_id_pool_t *poolPtr;
 

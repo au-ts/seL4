@@ -156,7 +156,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
         }
 #endif
         if (final && cap_vspace_cap_get_capVSIsMapped(cap)) {
-            deleteASID(cap_vspace_cap_get_capVSMappedVSpaceId(cap),
+            deleteVSpaceId(cap_vspace_cap_get_capVSMappedVSpaceId(cap),
                        VSPACE_PTR(cap_vspace_cap_get_capVSBasePtr(cap)));
         }
         break;

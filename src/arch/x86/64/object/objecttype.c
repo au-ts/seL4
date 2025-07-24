@@ -82,7 +82,7 @@ finaliseCap_ret_t Mode_finaliseCap(cap_t cap, bool_t final)
 
     case cap_pml4_cap:
         if (final && cap_pml4_cap_get_capPML4IsMapped(cap)) {
-            deleteASID(
+            deleteVSpaceId(
                 cap_pml4_cap_get_capPML4MappedVspaceId(cap),
                 PML4E_PTR(cap_pml4_cap_get_capPML4BasePtr(cap))
             );

@@ -1294,7 +1294,7 @@ void deleteVspaceIdPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
     }
 }
 
-void deleteASID(vspace_id_t vspaceId, pde_t *pd)
+void deleteVSpaceId(vspace_id_t vspaceId, pde_t *pd)
 {
     vspace_id_pool_t *poolPtr;
 

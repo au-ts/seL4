@@ -1069,7 +1069,7 @@ void unmapPage(vm_page_size_t page_size, vspace_id_t vspaceId, vptr_t vptr, pptr
     invalidateTLBByASIDVA(hw_asid.v, vptr);
 }
 
-void deleteASID(vspace_id_t vspaceId, vspace_root_t *vspace)
+void deleteVSpaceId(vspace_id_t vspaceId, vspace_root_t *vspace)
 {
     vspace_id_pool_t *poolPtr;
 

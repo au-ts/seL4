@@ -217,7 +217,7 @@ exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *po
 
 void unmapPageDirectory(vspace_id_t vspaceId, vptr_t vaddr, pde_t *pd)
 {
-    deleteASID(vspaceId, pd);
+    deleteVSpaceId(vspaceId, pd);
 }
 
 static exception_t performIA32PageDirectoryGetStatusBits(lookupPTSlot_ret_t ptSlot, lookupPDSlot_ret_t pdSlot,

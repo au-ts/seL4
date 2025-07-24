@@ -77,7 +77,7 @@ exception_t performASIDControlInvocation(void *frame, cte_t *slot, cte_t *parent
     return EXCEPTION_NONE;
 }
 
-void deleteASID(vspace_id_t vspaceId, vspace_root_t *vspace)
+void deleteVSpaceId(vspace_id_t vspaceId, vspace_root_t *vspace)
 {
     vspace_id_pool_t *poolPtr;
 

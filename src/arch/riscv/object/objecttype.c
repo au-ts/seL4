@@ -95,7 +95,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
             findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
             pte_t *pte = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
             if (find_ret.status == EXCEPTION_NONE && find_ret.vspace_root == pte) {
-                deleteASID(vspaceId, pte);
+                deleteVSpaceId(vspaceId, pte);
             } else {
                 unmapPageTable(vspaceId, cap_page_table_cap_get_capPTMappedAddress(cap), pte);
             }
