@@ -1162,7 +1162,7 @@ hw_asid_t getHWASID(vspace_id_t vspaceId)
     }
 }
 
-static void invalidateASIDEntry(vspace_id_t vspaceId)
+static void invalidateVSpaceIdEntry(vspace_id_t vspaceId)
 {
     pde_t stored_hw_asid;
 
@@ -1286,7 +1286,7 @@ void deleteVSpaceIdPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
         for (offset = 0; offset < BIT(vspaceIdLowBits); offset++) {
             if (pool->array[offset]) {
                 flushSpace(vspaceId_base + offset);
-                invalidateASIDEntry(vspaceId_base + offset);
+                invalidateVSpaceIdEntry(vspaceId_base + offset);
             }
         }
         armKSVSpaceIdTable[vspaceId_base >> vspaceIdLowBits] = NULL;
@@ -1302,7 +1302,7 @@ void deleteVSpaceId(vspace_id_t vspaceId, pde_t *pd)
 
     if (poolPtr != NULL && poolPtr->array[VSPACE_ID_LOW(vspaceId)] == pd) {
         flushSpace(vspaceId);
-        invalidateASIDEntry(vspaceId);
+        invalidateVSpaceIdEntry(vspaceId);
         poolPtr->array[VSPACE_ID_LOW(vspaceId)] = NULL;
         setVMRoot(NODE_STATE(ksCurThread));
     }
@@ -1523,7 +1523,7 @@ void flushSpace(vspace_id_t vspaceId)
     invalidateTranslationASID((hw_asid_t){pde_pde_invalid_get_stored_hw_asid(stored_hw_asid)});
 }
 
-void invalidateTLBByASID(vspace_id_t vspaceId)
+void invalidateTLBByVSpaceId(vspace_id_t vspaceId)
 {
     pde_t stored_hw_asid;
 
@@ -1872,7 +1872,7 @@ static exception_t performPageInvocationMapPTE(vspace_id_t vspaceId, cap_t cap, 
                         LAST_BYTE_PTE(pte_entries.base, pte_entries.length),
                         addrFromPPtr(pte_entries.base));
     if (unlikely(tlbflush_required)) {
-        invalidateTLBByASID(vspaceId);
+        invalidateTLBByVSpaceId(vspaceId);
     }
 
     return EXCEPTION_NONE;
@@ -1906,7 +1906,7 @@ static exception_t performPageInvocationMapPDE(vspace_id_t vspaceId, cap_t cap, 
                         LAST_BYTE_PDE(pde_entries.base, pde_entries.length),
                         addrFromPPtr(pde_entries.base));
     if (unlikely(tlbflush_required)) {
-        invalidateTLBByASID(vspaceId);
+        invalidateTLBByVSpaceId(vspaceId);
     }
 
     return EXCEPTION_NONE;

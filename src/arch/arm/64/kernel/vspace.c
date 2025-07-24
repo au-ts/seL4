@@ -903,7 +903,7 @@ hw_asid_t getHWASID(vspace_id_t vspaceId)
     }
 }
 
-static void invalidateASIDEntry(vspace_id_t vspaceId)
+static void invalidateVSpaceIdEntry(vspace_id_t vspaceId)
 {
     asid_map_t asid_map;
 
@@ -958,7 +958,7 @@ void decreaseASIDBindCB(vspace_id_t vspaceId)
 }
 #endif
 
-static inline void invalidateTLBByASID(vspace_id_t vspaceId)
+static inline void invalidateTLBByVSpaceId(vspace_id_t vspaceId)
 {
 #ifdef CONFIG_ARM_SMMU
     word_t bind_cb = getASIDBindCB(vspaceId);
@@ -1030,7 +1030,7 @@ void unmapPageTable(vspace_id_t vspaceId, vptr_t vptr, pte_t *target_pt)
     assert(ptSlot != NULL);
     *ptSlot = pte_pte_invalid_new();
     cleanByVA_PoU((vptr_t)ptSlot, pptr_to_paddr(ptSlot));
-    invalidateTLBByASID(vspaceId);
+    invalidateTLBByVSpaceId(vspaceId);
 }
 
 void unmapPage(vm_page_size_t page_size, vspace_id_t vspaceId, vptr_t vptr, pptr_t pptr)
@@ -1079,9 +1079,9 @@ void deleteVSpaceId(vspace_id_t vspaceId, vspace_root_t *vspace)
         asid_map_t asid_map = poolPtr->array[VSPACE_ID_LOW(vspaceId)];
         if (asid_map_get_type(asid_map) == asid_map_asid_map_vspace &&
             (vspace_root_t *)asid_map_asid_map_vspace_get_vspace_root(asid_map) == vspace) {
-            invalidateTLBByASID(vspaceId);
+            invalidateTLBByVSpaceId(vspaceId);
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
-            invalidateASIDEntry(vspaceId);
+            invalidateVSpaceIdEntry(vspaceId);
 #endif
             poolPtr->array[VSPACE_ID_LOW(vspaceId)] = asid_map_asid_map_none_new();
             setVMRoot(NODE_STATE(ksCurThread));
@@ -1099,9 +1099,9 @@ void deleteVSpaceIdPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
         for (offset = 0; offset < BIT(vspaceIdLowBits); offset++) {
             asid_map_t asid_map = pool->array[offset];
             if (asid_map_get_type(asid_map) == asid_map_asid_map_vspace) {
-                invalidateTLBByASID(vspaceId_base + offset);
+                invalidateTLBByVSpaceId(vspaceId_base + offset);
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
-                invalidateASIDEntry(vspaceId_base + offset);
+                invalidateVSpaceIdEntry(vspaceId_base + offset);
 #endif
             }
         }

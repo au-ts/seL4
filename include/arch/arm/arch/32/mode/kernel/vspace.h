@@ -58,7 +58,7 @@ hw_asid_t findFreeHWASID(void);
 void flushPage(vm_page_size_t page_size, pde_t *pd, vspace_id_t vspaceId, word_t vptr);
 void flushTable(pde_t *pd, vspace_id_t vspaceId, word_t vptr, pte_t *pt);
 void flushSpace(vspace_id_t vspaceId);
-void invalidateTLBByASID(vspace_id_t vspaceId);
+void invalidateTLBByVSpaceId(vspace_id_t vspaceId);
 
 bool_t CONST isIOSpaceFrameCap(cap_t cap);
 
