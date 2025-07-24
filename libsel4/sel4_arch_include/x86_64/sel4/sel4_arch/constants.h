@@ -57,7 +57,7 @@
 #define seL4_LargePageBits      21
 #define seL4_HugePageBits       30
 #define seL4_NumVSpaceIdPoolsBits    3
-#define seL4_VspaceIdPoolBits       12
+#define seL4_VSpaceIdPoolBits       12
 #define seL4_VSpaceIdPoolIndexBits 9
 
 
@@ -71,7 +71,7 @@ SEL4_SIZE_SANITY(seL4_PageTableEntryBits, seL4_PageTableIndexBits, seL4_PageTabl
 SEL4_SIZE_SANITY(seL4_PageDirEntryBits, seL4_PageDirIndexBits, seL4_PageDirBits);
 SEL4_SIZE_SANITY(seL4_PDPTEntryBits, seL4_PDPTIndexBits, seL4_PDPTBits);
 SEL4_SIZE_SANITY(seL4_PML4EntryBits, seL4_PML4IndexBits, seL4_PML4Bits);
-SEL4_SIZE_SANITY(seL4_WordSizeBits, seL4_VSpaceIdPoolIndexBits, seL4_VspaceIdPoolBits);
+SEL4_SIZE_SANITY(seL4_WordSizeBits, seL4_VSpaceIdPoolIndexBits, seL4_VSpaceIdPoolBits);
 
 typedef enum {
     seL4_VMFault_IP,

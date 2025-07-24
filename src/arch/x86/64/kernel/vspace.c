@@ -486,7 +486,7 @@ void setVMRoot(tcb_t *tcb)
     }
 
     pml4 = PML4E_PTR(cap_pml4_cap_get_capPML4BasePtr(threadRoot));
-    vspaceId = cap_pml4_cap_get_capPML4MappedVspaceId(threadRoot);
+    vspaceId = cap_pml4_cap_get_capPML4MappedVSpaceId(threadRoot);
     find_ret = findVSpaceForVSpaceId(vspaceId);
     if (unlikely(find_ret.status != EXCEPTION_NONE || find_ret.vspace_root != pml4)) {
         setCurrentUserVSpaceRoot(kpptr_to_paddr(X86_GLOBAL_VSPACE_ROOT), (hw_asid_t){0});
@@ -698,7 +698,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
     slot_pos_before = ndks_boot.slot_pos_cur;
     copyGlobalMappings(PML4_PTR(rootserver.vspace));
     vspace_cap = cap_pml4_cap_new(
-                     IT_VSPACE_ID,        /* capPML4MappedVspaceId */
+                     IT_VSPACE_ID,        /* capPML4MappedVSpaceId */
                      rootserver.vspace,           /* capPML4BasePtr   */
                      1               /* capPML4IsMapped   */
                  );
@@ -804,14 +804,14 @@ exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *po
     asid_map_t asid_map;
 #ifdef CONFIG_VTX
     if (cap_get_capType(vspaceCapSlot->cap) == cap_ept_pml4_cap) {
-        cap_ept_pml4_cap_ptr_set_capPML4MappedVspaceId(&vspaceCapSlot->cap, asid);
+        cap_ept_pml4_cap_ptr_set_capPML4MappedVSpaceId(&vspaceCapSlot->cap, asid);
         cap_ept_pml4_cap_ptr_set_capPML4IsMapped(&vspaceCapSlot->cap, 1);
         asid_map = asid_map_asid_map_ept_new(cap_ept_pml4_cap_get_capPML4BasePtr(vspaceCapSlot->cap));
     } else
 #endif
     {
         assert(cap_get_capType(vspaceCapSlot->cap) == cap_pml4_cap);
-        cap_pml4_cap_ptr_set_capPML4MappedVspaceId(&vspaceCapSlot->cap, vspaceId);
+        cap_pml4_cap_ptr_set_capPML4MappedVSpaceId(&vspaceCapSlot->cap, vspaceId);
         cap_pml4_cap_ptr_set_capPML4IsMapped(&vspaceCapSlot->cap, 1);
         asid_map = asid_map_asid_map_vspace_new(cap_pml4_cap_get_capPML4BasePtr(vspaceCapSlot->cap));
     }
@@ -1065,7 +1065,7 @@ static void flushPDPT(vspace_root_t *vspace, word_t vptr, pdpte_t *pdpt, vspace_
     hwASIDInvalidate(vspaceId, vspace);
 }
 
-/* This function is named funny, it's basically only used from VspaceId pools (i.e software) */
+/* This function is named funny, it's basically only used from VSpaceId pools (i.e software) */
 void hwASIDInvalidate(vspace_id_t vspaceId, vspace_root_t *vspace)
 {
     /* invalidate the hw asid from the sw asid - ASID gets PCID and fixes up TLB map */

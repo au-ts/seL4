@@ -91,7 +91,7 @@ static inline vspace_id_t PURE cap_get_capMappedVSpaceId(cap_t cap)
 
 #ifdef CONFIG_VTX
     case cap_ept_pml4_cap:
-        return cap_ept_pml4_cap_get_capPML4MappedVspaceId(cap);
+        return cap_ept_pml4_cap_get_capPML4MappedVSpaceId(cap);
 #endif
 
     default:

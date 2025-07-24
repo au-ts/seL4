@@ -452,7 +452,7 @@
             <error name="seL4_DeleteFirst">
                 <description>
                     The destination slot contains a capability.
-                    Or, there are no more VspaceId pools available.
+                    Or, there are no more VSpaceId pools available.
                 </description>
             </error>
             <error name="seL4_FailedLookup">

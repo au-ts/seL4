@@ -41,7 +41,7 @@ block page_table_cap {
     field       capType             4
 }
 
--- Cap to the table of 1 VspaceId pool
+-- Cap to the table of 1 VSpaceId pool
 block vspace_id_control_cap {
     padding             32
 
@@ -49,12 +49,12 @@ block vspace_id_control_cap {
     field   capType     4
 }
 
--- Cap to a pool of 2^9 VspaceIds
+-- Cap to a pool of 2^9 VSpaceIds
 block vspace_id_pool_cap {
     padding                     23
     field       capVSpaceIdBase     9
 
-    field_high  capVspaceIdPool     28
+    field_high  capVSpaceIdPool     28
     field       capType         4
 }
 

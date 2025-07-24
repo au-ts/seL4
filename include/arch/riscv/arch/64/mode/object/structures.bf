@@ -46,7 +46,7 @@ block page_table_cap {
     field_high  capPTMappedAddress  39
 }
 
--- Cap to the table of 2^6 VspaceId pools
+-- Cap to the table of 2^6 VSpaceId pools
 block vspace_id_control_cap {
     padding 64
 
@@ -54,14 +54,14 @@ block vspace_id_control_cap {
     padding             59
 }
 
--- Cap to a pool of 2^10 VspaceIds
+-- Cap to a pool of 2^10 VSpaceIds
 block vspace_id_pool_cap {
     padding 64
 
     field       capType         5
     field       capVSpaceIdBase     16
     padding                     6
-    field_high  capVspaceIdPool     37
+    field_high  capVSpaceIdPool     37
 }
 
 -- NB: odd numbers are arch caps (see isArchCap())

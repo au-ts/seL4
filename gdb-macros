@@ -272,7 +272,7 @@ define disp_cap
       printf "Subtype: subcap_vspace_id_pool_cap\n"
       printf "capVSpaceIdBase: %x\n", $cap.words[1] & 0xffff
       printf "capType: %x\n", ($cap.words[0] >> 28) & 0xf
-      printf "capVspaceIdPool %x\n", ($cap.words[0] << 12)
+      printf "capVSpaceIdPool %x\n", ($cap.words[0] << 12)
     end
 
     if( $subtype == subcap_io_port_cap )

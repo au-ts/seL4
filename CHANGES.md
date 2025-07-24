@@ -678,7 +678,7 @@ description indicates whether it is SOURCE-COMPATIBLE, BINARY-COMPATIBLE, or BRE
   - Pass all non-VM faults as user exceptions.
 * arm-hyp: pass ESR in handleUserLevelFault
 * aarch64: return ESR as part of user level fault
-* Created new seL4_nbASIDPoolsBits constant to keep track of max nb of VspaceId pools.
+* Created new seL4_nbASIDPoolsBits constant to keep track of max nb of VSpaceId pools.
 * Support added for Hardkernel ODROID-C2.
 * Added extended bootinfo header for device tree (SEL4_BOOTINFO_HEADER_FDT).
 * Support added for passing a device tree from the bootloader to the root task on ARM.

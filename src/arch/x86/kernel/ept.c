@@ -319,7 +319,7 @@ static exception_t decodeX86EPTPDPTInvocation(
     }
 
     pml4 = (ept_pml4e_t *)cap_ept_pml4_cap_get_capPML4BasePtr(pml4Cap);
-    vspaceId = cap_ept_pml4_cap_get_capPML4MappedVspaceId(pml4Cap);
+    vspaceId = cap_ept_pml4_cap_get_capPML4MappedVSpaceId(pml4Cap);
 
     find_ret = findEPTForVSpaceId(asid);
     if (find_ret.status != EXCEPTION_NONE) {
@@ -520,7 +520,7 @@ exception_t decodeX86EPTPDInvocation(
     }
 
     pml4 = (ept_pml4e_t *)cap_ept_pml4_cap_get_capPML4BasePtr(pml4Cap);
-    vspaceId = cap_ept_pml4_cap_get_capPML4MappedVspaceId(pml4Cap);
+    vspaceId = cap_ept_pml4_cap_get_capPML4MappedVSpaceId(pml4Cap);
 
     find_ret = findEPTForVSpaceId(asid);
     if (find_ret.status != EXCEPTION_NONE) {
@@ -708,7 +708,7 @@ exception_t decodeX86EPTPTInvocation(
     }
 
     pml4 = (ept_pml4e_t *)(cap_ept_pml4_cap_get_capPML4BasePtr(pml4Cap));
-    vspaceId = cap_ept_pml4_cap_get_capPML4MappedVspaceId(pml4Cap);
+    vspaceId = cap_ept_pml4_cap_get_capPML4MappedVSpaceId(pml4Cap);
 
     find_ret = findEPTForVSpaceId(asid);
     if (find_ret.status != EXCEPTION_NONE) {
@@ -828,7 +828,7 @@ exception_t decodeX86EPTPageMap(
     }
 
     pml4 = (ept_pml4e_t *)(cap_ept_pml4_cap_get_capPML4BasePtr(pml4Cap));
-    vspaceId = cap_ept_pml4_cap_get_capPML4MappedVspaceId(pml4Cap);
+    vspaceId = cap_ept_pml4_cap_get_capPML4MappedVSpaceId(pml4Cap);
 
     findEPTForVSpaceId_ret_t find_ret = findEPTForVSpaceId(asid);
     if (find_ret.status != EXCEPTION_NONE) {

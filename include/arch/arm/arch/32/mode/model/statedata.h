@@ -12,7 +12,7 @@
 #include <util.h>
 #include <object/structures.h>
 
-extern vspace_id_pool_t *armKSVspaceIdTable[BIT(vspaceIdHighBits)] VISIBLE;
+extern vspace_id_pool_t *armKSVSpaceIdTable[BIT(vspaceIdHighBits)] VISIBLE;
 /* map from hw_asid_t -> vspace_id_t */
 extern vspace_id_t armKSHWASIDTable[BIT(hwASIDBits)] VISIBLE;
 extern hw_asid_t armKSNextASID VISIBLE;

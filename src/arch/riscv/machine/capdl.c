@@ -153,7 +153,7 @@ void print_cap_arch(cap_t cap)
         break;
     }
     case cap_vspace_id_pool_cap: {
-        printf("%p_asid_pool\n", (void *)cap_vspace_id_pool_cap_get_capVspaceIdPool(cap));
+        printf("%p_asid_pool\n", (void *)cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap));
         break;
     }
     /* riscv specific caps */
@@ -180,7 +180,7 @@ void print_object_arch(cap_t cap)
 
     case cap_vspace_id_pool_cap: {
         printf("%p_asid_pool = asid_pool ",
-               (void *)cap_vspace_id_pool_cap_get_capVspaceIdPool(cap));
+               (void *)cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap));
         obj_asidpool_print_attrs(cap);
         break;
     }

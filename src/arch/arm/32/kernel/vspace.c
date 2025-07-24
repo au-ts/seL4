@@ -592,7 +592,7 @@ BOOT_CODE void write_it_asid_pool(cap_t it_ap_cap, cap_t it_pd_cap)
 {
     vspace_id_pool_t *ap = VSPACE_ID_POOL_PTR(pptr_of_cap(it_ap_cap));
     ap->array[VSPACE_ID_LOW(IT_VSPACE_ID)] = PDE_PTR(pptr_of_cap(it_pd_cap));
-    armKSVspaceIdTable[VSPACE_ID_HIGH(IT_VSPACE_ID)] = ap;
+    armKSVSpaceIdTable[VSPACE_ID_HIGH(IT_VSPACE_ID)] = ap;
 }
 
 /* ==================== BOOT CODE FINISHES HERE ==================== */
@@ -603,7 +603,7 @@ findVSpaceForVSpaceId_ret_t findVSpaceForVSpaceId(vspace_id_t vspaceId)
     vspace_id_pool_t *poolPtr;
     pde_t *pd;
 
-    poolPtr = armKSVspaceIdTable[VSPACE_ID_HIGH(vspaceId)];
+    poolPtr = armKSVSpaceIdTable[VSPACE_ID_HIGH(vspaceId)];
     if (unlikely(!poolPtr)) {
         current_lookup_fault = lookup_fault_invalid_root_new();
 
@@ -1075,7 +1075,7 @@ static void invalidateASID(vspace_id_t vspaceId)
     vspace_id_pool_t *asidPool;
     pde_t *pd;
 
-    asidPool = armKSVspaceIdTable[VSPACE_ID_HIGH(vspaceId)];
+    asidPool = armKSVSpaceIdTable[VSPACE_ID_HIGH(vspaceId)];
     assert(asidPool);
 
     pd = asidPool->array[VSPACE_ID_LOW(vspaceId)];
@@ -1089,7 +1089,7 @@ static pde_t PURE loadHWASID(vspace_id_t vspaceId)
     vspace_id_pool_t *asidPool;
     pde_t *pd;
 
-    asidPool = armKSVspaceIdTable[VSPACE_ID_HIGH(vspaceId)];
+    asidPool = armKSVSpaceIdTable[VSPACE_ID_HIGH(vspaceId)];
     assert(asidPool);
 
     pd = asidPool->array[VSPACE_ID_LOW(vspaceId)];
@@ -1103,7 +1103,7 @@ static void storeHWASID(vspace_id_t vspaceId, hw_asid_t hw_asid)
     vspace_id_pool_t *asidPool;
     pde_t *pd;
 
-    asidPool = armKSVspaceIdTable[VSPACE_ID_HIGH(vspaceId)];
+    asidPool = armKSVSpaceIdTable[VSPACE_ID_HIGH(vspaceId)];
     assert(asidPool);
 
     pd = asidPool->array[VSPACE_ID_LOW(vspaceId)];
@@ -1275,21 +1275,21 @@ exception_t handleVMFault(tcb_t *thread, vm_fault_type_t vm_faultType)
     }
 }
 
-void deleteVspaceIdPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
+void deleteVSpaceIdPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
 {
     unsigned int offset;
 
     /* Haskell error: "ASID pool's base must be aligned" */
     assert((vspaceId_base & MASK(vspaceIdLowBits)) == 0);
 
-    if (armKSVspaceIdTable[vspaceId_base >> vspaceIdLowBits] == pool) {
+    if (armKSVSpaceIdTable[vspaceId_base >> vspaceIdLowBits] == pool) {
         for (offset = 0; offset < BIT(vspaceIdLowBits); offset++) {
             if (pool->array[offset]) {
                 flushSpace(vspaceId_base + offset);
                 invalidateASIDEntry(vspaceId_base + offset);
             }
         }
-        armKSVspaceIdTable[vspaceId_base >> vspaceIdLowBits] = NULL;
+        armKSVSpaceIdTable[vspaceId_base >> vspaceIdLowBits] = NULL;
         setVMRoot(NODE_STATE(ksCurThread));
     }
 }
@@ -1298,7 +1298,7 @@ void deleteVSpaceId(vspace_id_t vspaceId, pde_t *pd)
 {
     vspace_id_pool_t *poolPtr;
 
-    poolPtr = armKSVspaceIdTable[VSPACE_ID_HIGH(vspaceId)];
+    poolPtr = armKSVSpaceIdTable[VSPACE_ID_HIGH(vspaceId)];
 
     if (poolPtr != NULL && poolPtr->array[VSPACE_ID_LOW(vspaceId)] == pd) {
         flushSpace(vspaceId);
@@ -1991,7 +1991,7 @@ static exception_t performASIDControlInvocation(void *frame, cte_t *slot,
               parent, slot);
     /* Haskell error: "ASID pool's base must be aligned" */
     assert((vspaceId_base & MASK(vspaceIdLowBits)) == 0);
-    armKSVspaceIdTable[vspaceId_base >> vspaceIdLowBits] = (vspace_id_pool_t *)frame;
+    armKSVSpaceIdTable[vspaceId_base >> vspaceIdLowBits] = (vspace_id_pool_t *)frame;
 
     return EXCEPTION_NONE;
 }
@@ -2544,7 +2544,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
         root = current_extra_caps.excaprefs[1]->cap;
 
         /* Find first free pool */
-        for (i = 0; i < nVSpaceIdPools && armKSVspaceIdTable[i]; i++);
+        for (i = 0; i < nVSpaceIdPools && armKSVSpaceIdTable[i]; i++);
 
         if (unlikely(i == nVSpaceIdPools)) {
             userError("ASIDControlMakePool: No unallocated pools found.");
@@ -2557,7 +2557,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
 
         if (unlikely(cap_get_capType(untyped) != cap_untyped_cap ||
                      cap_untyped_cap_get_capBlockSize(untyped) !=
-                     seL4_VspaceIdPoolBits || cap_untyped_cap_get_capIsDevice(untyped))) {
+                     seL4_VSpaceIdPoolBits || cap_untyped_cap_get_capIsDevice(untyped))) {
             userError("ASIDControlMakePool: Invalid untyped cap.");
             current_syscall_error.type = seL4_InvalidCapability;
             current_syscall_error.invalidCapNumber = 1;
@@ -2625,7 +2625,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        pool = armKSVspaceIdTable[cap_vspace_id_pool_cap_get_capVSpaceIdBase(cap) >>
+        pool = armKSVSpaceIdTable[cap_vspace_id_pool_cap_get_capVSpaceIdBase(cap) >>
                                                                      vspaceIdLowBits];
         if (unlikely(!pool)) {
             userError("ASIDPoolAssign: Failed to lookup pool.");
@@ -2636,7 +2636,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        if (unlikely(pool != VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVspaceIdPool(cap)))) {
+        if (unlikely(pool != VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap)))) {
             userError("ASIDPoolAssign: Failed to lookup pool.");
             current_syscall_error.type = seL4_InvalidCapability;
             current_syscall_error.invalidCapNumber = 0;

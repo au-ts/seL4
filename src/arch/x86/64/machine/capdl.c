@@ -213,7 +213,7 @@ static void _cap_frame_print_attrs_vptr(word_t vptr, vspace_root_t *vspace)
 
 static void cap_frame_print_attrs_vptr(word_t vptr, cap_t vspace)
 {
-    vspace_id_t vspaceId = cap_pml4_cap_get_capPML4MappedVspaceId(vspace);
+    vspace_id_t vspaceId = cap_pml4_cap_get_capPML4MappedVSpaceId(vspace);
     findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
     _cap_frame_print_attrs_vptr(vptr, find_ret.vspace_root);
 }
@@ -259,7 +259,7 @@ void print_cap_arch(cap_t cap)
         break;
     }
     case cap_pml4_cap: {
-        vspace_id_t vspaceId = cap_pml4_cap_get_capPML4MappedVspaceId(cap);
+        vspace_id_t vspaceId = cap_pml4_cap_get_capPML4MappedVSpaceId(cap);
         findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
         if (vspaceId != vspaceIdInvalid) {
             printf("%p_pd (vspaceId: %lu)\n",
@@ -282,7 +282,7 @@ void print_cap_arch(cap_t cap)
         break;
     }
     case cap_vspace_id_pool_cap: {
-        printf("%p_asid_pool\n", (void *)cap_vspace_id_pool_cap_get_capVspaceIdPool(cap));
+        printf("%p_asid_pool\n", (void *)cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap));
         break;
     }
 #ifdef CONFIG_VTX
@@ -334,7 +334,7 @@ void print_object_arch(cap_t cap)
 
     case cap_vspace_id_pool_cap: {
         printf("%p_asid_pool = asid_pool ",
-               (void *)cap_vspace_id_pool_cap_get_capVspaceIdPool(cap));
+               (void *)cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap));
         obj_asidpool_print_attrs(cap);
         break;
     }

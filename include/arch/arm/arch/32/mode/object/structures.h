@@ -281,7 +281,7 @@ static inline word_t CONST cap_get_archCapSizeBits(cap_t cap)
         return seL4_PageDirBits;
 
     case cap_vspace_id_pool_cap:
-        return seL4_VspaceIdPoolBits;
+        return seL4_VSpaceIdPoolBits;
 
     case cap_vspace_id_control_cap:
         return 0;
@@ -370,7 +370,7 @@ static inline void *CONST cap_get_archCapPtr(cap_t cap)
         return PD_PTR(cap_page_directory_cap_get_capPDBasePtr(cap));
 
     case cap_vspace_id_pool_cap:
-        return VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVspaceIdPool(cap));
+        return VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap));
 
     case cap_vspace_id_control_cap:
         return NULL;

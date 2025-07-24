@@ -42,7 +42,7 @@
 
 #define seL4_NumVSpaceIdPoolsBits   7
 #define seL4_VSpaceIdPoolIndexBits  9
-#define seL4_VspaceIdPoolBits       12
+#define seL4_VSpaceIdPoolBits       12
 
 /* Untyped size limits */
 #define seL4_MinUntypedBits     4

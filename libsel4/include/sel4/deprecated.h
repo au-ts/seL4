@@ -13,7 +13,7 @@
 #include <sel4/sel4_arch/deprecated.h>
 
 /* XXX: DEPRECATED */
-#define seL4_ASIDPoolBits seL4_VspaceIdPoolBits
+#define seL4_ASIDPoolBits seL4_VSpaceIdPoolBits
 #define seL4_NumASIDPoolsBits seL4_NumVSpaceIdPoolsBits
 #define seL4_ASIDPoolIndexBits seL4_VSpaceIdPoolIndexBits
 

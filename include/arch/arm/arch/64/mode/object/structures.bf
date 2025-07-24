@@ -59,7 +59,7 @@ block vspace_cap {
 #endif
 }
 
--- Cap to the table of 2^7 VspaceId pools
+-- Cap to the table of 2^7 VSpaceId pools
 block vspace_id_control_cap {
     padding                          64
 
@@ -74,7 +74,7 @@ block vspace_id_pool_cap {
     field capType                   5
     field capVSpaceIdBase               16
     padding                         6
-    field_high capVspaceIdPool          37
+    field_high capVSpaceIdPool          37
 }
 
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT

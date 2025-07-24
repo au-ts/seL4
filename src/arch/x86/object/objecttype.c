@@ -204,9 +204,9 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
 
     case cap_vspace_id_pool_cap:
         if (final) {
-            deleteVspaceIdPool(
+            deleteVSpaceIdPool(
                 cap_vspace_id_pool_cap_get_capVSpaceIdBase(cap),
-                VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVspaceIdPool(cap))
+                VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap))
             );
         }
         break;
@@ -247,7 +247,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
         break;
     case cap_ept_pml4_cap:
         if (final && cap_ept_pml4_cap_get_capPML4IsMapped(cap)) {
-            deleteEPTASID(cap_ept_pml4_cap_get_capPML4MappedVspaceId(cap),
+            deleteEPTASID(cap_ept_pml4_cap_get_capPML4MappedVSpaceId(cap),
                           (ept_pml4e_t *)cap_ept_pml4_cap_get_capPML4BasePtr(cap));
         }
         break;
@@ -325,8 +325,8 @@ bool_t CONST Arch_sameRegionAs(cap_t cap_a, cap_t cap_b)
 
     case cap_vspace_id_pool_cap:
         if (cap_get_capType(cap_b) == cap_vspace_id_pool_cap) {
-            return cap_vspace_id_pool_cap_get_capVspaceIdPool(cap_a) ==
-                   cap_vspace_id_pool_cap_get_capVspaceIdPool(cap_b);
+            return cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap_a) ==
+                   cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap_b);
         }
         break;
 
@@ -469,7 +469,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
     case seL4_X86_EPTPML4Object:
         return cap_ept_pml4_cap_new(
                    0,                  /* capPML4IsMapped      */
-                   VPID_INVALID,       /* capPML4MappedVspaceId    */
+                   VPID_INVALID,       /* capPML4MappedVSpaceId    */
                    (word_t)regionBase  /* capPML4BasePtr       */
                );
     case seL4_X86_EPTPDPTObject:

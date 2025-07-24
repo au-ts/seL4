@@ -21,7 +21,7 @@ bool_t CONST isValidNativeRoot(cap_t cap);
 void unmapPageTable(vspace_id_t vspaceId, vptr_t vaddr, pte_t *pt);
 void unmapPage(vm_page_size_t page_size, vspace_id_t vspaceId, vptr_t vptr, pptr_t pptr);
 
-void deleteVspaceIdPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool);
+void deleteVSpaceIdPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool);
 void deleteVSpaceId(vspace_id_t vspaceId, vspace_root_t *vspace);
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
 hw_asid_t getHWASID(vspace_id_t vspaceId);

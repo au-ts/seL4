@@ -440,7 +440,7 @@ exception_t handleVMFault(tcb_t *thread, vm_fault_type_t vm_faultType)
     }
 }
 
-void deleteVspaceIdPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
+void deleteVSpaceIdPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
 {
     /* Haskell error: "ASID pool's base must be aligned" */
     assert(IS_ALIGNED(vspaceId_base, vspaceIdLowBits));
@@ -465,7 +465,7 @@ static exception_t performASIDControlInvocation(void *frame, cte_t *slot, cte_t 
     cteInsert(
         cap_vspace_id_pool_cap_new(
             vspace_id_base,          /* capVSpaceIdBase  */
-            WORD_REF(frame)     /* capVspaceIdPool  */
+            WORD_REF(frame)     /* capVSpaceIdPool  */
         ),
         parent,
         slot
@@ -993,7 +993,7 @@ exception_t decodeRISCVMMUInvocation(word_t label, word_t length, cptr_t cptr,
         vspace_id_base = i << vspaceIdLowBits;
 
         if (cap_get_capType(untyped) != cap_untyped_cap ||
-            cap_untyped_cap_get_capBlockSize(untyped) != seL4_VspaceIdPoolBits ||
+            cap_untyped_cap_get_capBlockSize(untyped) != seL4_VSpaceIdPoolBits ||
             cap_untyped_cap_get_capIsDevice(untyped)) {
             current_syscall_error.type = seL4_InvalidCapability;
             current_syscall_error.invalidCapNumber = 1;
@@ -1062,7 +1062,7 @@ exception_t decodeRISCVMMUInvocation(word_t label, word_t length, cptr_t cptr,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        if (pool != VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVspaceIdPool(cap))) {
+        if (pool != VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap))) {
             current_syscall_error.type = seL4_InvalidCapability;
             current_syscall_error.invalidCapNumber = 0;
             return EXCEPTION_SYSCALL_ERROR;

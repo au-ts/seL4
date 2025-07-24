@@ -55,20 +55,20 @@ block page_directory_cap {
     field       capType             4
 }
 
--- Cap to the table of 2^6 VspaceId pools
+-- Cap to the table of 2^6 VSpaceId pools
 block vspace_id_control_cap {
     padding             32
     padding             28
     field   capType     4
 }
 
--- Cap to a pool of 2^10 VspaceIds
+-- Cap to a pool of 2^10 VSpaceIds
 block vspace_id_pool_cap {
     padding                     20
     field       capVSpaceIdBase     12
 
     padding                     8
-    field_high  capVspaceIdPool     20
+    field_high  capVSpaceIdPool     20
     field       capType         4
 }
 
@@ -174,7 +174,7 @@ block ept_pdpt_cap {
 block ept_pml4_cap {
     padding                         15
     field       capPML4IsMapped     1
-    field       capPML4MappedVspaceId   16
+    field       capPML4MappedVSpaceId   16
 
     field_high  capPML4BasePtr      20
     padding                         4

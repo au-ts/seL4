@@ -48,7 +48,7 @@ void copyGlobalMappings(pde_t *newPD);
 findVSpaceForVSpaceId_ret_t findVSpaceForVSpaceId(vspace_id_t asid);
 lookupPTSlot_ret_t lookupPTSlot(pde_t *pd, vptr_t vptr);
 pde_t *CONST lookupPDSlot(pde_t *pd, vptr_t vptr);
-void deleteVspaceIdPool(vspace_id_t base, vspace_id_pool_t *pool);
+void deleteVSpaceIdPool(vspace_id_t base, vspace_id_pool_t *pool);
 void deleteVSpaceId(vspace_id_t vspaceId, pde_t *pd);
 pde_t *pageTableMapped(vspace_id_t vspaceId, vptr_t vaddr, pte_t *pt);
 void unmapPageTable(vspace_id_t vspaceId, vptr_t vaddr, pte_t *pt);

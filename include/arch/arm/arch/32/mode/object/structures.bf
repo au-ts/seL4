@@ -89,7 +89,7 @@ block vspace_id_pool_cap {
     padding                15
     field capVSpaceIdBase      17
 
-    field_high capVspaceIdPool 28
+    field_high capVSpaceIdPool 28
     field capType          4
 }
 

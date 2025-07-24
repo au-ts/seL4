@@ -83,7 +83,7 @@ finaliseCap_ret_t Mode_finaliseCap(cap_t cap, bool_t final)
     case cap_pml4_cap:
         if (final && cap_pml4_cap_get_capPML4IsMapped(cap)) {
             deleteVSpaceId(
-                cap_pml4_cap_get_capPML4MappedVspaceId(cap),
+                cap_pml4_cap_get_capPML4MappedVSpaceId(cap),
                 PML4E_PTR(cap_pml4_cap_get_capPML4BasePtr(cap))
             );
         }
@@ -288,7 +288,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
               (Ptr (ptr_val \<acute>regionBase) :: (pml4e_C[512]) ptr))" */
         copyGlobalMappings(PML4_PTR(regionBase));
         return cap_pml4_cap_new(
-                   vspaceIdInvalid,                /* capPML4MappedVspaceId   */
+                   vspaceIdInvalid,                /* capPML4MappedVSpaceId   */
                    (word_t)regionBase,         /* capPML4BasePtr      */
                    0                           /* capPML4IsMapped     */
                );
