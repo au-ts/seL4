@@ -69,7 +69,7 @@ cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_reg);
 
 bool_t isVTableRoot(cap_t cap);
 
-asid_map_t findMapForASID(vspace_id_t vspaceId);
+asid_map_t findHWASIDMapForVSpaceId(vspace_id_t vspaceId);
 
 lookupPTSlot_ret_t lookupPTSlot(vspace_root_t *vspace, vptr_t vptr);
 lookupPDSlot_ret_t lookupPDSlot(vspace_root_t *vspace, vptr_t vptr);

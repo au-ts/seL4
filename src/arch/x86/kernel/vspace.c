@@ -535,7 +535,7 @@ BOOT_CODE void write_it_asid_pool(cap_t it_ap_cap, cap_t it_vspace_cap)
     x86KSVSpaceIdTable[VSPACE_ID_HIGH(IT_VSPACE_ID)] = ap;
 }
 
-asid_map_t findMapForASID(vspace_id_t vspaceId)
+asid_map_t findHWASIDMapForVSpaceId(vspace_id_t vspaceId)
 {
     vspace_id_pool_t        *poolPtr;
 
@@ -552,7 +552,7 @@ findVSpaceForVSpaceId_ret_t findVSpaceForVSpaceId(vspace_id_t vspaceId)
     findVSpaceForVSpaceId_ret_t ret;
     asid_map_t asid_map;
 
-    asid_map = findMapForASID(vspaceId);
+    asid_map = findHWASIDMapForVSpaceId(vspaceId);
     if (asid_map_get_type(asid_map) != asid_map_asid_map_vspace) {
         current_lookup_fault = lookup_fault_invalid_root_new();
 

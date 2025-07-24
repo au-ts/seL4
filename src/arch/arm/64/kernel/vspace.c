@@ -573,7 +573,7 @@ BOOT_CODE void write_it_asid_pool(cap_t it_ap_cap, cap_t it_vspace_cap)
 
 /* ==================== BOOT CODE FINISHES HERE ==================== */
 
-asid_map_t findMapForASID(vspace_id_t vspaceId)
+asid_map_t findHWASIDMapForVSpaceId(vspace_id_t vspaceId)
 {
     vspace_id_pool_t *poolPtr;
 
@@ -590,7 +590,7 @@ static findVSpaceForVSpaceId_ret_t findVSpaceForVSpaceId(vspace_id_t vspaceId)
     findVSpaceForVSpaceId_ret_t ret;
     asid_map_t asid_map;
 
-    asid_map = findMapForASID(vspaceId);
+    asid_map = findHWASIDMapForVSpaceId(vspaceId);
     if (asid_map_get_type(asid_map) != asid_map_asid_map_vspace) {
         current_lookup_fault = lookup_fault_invalid_root_new();
 
@@ -891,7 +891,7 @@ hw_asid_t getHWASID(vspace_id_t vspaceId)
 {
     asid_map_t asid_map;
 
-    asid_map = findMapForASID(asid);
+    asid_map = findHWASIDMapForVSpaceId(asid);
     if (asid_map_asid_map_vspace_get_stored_vmid_valid(asid_map)) {
         return asid_map_asid_map_vspace_get_stored_hw_vmid(asid_map);
     } else {
@@ -907,7 +907,7 @@ static void invalidateVSpaceIdEntry(vspace_id_t vspaceId)
 {
     asid_map_t asid_map;
 
-    asid_map = findMapForASID(asid);
+    asid_map = findHWASIDMapForVSpaceId(asid);
     if (asid_map_asid_map_vspace_get_stored_vmid_valid(asid_map)) {
         armKSHWASIDTable[asid_map_asid_map_vspace_get_stored_hw_vmid(asid_map)] =
             vspaceIdInvalid;
@@ -969,7 +969,7 @@ static inline void invalidateTLBByVSpaceId(vspace_id_t vspaceId)
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
     asid_map_t asid_map;
 
-    asid_map = findMapForASID(vspaceId);
+    asid_map = findHWASIDMapForVSpaceId(vspaceId);
     if (!asid_map_asid_map_vspace_get_stored_vmid_valid(asid_map)) {
         return;
     }
@@ -991,7 +991,7 @@ static inline void invalidateTLBByASIDVA(vspace_id_t vspaceId, vptr_t vaddr)
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
     asid_map_t asid_map;
 
-    asid_map = findMapForASID(vspaceId);
+    asid_map = findHWASIDMapForVSpaceId(vspaceId);
     if (!asid_map_asid_map_vspace_get_stored_vmid_valid(asid_map)) {
         return;
     }

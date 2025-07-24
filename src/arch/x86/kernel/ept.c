@@ -74,7 +74,7 @@ findEPTForVSpaceId_ret_t findEPTForVSpaceId(vspace_id_t vspaceId)
     findEPTForVSpaceId_ret_t ret;
     asid_map_t asid_map;
 
-    asid_map = findMapForASID(asid);
+    asid_map = findHWASIDMapForVSpaceId(asid);
     if (asid_map_get_type(asid_map) != asid_map_asid_map_ept) {
         current_lookup_fault = lookup_fault_invalid_root_new();
 

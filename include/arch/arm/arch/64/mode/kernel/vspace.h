@@ -28,7 +28,7 @@ hw_asid_t getHWASID(vspace_id_t vspaceId);
 #endif
 
 // rename
-asid_map_t findMapForASID(vspace_id_t vspaceId);
+asid_map_t findHWASIDMapForVSpaceId(vspace_id_t vspaceId);
 
 #ifdef __clang__
 static const region_t BOOT_RODATA mode_reserved_region[] = {};
