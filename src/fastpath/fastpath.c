@@ -97,7 +97,7 @@ void NORETURN fastpath_call(word_t cptr, word_t msgInfo)
 #endif
 #ifdef CONFIG_ARCH_AARCH64
     /* Need to test that the ASID is still valid */
-    vspace_id_t vspaceId = cap_vspace_cap_get_capVSMappedASID(newVTable);
+    vspace_id_t vspaceId = cap_vspace_cap_get_capVSMappedVSpaceId(newVTable);
     asid_map_t asid_map = findMapForASID(vspaceId);
     if (unlikely(asid_map_get_type(asid_map) != asid_map_asid_map_vspace ||
                  VSPACE_PTR(asid_map_asid_map_vspace_get_vspace_root(asid_map)) != cap_pd)) {
@@ -118,7 +118,7 @@ void NORETURN fastpath_call(word_t cptr, word_t msgInfo)
 
 #ifdef CONFIG_ARCH_RISCV
     /* Get HW(???) ASID */
-    stored_hw_asid.words[0] = (hw_asid_t){cap_page_table_cap_get_capPTMappedASID(newVTable)}.v;
+    stored_hw_asid.words[0] = (hw_asid_t){cap_page_table_cap_get_capPTMappedVSpaceId(newVTable)}.v;
 #endif
 
     /* let gcc optimise this out for 1 domain */
@@ -375,7 +375,7 @@ void NORETURN fastpath_reply_recv(word_t cptr, word_t msgInfo)
 #endif
 #ifdef CONFIG_ARCH_AARCH64
     /* Need to test that the ASID is still valid */
-    vspace_id_t vspaceId = cap_vspace_cap_get_capVSMappedASID(newVTable);
+    vspace_id_t vspaceId = cap_vspace_cap_get_capVSMappedVSpaceId(newVTable);
     asid_map_t asid_map = findMapForASID(vspaceId);
     if (unlikely(asid_map_get_type(asid_map) != asid_map_asid_map_vspace ||
                  VSPACE_PTR(asid_map_asid_map_vspace_get_vspace_root(asid_map)) != cap_pd)) {
@@ -395,7 +395,7 @@ void NORETURN fastpath_reply_recv(word_t cptr, word_t msgInfo)
 #endif
 
 #ifdef CONFIG_ARCH_RISCV
-    stored_hw_asid.words[0] = cap_page_table_cap_get_capPTMappedASID(newVTable);
+    stored_hw_asid.words[0] = cap_page_table_cap_get_capPTMappedVSpaceId(newVTable);
 #endif
 
     /* Ensure the original caller can be scheduled directly. */
@@ -775,7 +775,7 @@ void NORETURN fastpath_vm_fault(vm_fault_type_t type)
 
 #ifdef CONFIG_ARCH_AARCH64
     /* Need to test that the ASID is still valid */
-    vspace_id_t vspaceId = cap_vspace_cap_get_capVSMappedASID(newVTable);
+    vspace_id_t vspaceId = cap_vspace_cap_get_capVSMappedVSpaceId(newVTable);
     asid_map_t asid_map = findMapForASID(asid);
     if (unlikely(asid_map_get_type(asid_map) != asid_map_asid_map_vspace ||
                  VSPACE_PTR(asid_map_asid_map_vspace_get_vspace_root(asid_map)) != cap_pd)) {

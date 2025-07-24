@@ -34,7 +34,7 @@ block frame_cap {
 
 -- Page table caps
 block page_table_cap {
-    field capPTMappedASID            16
+    field capPTMappedVSpaceId            16
     field_high capPTBasePtr          48
 
     field capType                    5
@@ -46,7 +46,7 @@ block page_table_cap {
 
 -- First-level page table (vspace_root)
 block vspace_cap {
-    field capVSMappedASID            16
+    field capVSMappedVSpaceId            16
     field_high capVSBasePtr          48
 
     field capType                    5

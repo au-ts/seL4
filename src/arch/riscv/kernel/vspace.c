@@ -240,7 +240,7 @@ static BOOT_CODE cap_t create_it_pt_cap(cap_t vspace_cap, pptr_t pptr, vptr_t vp
 {
     cap_t cap;
     cap = cap_page_table_cap_new(
-              vspaceId,   /* capPTMappedASID      */
+              vspaceId,   /* capPTMappedVSpaceId      */
               pptr,   /* capPTBasePtr         */
               1,      /* capPTIsMapped        */
               vptr    /* capPTMappedAddress   */
@@ -270,7 +270,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
 
     lvl1pt_cap =
         cap_page_table_cap_new(
-            IT_ASID,               /* capPTMappedASID    */
+            IT_ASID,               /* capPTMappedVSpaceId    */
             (word_t) rootserver.vspace,  /* capPTBasePtr       */
             1,                     /* capPTIsMapped      */
             (word_t) rootserver.vspace   /* capPTMappedAddress */
@@ -482,7 +482,7 @@ static exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace_id_poo
 {
     cap_t cap = vspaceCapSlot->cap;
     pte_t *regionBase = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
-    cap = cap_page_table_cap_set_capPTMappedASID(cap, vspaceId);
+    cap = cap_page_table_cap_set_capPTMappedVSpaceId(cap, vspaceId);
     cap = cap_page_table_cap_set_capPTMappedAddress(cap, 0);
     cap = cap_page_table_cap_set_capPTIsMapped(cap, 1);
     vspaceCapSlot->cap = cap;
@@ -596,7 +596,7 @@ void setVMRoot(tcb_t *tcb)
 
     lvl1pt = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(threadRoot));
 
-    vspaceId = cap_page_table_cap_get_capPTMappedASID(threadRoot);
+    vspaceId = cap_page_table_cap_get_capPTMappedVSpaceId(threadRoot);
     find_ret = findVSpaceForVSpaceId(vspaceId);
     if (unlikely(find_ret.status != EXCEPTION_NONE || find_ret.vspace_root != lvl1pt)) {
         setVSpaceRoot(kpptr_to_paddr(&kernel_root_pageTable), (hw_asid_t){0});
@@ -697,7 +697,7 @@ static exception_t decodeRISCVPageTableInvocation(word_t label, word_t length,
         }
         /* Ensure that if the page table is mapped, it is not a top level table */
         if (likely(cap_page_table_cap_get_capPTIsMapped(cap))) {
-            vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedASID(cap);
+            vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceId(cap);
             findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
             pte_t *pte = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
             if (unlikely(find_ret.status == EXCEPTION_NONE &&
@@ -743,7 +743,7 @@ static exception_t decodeRISCVPageTableInvocation(word_t label, word_t length,
     }
 
     pte_t *lvl1pt = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(lvl1ptCap));
-    vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedASID(lvl1ptCap);
+    vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceId(lvl1ptCap);
 
     if (unlikely(vaddr >= USER_TOP)) {
         userError("RISCVPageTableMap: Virtual address cannot be in kernel window.");
@@ -797,7 +797,7 @@ static exception_t decodeRISCVPageTableInvocation(word_t label, word_t length,
                        );
 
     cap = cap_page_table_cap_set_capPTIsMapped(cap, 1);
-    cap = cap_page_table_cap_set_capPTMappedASID(cap, vspaceId);
+    cap = cap_page_table_cap_set_capPTMappedVSpaceId(cap, vspaceId);
     cap = cap_page_table_cap_set_capPTMappedAddress(cap, (vaddr & ~MASK(lu_ret.ptBitsLeft)));
 
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
@@ -832,7 +832,7 @@ static exception_t decodeRISCVFrameInvocation(word_t label, word_t length,
         }
 
         pte_t *lvl1pt = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(lvl1ptCap));
-        vspace_id_t page_table_vspace_id = cap_page_table_cap_get_capPTMappedASID(lvl1ptCap);
+        vspace_id_t page_table_vspace_id = cap_page_table_cap_get_capPTMappedVSpaceId(lvl1ptCap);
 
         findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(page_table_vspace_id);
         if (unlikely(find_ret.status != EXCEPTION_NONE)) {
@@ -1104,7 +1104,7 @@ exception_t performPageTableInvocationUnmap(cap_t cap, cte_t *ctSlot)
     if (cap_page_table_cap_get_capPTIsMapped(cap)) {
         pte_t *pt = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
         unmapPageTable(
-            cap_page_table_cap_get_capPTMappedASID(cap),
+            cap_page_table_cap_get_capPTMappedVSpaceId(cap),
             cap_page_table_cap_get_capPTMappedAddress(cap),
             pt
         );

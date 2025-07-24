@@ -91,7 +91,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
              * a mapped PageTable and unmap it from whatever page table it is mapped
              * into.
              */
-            vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedASID(cap);
+            vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceId(cap);
             findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
             pte_t *pte = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
             if (find_ret.status == EXCEPTION_NONE && find_ret.vspace_root == pte) {
@@ -272,7 +272,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
         /** AUXUPD: "(True, ptr_retyps 1
               (Ptr (ptr_val \<acute>regionBase) :: (pte_C[512]) ptr))" */
         return cap_page_table_cap_new(
-                   vspaceIdInvalid,            /* capPTMappedASID    */
+                   vspaceIdInvalid,            /* capPTMappedVSpaceId    */
                    (word_t)regionBase,     /* capPTBasePtr       */
                    0,                      /* capPTIsMapped      */
                    0                       /* capPTMappedAddress */

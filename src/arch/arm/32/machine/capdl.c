@@ -268,7 +268,7 @@ void print_cap_arch(cap_t cap)
 {
     switch (cap_get_capType(cap)) {
     case cap_page_table_cap: {
-        vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedASID(cap);
+        vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceId(cap);
         findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
         vptr_t vptr = cap_page_table_cap_get_capPTMappedAddress(cap);
         if (vspaceId != vspaceIdInvalid) {

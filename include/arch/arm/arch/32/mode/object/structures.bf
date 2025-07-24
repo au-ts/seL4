@@ -51,7 +51,7 @@ block frame_cap {
 block page_table_cap {
     padding                   2
     field capPTIsMapped       1
-    field capPTMappedASID    17
+    field capPTMappedVSpaceId    17
 #ifndef CONFIG_ARM_HYPERVISOR_SUPPORT
     field_high capPTMappedAddress 12
 #else

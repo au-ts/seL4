@@ -257,7 +257,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
         /** AUXUPD: "(True, ptr_retyps 1
               (Ptr (ptr_val \<acute>regionBase) :: (pte_C[512]) ptr))" */
         return cap_page_table_cap_new(
-                   vspaceIdInvalid,            /* capPTMappedASID    */
+                   vspaceIdInvalid,            /* capPTMappedVSpaceId    */
                    (word_t)regionBase,     /* capPTBasePtr       */
                    0,                      /* capPTIsMapped      */
                    0                       /* capPTMappedAddress */

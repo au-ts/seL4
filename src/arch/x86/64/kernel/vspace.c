@@ -667,7 +667,7 @@ static BOOT_CODE cap_t create_it_pt_cap(cap_t vspace_cap, pptr_t pptr, vptr_t vp
 {
     cap_t cap;
     cap = cap_page_table_cap_new(
-              vspaceId,   /* capPTMappedASID      */
+              vspaceId,   /* capPTMappedVSpaceId      */
               pptr,   /* capPTBasePtr         */
               1,      /* capPTIsMapped        */
               vptr    /* capPTMappedAddress   */

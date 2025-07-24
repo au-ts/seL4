@@ -394,7 +394,7 @@ static BOOT_CODE cap_t create_it_pt_cap(cap_t vspace_cap, pptr_t pptr, vptr_t vp
 {
     cap_t cap;
     cap = cap_page_table_cap_new(
-              vspaceId,                   /* capPTMappedASID */
+              vspaceId,                   /* capPTMappedVSpaceId */
               pptr,                   /* capPTBasePtr */
               1,                      /* capPTIsMapped */
               vptr                    /* capPTMappedAddress */
@@ -428,7 +428,7 @@ static BOOT_CODE cap_t create_it_pd_cap(cap_t vspace_cap, pptr_t pptr, vptr_t vp
 {
     cap_t cap;
     cap = cap_page_table_cap_new(
-              vspaceId,                   /* capPTMappedASID */
+              vspaceId,                   /* capPTMappedVSpaceId */
               pptr,                   /* capPTBasePtr */
               1,                      /* capPTIsMapped */
               vptr                    /* capPTMappedAddress */
@@ -454,7 +454,7 @@ static BOOT_CODE cap_t create_it_pud_cap(cap_t vspace_cap, pptr_t pptr, vptr_t v
 {
     cap_t cap;
     cap = cap_page_table_cap_new(
-              vspaceId,               /* capPTMappedASID */
+              vspaceId,               /* capPTMappedVSpaceId */
               pptr,               /* capPTBasePtr */
               1,                  /* capPTIsMapped */
               vptr                /* capPTMappedAddress */
@@ -482,7 +482,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
 
     /* create the PGD */
     vspace_cap = cap_vspace_cap_new(
-                     IT_ASID,           /* capVSMappedASID */
+                     IT_ASID,           /* capVSMappedVSpaceId */
                      rootserver.vspace, /* capVSBasePtr    */
                      1                  /* capVSIsMapped   */
 #ifdef CONFIG_ARM_SMMU
@@ -780,7 +780,7 @@ void setVMRoot(tcb_t *tcb)
     }
 
     vspaceRoot = VSPACE_PTR(cap_vspace_cap_get_capVSBasePtr(threadRoot));
-    vspaceId = cap_vspace_cap_get_capVSMappedASID(threadRoot);
+    vspaceId = cap_vspace_cap_get_capVSMappedVSpaceId(threadRoot);
     find_ret = findVSpaceForVSpaceId(vspaceId);
     if (unlikely(find_ret.status != EXCEPTION_NONE || find_ret.vspace_root != vspaceRoot)) {
         setCurrentUserVSpaceRoot(ttbr_new(0, addrFromKPPtr(armKSGlobalUserVSpace)));
@@ -1187,7 +1187,7 @@ static exception_t performPageTableInvocationUnmap(cap_t cap, cte_t *ctSlot)
 {
     if (cap_page_table_cap_get_capPTIsMapped(cap)) {
         pte_t *pt = PT_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
-        unmapPageTable(cap_page_table_cap_get_capPTMappedASID(cap),
+        unmapPageTable(cap_page_table_cap_get_capPTMappedVSpaceId(cap),
                        cap_page_table_cap_get_capPTMappedAddress(cap), pt);
         clearMemory_PT((void *)pt, cap_get_capSizeBits(cap));
     }
@@ -1351,7 +1351,7 @@ static exception_t decodeARMVSpaceRootInvocation(word_t invLabel, word_t length,
 
         /* Make sure that the supplied pgd is ok */
         vspaceRoot = VSPACE_PTR(cap_vspace_cap_get_capVSBasePtr(cap));
-        vspaceId = cap_vspace_cap_get_capVSMappedASID(cap);
+        vspaceId = cap_vspace_cap_get_capVSMappedVSpaceId(cap);
 
         find_ret = findVSpaceForVSpaceId(vspaceId);
         if (unlikely(find_ret.status != EXCEPTION_NONE)) {
@@ -1464,7 +1464,7 @@ static exception_t decodeARMPageTableInvocation(word_t invLabel, word_t length,
     }
 
     vspaceRoot = VSPACE_PTR(cap_vspace_cap_get_capVSBasePtr(vspaceRootCap));
-    vspaceId = cap_vspace_cap_get_capVSMappedASID(vspaceRootCap);
+    vspaceId = cap_vspace_cap_get_capVSMappedVSpaceId(vspaceRootCap);
 
     if (unlikely(vaddr > USER_TOP)) {
         current_syscall_error.type = seL4_InvalidArgument;
@@ -1495,7 +1495,7 @@ static exception_t decodeARMPageTableInvocation(word_t invLabel, word_t length,
     pte = pte_pte_table_new(pptr_to_paddr(PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap))));
 
     cap = cap_page_table_cap_set_capPTIsMapped(cap, 1);
-    cap = cap_page_table_cap_set_capPTMappedASID(cap, vspaceId);
+    cap = cap_page_table_cap_set_capPTMappedVSpaceId(cap, vspaceId);
     cap = cap_page_table_cap_set_capPTMappedAddress(cap, (vaddr & ~MASK(ptSlot.ptBitsLeft)));
 
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
@@ -1542,7 +1542,7 @@ static exception_t decodeARMFrameInvocation(word_t invLabel, word_t length,
         }
 
         vspaceRoot = VSPACE_PTR(cap_vspace_cap_get_capVSBasePtr(vspaceRootCap));
-        vspaceId = cap_vspace_cap_get_capVSMappedASID(vspaceRootCap);
+        vspaceId = cap_vspace_cap_get_capVSMappedVSpaceId(vspaceRootCap);
 
         find_ret = findVSpaceForVSpaceId(vspaceId);
         if (unlikely(find_ret.status != EXCEPTION_NONE)) {

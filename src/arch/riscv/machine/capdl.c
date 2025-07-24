@@ -33,7 +33,7 @@ static void obj_asidpool_print_attrs(cap_t asid_cap)
 void print_ipc_buffer_slot(tcb_t *tcb)
 {
     word_t vptr = tcb->tcbIPCBuffer;
-    vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedASID(TCB_PTR_CTE_PTR(tcb, tcbVTable)->cap);
+    vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceId(TCB_PTR_CTE_PTR(tcb, tcbVTable)->cap);
     findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
 
     printf("ipc_buffer_slot: ");
@@ -125,7 +125,7 @@ void print_cap_arch(cap_t cap)
 {
     switch (cap_get_capType(cap)) {
     case cap_page_table_cap: {
-        vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedASID(cap);
+        vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceId(cap);
         findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
         vptr_t vptr = cap_page_table_cap_get_capPTMappedAddress(cap);
 

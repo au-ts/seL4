@@ -628,7 +628,7 @@ static exception_t performEPTPTInvocationUnmap(cap_t cap, cte_t *cte)
     if (cap_ept_pt_cap_get_capPTIsMapped(cap)) {
         ept_pte_t *pt = (ept_pte_t *)cap_ept_pt_cap_get_capPTBasePtr(cap);
         unmapEPTPageTable(
-            cap_ept_pt_cap_get_capPTMappedASID(cap),
+            cap_ept_pt_cap_get_capPTMappedVSpaceId(cap),
             cap_ept_pt_cap_get_capPTMappedAddress(cap),
             pt);
         clearMemory((void *)pt, cap_get_capSizeBits(cap));
@@ -752,7 +752,7 @@ exception_t decodeX86EPTPTInvocation(
           );
 
     cap = cap_ept_pt_cap_set_capPTIsMapped(cap, 1);
-    cap = cap_ept_pt_cap_set_capPTMappedASID(cap, asid);
+    cap = cap_ept_pt_cap_set_capPTMappedVSpaceId(cap, asid);
     cap = cap_ept_pt_cap_set_capPTMappedAddress(cap, vaddr);
 
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);

@@ -1119,7 +1119,7 @@ static exception_t performX86PageTableInvocationUnmap(cap_t cap, cte_t *ctSlot)
     if (cap_page_table_cap_get_capPTIsMapped(cap)) {
         pte_t *pt = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
         unmapPageTable(
-            cap_page_table_cap_get_capPTMappedASID(cap),
+            cap_page_table_cap_get_capPTMappedVSpaceId(cap),
             cap_page_table_cap_get_capPTMappedAddress(cap),
             pt
         );
@@ -1135,7 +1135,7 @@ static exception_t performX86PageTableInvocationMap(cap_t cap, cte_t *ctSlot, pd
 {
     ctSlot->cap = cap;
     *pdSlot = pde;
-    invalidatePageStructureCacheASID(pptr_to_paddr(root), cap_page_table_cap_get_capPTMappedASID(cap),
+    invalidatePageStructureCacheASID(pptr_to_paddr(root), cap_page_table_cap_get_capPTMappedVSpaceId(cap),
                                      SMP_TERNARY(tlb_bitmap_get(root), 0));
     return EXCEPTION_NONE;
 }
@@ -1247,7 +1247,7 @@ static exception_t decodeX86PageTableInvocation(
     pde = makeUserPDEPageTable(paddr, attr);
 
     cap = cap_page_table_cap_set_capPTIsMapped(cap, 1);
-    cap = cap_page_table_cap_set_capPTMappedASID(cap, vspaceId);
+    cap = cap_page_table_cap_set_capPTMappedVSpaceId(cap, vspaceId);
     cap = cap_page_table_cap_set_capPTMappedAddress(cap, vaddr);
 
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);

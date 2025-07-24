@@ -169,7 +169,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     case cap_page_table_cap:
         if (final && cap_page_table_cap_get_capPTIsMapped(cap)) {
             unmapPageTable(
-                cap_page_table_cap_get_capPTMappedASID(cap),
+                cap_page_table_cap_get_capPTMappedVSpaceId(cap),
                 cap_page_table_cap_get_capPTMappedAddress(cap),
                 PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap)));
         }

@@ -31,7 +31,7 @@ block frame_cap {
 
 -- N-level page table
 block page_table_cap {
-    field       capPTMappedASID     9
+    field       capPTMappedVSpaceId     9
     field_high  capPTBasePtr        20
     padding                         3
 

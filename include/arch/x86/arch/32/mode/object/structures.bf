@@ -35,7 +35,7 @@ block frame_cap {
 block page_table_cap {
     padding                         8
     field       capPTIsMapped       1
-    field       capPTMappedASID     12
+    field       capPTMappedVSpaceId     12
     field_high  capPTMappedAddress  11
 
     padding                         8
@@ -139,7 +139,7 @@ block ept_pt_cap {
     field_high  capPTMappedAddress  11
     padding                         4
     field       capPTIsMapped       1
-    field       capPTMappedASID     16
+    field       capPTMappedVSpaceId     16
 
     field_high  capPTBasePtr        20
     padding                         4

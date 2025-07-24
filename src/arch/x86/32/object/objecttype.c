@@ -160,7 +160,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
     case seL4_X86_PageTableObject:
         return cap_page_table_cap_new(
                    0,                  /* capPTIsMapped        */
-                   vspaceIdInvalid,        /* capPTMappedASID      */
+                   vspaceIdInvalid,        /* capPTMappedVSpaceId      */
                    0,                  /* capPTMappedAddress   */
                    (word_t)regionBase  /* capPTBasePtr         */
                );

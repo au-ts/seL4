@@ -264,7 +264,7 @@ void print_cap_arch(cap_t cap)
 
     switch (cap_get_capType(cap)) {
     case cap_page_table_cap: {
-        vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedASID(cap);
+        vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceId(cap);
         vptr_t vptr = cap_page_table_cap_get_capPTMappedAddress(cap);
         pte_t *target_pt = PT_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
 
@@ -295,7 +295,7 @@ void print_cap_arch(cap_t cap)
         break;
     }
     case cap_vspace_cap: {
-        vspace_id_t vspaceId = cap_vspace_cap_get_capVSMappedASID(cap);
+        vspace_id_t vspaceId = cap_vspace_cap_get_capVSMappedVSpaceId(cap);
         findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
         if (vspaceId != vspaceIdInvalid) {
             printf("%p_pd (vspaceId: %lu)\n",

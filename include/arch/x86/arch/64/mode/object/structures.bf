@@ -35,7 +35,7 @@ block frame_cap {
 -- Second-level page table
 block page_table_cap {
     padding                         4
-    field       capPTMappedASID     12
+    field       capPTMappedVSpaceId     12
     field_high  capPTBasePtr        48
 
     field       capType             5
@@ -165,14 +165,14 @@ block vcpu_cap {
 }
 
 -- Fourth-level EPT page table
-block ept_pt_cap (capType, capPTMappedAddress, capPTIsMapped, capPTMappedASID, capPTBasePtr) {
+block ept_pt_cap (capType, capPTMappedAddress, capPTIsMapped, capPTMappedVSpaceId, capPTBasePtr) {
     field       capPTBasePtr        64
 
     field       capType             5
     field       capPTIsMapped       1
     padding                         9
     field_high  capPTMappedAddress  28
-    field       capPTMappedASID     16
+    field       capPTMappedVSpaceId     16
     padding                         5
 }
 

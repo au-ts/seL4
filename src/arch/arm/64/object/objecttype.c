@@ -152,18 +152,18 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
 #ifdef CONFIG_ARM_SMMU
         if (cap_vspace_cap_get_capVSMappedCB(cap) != CB_INVALID) {
             smmu_cb_delete_vspace(cap_vspace_cap_get_capVSMappedCB(cap),
-                                  cap_vspace_cap_get_capVSMappedASID(cap));
+                                  cap_vspace_cap_get_capVSMappedVSpaceId(cap));
         }
 #endif
         if (final && cap_vspace_cap_get_capVSIsMapped(cap)) {
-            deleteASID(cap_vspace_cap_get_capVSMappedASID(cap),
+            deleteASID(cap_vspace_cap_get_capVSMappedVSpaceId(cap),
                        VSPACE_PTR(cap_vspace_cap_get_capVSBasePtr(cap)));
         }
         break;
 
     case cap_page_table_cap:
         if (final && cap_page_table_cap_get_capPTIsMapped(cap)) {
-            unmapPageTable(cap_page_table_cap_get_capPTMappedASID(cap),
+            unmapPageTable(cap_page_table_cap_get_capPTMappedVSpaceId(cap),
                            cap_page_table_cap_get_capPTMappedAddress(cap),
                            PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap)));
         }
@@ -454,14 +454,14 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                             addrFromPPtr(regionBase));
 #ifdef CONFIG_ARM_SMMU
         return cap_vspace_cap_new(
-                   vspaceIdInvalid,           /* capVSMappedASID */
+                   vspaceIdInvalid,           /* capVSMappedVSpaceId */
                    (word_t)regionBase,    /* capVSBasePtr    */
                    0,                     /* capVSIsMapped   */
                    CB_INVALID             /* capVSMappedCB   */
                );
 #else
         return cap_vspace_cap_new(
-                   vspaceIdInvalid,           /* capVSMappedASID */
+                   vspaceIdInvalid,           /* capVSMappedVSpaceId */
                    (word_t)regionBase,    /* capVSBasePtr    */
                    0                      /* capVSIsMapped   */
                );
@@ -474,7 +474,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                             (word_t)regionBase + MASK(seL4_PageTableBits),
                             addrFromPPtr(regionBase));
         return cap_page_table_cap_new(
-                   vspaceIdInvalid,           /* capPTMappedASID    */
+                   vspaceIdInvalid,           /* capPTMappedVSpaceId    */
                    (word_t)regionBase,    /* capPTBasePtr       */
                    0,                     /* capPTIsMapped      */
                    0                      /* capPTMappedAddress */

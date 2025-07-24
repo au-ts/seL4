@@ -472,7 +472,7 @@ static BOOT_CODE cap_t create_it_page_table_cap(cap_t pd, pptr_t pptr, vptr_t vp
     cap_t cap;
     cap = cap_page_table_cap_new(
               1,    /* capPTIsMapped      */
-              vspaceId, /* capPTMappedASID    */
+              vspaceId, /* capPTMappedVSpaceId    */
               vptr, /* capPTMappedAddress */
               pptr  /* capPTBasePtr       */
           );
@@ -1834,7 +1834,7 @@ static exception_t performPageTableInvocationUnmap(cap_t cap, cte_t *ctSlot)
     if (cap_page_table_cap_get_capPTIsMapped(cap)) {
         pte_t *pt = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
         unmapPageTable(
-            cap_page_table_cap_get_capPTMappedASID(cap),
+            cap_page_table_cap_get_capPTMappedVSpaceId(cap),
             cap_page_table_cap_get_capPTMappedAddress(cap),
             pt);
         clearMemory_PT((void *)pt, cap_get_capSizeBits(cap));
@@ -2222,7 +2222,7 @@ static exception_t decodeARMPageTableInvocation(word_t invLabel, word_t length,
 #endif
 
     cap = cap_page_table_cap_set_capPTIsMapped(cap, 1);
-    cap = cap_page_table_cap_set_capPTMappedASID(cap, vspaceId);
+    cap = cap_page_table_cap_set_capPTMappedVSpaceId(cap, vspaceId);
     cap = cap_page_table_cap_set_capPTMappedAddress(cap, vaddr);
 
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);

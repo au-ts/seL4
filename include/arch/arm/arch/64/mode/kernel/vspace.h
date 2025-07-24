@@ -54,7 +54,7 @@ static inline exception_t performASIDPoolInvocation(vspace_id_t vspaceId, vspace
                               , 0, false
 #endif
                           );
-    cap = cap_vspace_cap_set_capVSMappedASID(cap, vspaceId);
+    cap = cap_vspace_cap_set_capVSMappedVSpaceId(cap, vspaceId);
     cap = cap_vspace_cap_set_capVSIsMapped(cap, 1);
     vspaceCapSlot->cap = cap;
 

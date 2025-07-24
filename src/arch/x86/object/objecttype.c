@@ -195,7 +195,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     case cap_page_table_cap:
         if (final && cap_page_table_cap_get_capPTIsMapped(cap)) {
             unmapPageTable(
-                cap_page_table_cap_get_capPTMappedASID(cap),
+                cap_page_table_cap_get_capPTMappedVSpaceId(cap),
                 cap_page_table_cap_get_capPTMappedAddress(cap),
                 PT_PTR(cap_page_table_cap_get_capPTBasePtr(cap))
             );
@@ -273,7 +273,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     case cap_ept_pt_cap:
         if (final && cap_ept_pt_cap_get_capPTIsMapped(cap)) {
             unmapEPTPageTable(
-                cap_ept_pt_cap_get_capPTMappedASID(cap),
+                cap_ept_pt_cap_get_capPTMappedVSpaceId(cap),
                 cap_ept_pt_cap_get_capPTMappedAddress(cap),
                 (ept_pte_t *)cap_ept_pt_cap_get_capPTBasePtr(cap));
         }
@@ -490,7 +490,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
         return cap_ept_pt_cap_new(
                    0,                  /* capPTMappedAddress   */
                    0,                  /* capPTIsMapped        */
-                   VPID_INVALID,       /* capPTMappedASID      */
+                   VPID_INVALID,       /* capPTMappedVSpaceId      */
                    (word_t)regionBase  /* capPTBasePtr         */
                );
     default:
