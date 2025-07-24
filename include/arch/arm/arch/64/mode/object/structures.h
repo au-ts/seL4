@@ -172,7 +172,7 @@ static inline void *CONST cap_get_archCapPtr(cap_t cap)
         return NULL;
 
     case cap_asid_pool_cap:
-        return VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capASIDPool(cap));
+        return VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capVspaceIdPool(cap));
 
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
     case cap_vcpu_cap:

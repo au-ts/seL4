@@ -282,7 +282,7 @@ void print_cap_arch(cap_t cap)
         break;
     }
     case cap_asid_pool_cap: {
-        printf("%p_asid_pool\n", (void *)cap_asid_pool_cap_get_capASIDPool(cap));
+        printf("%p_asid_pool\n", (void *)cap_asid_pool_cap_get_capVspaceIdPool(cap));
         break;
     }
 #ifdef CONFIG_VTX
@@ -316,7 +316,7 @@ void print_cap_arch(cap_t cap)
 
 static void obj_asidpool_print_attrs(cap_t asid_cap)
 {
-    vspace_id_t vspaceId = cap_asid_pool_cap_get_capASIDBase(asid_cap);
+    vspace_id_t vspaceId = cap_asid_pool_cap_get_capVSpaceIdBase(asid_cap);
     printf("(vspaceId_high: 0x%lx)\n", VSPACE_ID_HIGH(vspaceId));
 }
 
@@ -334,7 +334,7 @@ void print_object_arch(cap_t cap)
 
     case cap_asid_pool_cap: {
         printf("%p_asid_pool = asid_pool ",
-               (void *)cap_asid_pool_cap_get_capASIDPool(cap));
+               (void *)cap_asid_pool_cap_get_capVspaceIdPool(cap));
         obj_asidpool_print_attrs(cap);
         break;
     }

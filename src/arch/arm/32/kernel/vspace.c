@@ -2625,7 +2625,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        pool = armKSVspaceIdTable[cap_asid_pool_cap_get_capASIDBase(cap) >>
+        pool = armKSVspaceIdTable[cap_asid_pool_cap_get_capVSpaceIdBase(cap) >>
                                                                      vspaceIdLowBits];
         if (unlikely(!pool)) {
             userError("ASIDPoolAssign: Failed to lookup pool.");
@@ -2636,7 +2636,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        if (unlikely(pool != VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capASIDPool(cap)))) {
+        if (unlikely(pool != VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capVspaceIdPool(cap)))) {
             userError("ASIDPoolAssign: Failed to lookup pool.");
             current_syscall_error.type = seL4_InvalidCapability;
             current_syscall_error.invalidCapNumber = 0;
@@ -2645,7 +2645,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
         }
 
         /* Find first free ASID */
-        vspaceId = cap_asid_pool_cap_get_capASIDBase(cap);
+        vspaceId = cap_asid_pool_cap_get_capVSpaceIdBase(cap);
         for (i = 0; i < (1 << vspaceIdLowBits) && (vspaceId + i == 0 || pool->array[i]); i++);
 
         if (unlikely(i == 1 << vspaceIdLowBits)) {

@@ -310,7 +310,7 @@ void print_cap_arch(cap_t cap)
         break;
     }
     case cap_asid_pool_cap: {
-        printf("%p_asid_pool\n", (void *)cap_asid_pool_cap_get_capASIDPool(cap));
+        printf("%p_asid_pool\n", (void *)cap_asid_pool_cap_get_capVspaceIdPool(cap));
         break;
     }
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
@@ -347,7 +347,7 @@ void print_object_arch(cap_t cap)
 
     case cap_asid_pool_cap: {
         printf("%p_asid_pool = asid_pool ",
-               (void *)cap_asid_pool_cap_get_capASIDPool(cap));
+               (void *)cap_asid_pool_cap_get_capVspaceIdPool(cap));
         obj_asidpool_print_attrs(cap);
         break;
     }

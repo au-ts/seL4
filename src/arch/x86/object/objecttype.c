@@ -205,8 +205,8 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     case cap_asid_pool_cap:
         if (final) {
             deleteASIDPool(
-                cap_asid_pool_cap_get_capASIDBase(cap),
-                VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capASIDPool(cap))
+                cap_asid_pool_cap_get_capVSpaceIdBase(cap),
+                VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capVspaceIdPool(cap))
             );
         }
         break;
@@ -325,8 +325,8 @@ bool_t CONST Arch_sameRegionAs(cap_t cap_a, cap_t cap_b)
 
     case cap_asid_pool_cap:
         if (cap_get_capType(cap_b) == cap_asid_pool_cap) {
-            return cap_asid_pool_cap_get_capASIDPool(cap_a) ==
-                   cap_asid_pool_cap_get_capASIDPool(cap_b);
+            return cap_asid_pool_cap_get_capVspaceIdPool(cap_a) ==
+                   cap_asid_pool_cap_get_capVspaceIdPool(cap_b);
         }
         break;
 

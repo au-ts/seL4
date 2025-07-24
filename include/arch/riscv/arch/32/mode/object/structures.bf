@@ -52,9 +52,9 @@ block asid_control_cap {
 -- Cap to a pool of 2^9 ASIDs
 block asid_pool_cap {
     padding                     23
-    field       capASIDBase     9
+    field       capVSpaceIdBase     9
 
-    field_high  capASIDPool     28
+    field_high  capVspaceIdPool     28
     field       capType         4
 }
 

@@ -64,8 +64,8 @@ exception_t performASIDControlInvocation(void *frame, cte_t *slot, cte_t *parent
 
     cteInsert(
         cap_asid_pool_cap_new(
-            vspaceId_base,          /* capASIDBase  */
-            WORD_REF(frame)     /* capASIDPool  */
+            vspaceId_base,          /* capVSpaceIdBase  */
+            WORD_REF(frame)     /* capVspaceIdPool  */
         ),
         parent,
         slot
@@ -1377,7 +1377,7 @@ exception_t decodeX86MMUInvocation(
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        pool = x86KSVSpaceIdTable[cap_asid_pool_cap_get_capASIDBase(cap) >> vspaceIdLowBits];
+        pool = x86KSVSpaceIdTable[cap_asid_pool_cap_get_capVSpaceIdBase(cap) >> vspaceIdLowBits];
         if (!pool) {
             current_syscall_error.type = seL4_FailedLookup;
             current_syscall_error.failedLookupWasSource = false;
@@ -1385,14 +1385,14 @@ exception_t decodeX86MMUInvocation(
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        if (pool != VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capASIDPool(cap))) {
+        if (pool != VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capVspaceIdPool(cap))) {
             current_syscall_error.type = seL4_InvalidCapability;
             current_syscall_error.invalidCapNumber = 0;
             return EXCEPTION_SYSCALL_ERROR;
         }
 
         /* Find first free ASID */
-        vspaceId = cap_asid_pool_cap_get_capASIDBase(cap);
+        vspaceId = cap_asid_pool_cap_get_capVSpaceIdBase(cap);
         for (i = 0; i < BIT(vspaceIdLowBits) && (vspaceId + i == 0
                                              || asid_map_get_type(pool->array[i]) != asid_map_asid_map_none); i++);
 

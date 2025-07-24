@@ -59,9 +59,9 @@ block asid_pool_cap {
     padding 64
 
     field       capType         5
-    field       capASIDBase     16
+    field       capVSpaceIdBase     16
     padding                     6
-    field_high  capASIDPool     37
+    field_high  capVspaceIdPool     37
 }
 
 -- NB: odd numbers are arch caps (see isArchCap())

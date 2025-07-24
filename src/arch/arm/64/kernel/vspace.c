@@ -1292,8 +1292,8 @@ static exception_t performASIDControlInvocation(void *frame, cte_t *slot,
 
     cteInsert(
         cap_asid_pool_cap_new(
-            vspaceId_base,         /* capASIDBase  */
-            WORD_REF(frame)    /* capASIDPool  */
+            vspaceId_base,         /* capVSpaceIdBase  */
+            WORD_REF(frame)    /* capVspaceIdPool  */
         ), parent, slot);
 
     assert((vspaceId_base & MASK(vspaceIdLowBits)) == 0);
@@ -1820,7 +1820,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        pool = armKSVspaceIdTable[cap_asid_pool_cap_get_capASIDBase(cap) >> vspaceIdLowBits];
+        pool = armKSVspaceIdTable[cap_asid_pool_cap_get_capVSpaceIdBase(cap) >> vspaceIdLowBits];
 
         if (unlikely(!pool)) {
             current_syscall_error.type = seL4_FailedLookup;
@@ -1830,7 +1830,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        if (unlikely(pool != VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capASIDPool(cap)))) {
+        if (unlikely(pool != VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capVspaceIdPool(cap)))) {
             current_syscall_error.type = seL4_InvalidCapability;
             current_syscall_error.invalidCapNumber = 0;
 
@@ -1839,7 +1839,7 @@ exception_t decodeARMMMUInvocation(word_t invLabel, word_t length, cptr_t cptr,
 
         /* Find first free ASID */
         /* XXX: base?? */
-        vspaceId = cap_asid_pool_cap_get_capASIDBase(cap);
+        vspaceId = cap_asid_pool_cap_get_capVSpaceIdBase(cap);
         for (i = 0; i < (1 << vspaceIdLowBits) && (vspaceId + i == 0
                                                || (asid_map_get_type(pool->array[i]) != asid_map_asid_map_none)); i++);
 
