@@ -46,8 +46,8 @@ block page_table_cap {
     field_high  capPTMappedAddress  39
 }
 
--- Cap to the table of 2^6 ASID pools
-block asid_control_cap {
+-- Cap to the table of 2^6 VspaceId pools
+block vspace_id_control_cap {
     padding 64
 
     field   capType     5
@@ -55,7 +55,7 @@ block asid_control_cap {
 }
 
 -- Cap to a pool of 2^10 ASIDs
-block asid_pool_cap {
+block vspace_id_pool_cap {
     padding 64
 
     field       capType         5
@@ -86,8 +86,8 @@ tagged_union cap capType {
     -- 5-bit tag arch caps
     tag frame_cap           1
     tag page_table_cap      3
-    tag asid_control_cap    11
-    tag asid_pool_cap       13
+    tag vspace_id_control_cap    11
+    tag vspace_id_pool_cap       13
 }
 
 ---- Arch-independent object types

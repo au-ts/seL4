@@ -76,10 +76,10 @@ static inline bool_t CONST cap_get_archCapIsPhysical(cap_t cap)
     case cap_page_table_cap:
         return true;
 
-    case cap_asid_control_cap:
+    case cap_vspace_id_control_cap:
         return false;
 
-    case cap_asid_pool_cap:
+    case cap_vspace_id_pool_cap:
         return true;
 
     default:
@@ -101,10 +101,10 @@ static inline word_t CONST cap_get_archCapSizeBits(cap_t cap)
     case cap_page_table_cap:
         return PT_SIZE_BITS;
 
-    case cap_asid_control_cap:
+    case cap_vspace_id_control_cap:
         return 0;
 
-    case cap_asid_pool_cap:
+    case cap_vspace_id_pool_cap:
         return seL4_ASIDPoolBits;
 
     default:
@@ -128,11 +128,11 @@ static inline void *CONST cap_get_archCapPtr(cap_t cap)
     case cap_page_table_cap:
         return PT_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
 
-    case cap_asid_control_cap:
+    case cap_vspace_id_control_cap:
         return NULL;
 
-    case cap_asid_pool_cap:
-        return VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capVspaceIdPool(cap));
+    case cap_vspace_id_pool_cap:
+        return VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVspaceIdPool(cap));
 
     default:
         assert(!"Unknown cap type");

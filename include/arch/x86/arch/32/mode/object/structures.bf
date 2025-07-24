@@ -55,15 +55,15 @@ block page_directory_cap {
     field       capType             4
 }
 
--- Cap to the table of 2^6 ASID pools
-block asid_control_cap {
+-- Cap to the table of 2^6 VspaceId pools
+block vspace_id_control_cap {
     padding             32
     padding             28
     field   capType     4
 }
 
 -- Cap to a pool of 2^10 ASIDs
-block asid_pool_cap {
+block vspace_id_pool_cap {
     padding                     20
     field       capVSpaceIdBase     12
 
@@ -203,8 +203,8 @@ tagged_union cap capType {
     tag frame_cap           1
     tag page_table_cap      3
     tag page_directory_cap  5
-    tag asid_control_cap    9
-    tag asid_pool_cap       11
+    tag vspace_id_control_cap    9
+    tag vspace_id_pool_cap       11
 #ifdef CONFIG_IOMMU
     tag io_space_cap        13
 #endif

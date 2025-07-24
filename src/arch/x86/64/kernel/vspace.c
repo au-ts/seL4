@@ -1065,7 +1065,7 @@ static void flushPDPT(vspace_root_t *vspace, word_t vptr, pdpte_t *pdpt, vspace_
     hwASIDInvalidate(vspaceId, vspace);
 }
 
-/* This function is named funny, it's basically only used from ASID pools (i.e software) */
+/* This function is named funny, it's basically only used from VspaceId pools (i.e software) */
 void hwASIDInvalidate(vspace_id_t vspaceId, vspace_root_t *vspace)
 {
     /* invalidate the hw asid from the sw asid - ASID gets PCID and fixes up TLB map */

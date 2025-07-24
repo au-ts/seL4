@@ -37,8 +37,8 @@ deriveCap_ret_t Arch_deriveCap(cte_t *slot, cap_t cap)
         ret.status = EXCEPTION_NONE;
         return ret;
 
-    case cap_asid_control_cap:
-    case cap_asid_pool_cap:
+    case cap_vspace_id_control_cap:
+    case cap_vspace_id_pool_cap:
         ret.cap = cap;
         ret.status = EXCEPTION_NONE;
         return ret;
@@ -101,15 +101,15 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
             }
         }
         break;
-    case cap_asid_pool_cap:
+    case cap_vspace_id_pool_cap:
         if (final) {
             deleteASIDPool(
-                cap_asid_pool_cap_get_capVSpaceIdBase(cap),
-                VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capVspaceIdPool(cap))
+                cap_vspace_id_pool_cap_get_capVSpaceIdBase(cap),
+                VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVspaceIdPool(cap))
             );
         }
         break;
-    case cap_asid_control_cap:
+    case cap_vspace_id_control_cap:
         break;
     }
     fc_ret.remainder = cap_null_cap_new();
@@ -137,16 +137,16 @@ bool_t CONST Arch_sameRegionAs(cap_t cap_a, cap_t cap_b)
                    cap_page_table_cap_get_capPTBasePtr(cap_b);
         }
         break;
-    case cap_asid_control_cap:
-        if (cap_get_capType(cap_b) == cap_asid_control_cap) {
+    case cap_vspace_id_control_cap:
+        if (cap_get_capType(cap_b) == cap_vspace_id_control_cap) {
             return true;
         }
         break;
 
-    case cap_asid_pool_cap:
-        if (cap_get_capType(cap_b) == cap_asid_pool_cap) {
-            return cap_asid_pool_cap_get_capVspaceIdPool(cap_a) ==
-                   cap_asid_pool_cap_get_capVspaceIdPool(cap_b);
+    case cap_vspace_id_pool_cap:
+        if (cap_get_capType(cap_b) == cap_vspace_id_pool_cap) {
+            return cap_vspace_id_pool_cap_get_capVspaceIdPool(cap_a) ==
+                   cap_vspace_id_pool_cap_get_capVspaceIdPool(cap_b);
         }
         break;
     }

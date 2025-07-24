@@ -42,7 +42,7 @@ block page_table_cap {
 }
 
 -- Cap to the table of 1 ASID pool
-block asid_control_cap {
+block vspace_id_control_cap {
     padding             32
 
     padding             28
@@ -50,7 +50,7 @@ block asid_control_cap {
 }
 
 -- Cap to a pool of 2^9 ASIDs
-block asid_pool_cap {
+block vspace_id_pool_cap {
     padding                     23
     field       capVSpaceIdBase     9
 
@@ -75,8 +75,8 @@ tagged_union cap capType {
     -- 4-bit tag arch caps
     tag frame_cap           1
     tag page_table_cap      3
-    tag asid_control_cap    11
-    tag asid_pool_cap       13
+    tag vspace_id_control_cap    11
+    tag vspace_id_pool_cap       13
 
     -- 8-bit tag caps
     tag irq_control_cap     0x0e

@@ -463,7 +463,7 @@ static exception_t performASIDControlInvocation(void *frame, cte_t *slot, cte_t 
     /** AUXUPD: "(True, ptr_retyps 1 (Ptr (ptr_val \<acute>frame) :: asid_pool_C ptr))" */
 
     cteInsert(
-        cap_asid_pool_cap_new(
+        cap_vspace_id_pool_cap_new(
             vspace_id_base,          /* capVSpaceIdBase  */
             WORD_REF(frame)     /* capVspaceIdPool  */
         ),
@@ -947,7 +947,7 @@ exception_t decodeRISCVMMUInvocation(word_t label, word_t length, cptr_t cptr,
     case cap_frame_cap:
         return decodeRISCVFrameInvocation(label, length, cte, cap, call, buffer);
 
-    case cap_asid_control_cap: {
+    case cap_vspace_id_control_cap: {
         word_t     i;
         /* XXX: Why _base? */
         vspace_id_t      vspace_id_base;
@@ -1023,7 +1023,7 @@ exception_t decodeRISCVMMUInvocation(word_t label, word_t length, cptr_t cptr,
         return performASIDControlInvocation(frame, destSlot, parentSlot, vspace_id_base);
     }
 
-    case cap_asid_pool_cap: {
+    case cap_vspace_id_pool_cap: {
         cap_t        vspaceCap;
         cte_t       *vspaceCapSlot;
         vspace_id_pool_t *pool;
@@ -1054,7 +1054,7 @@ exception_t decodeRISCVMMUInvocation(word_t label, word_t length, cptr_t cptr,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        pool = riscvKSVSpaceIdTable[cap_asid_pool_cap_get_capVSpaceIdBase(cap) >> vspaceIdLowBits];
+        pool = riscvKSVSpaceIdTable[cap_vspace_id_pool_cap_get_capVSpaceIdBase(cap) >> vspaceIdLowBits];
         if (!pool) {
             current_syscall_error.type = seL4_FailedLookup;
             current_syscall_error.failedLookupWasSource = false;
@@ -1062,7 +1062,7 @@ exception_t decodeRISCVMMUInvocation(word_t label, word_t length, cptr_t cptr,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        if (pool != VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capVspaceIdPool(cap))) {
+        if (pool != VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVspaceIdPool(cap))) {
             current_syscall_error.type = seL4_InvalidCapability;
             current_syscall_error.invalidCapNumber = 0;
             return EXCEPTION_SYSCALL_ERROR;
@@ -1070,7 +1070,7 @@ exception_t decodeRISCVMMUInvocation(word_t label, word_t length, cptr_t cptr,
 
         // XXX: Base.
         /* Find first free ASID */
-        vspaceId = cap_asid_pool_cap_get_capVSpaceIdBase(cap);
+        vspaceId = cap_vspace_id_pool_cap_get_capVSpaceIdBase(cap);
         for (i = 0; i < BIT(vspaceIdLowBits) && (vspaceId + i == 0 || pool->array[i]); i++);
 
         if (i == BIT(vspaceIdLowBits)) {

@@ -305,7 +305,7 @@ void print_cap_arch(cap_t cap)
         }
         break;
     }
-    case cap_asid_control_cap: {
+    case cap_vspace_id_control_cap: {
         /* only one in the system */
         printf("asid_control\n");
         break;
@@ -317,8 +317,8 @@ void print_cap_arch(cap_t cap)
         _cap_frame_print_attrs_vptr(vptr, find_ret.vspace_root);
         break;
     }
-    case cap_asid_pool_cap: {
-        printf("%p_asid_pool\n", (void *)cap_asid_pool_cap_get_capVspaceIdPool(cap));
+    case cap_vspace_id_pool_cap: {
+        printf("%p_asid_pool\n", (void *)cap_vspace_id_pool_cap_get_capVspaceIdPool(cap));
         break;
     }
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
@@ -351,9 +351,9 @@ void print_object_arch(cap_t cap)
         /* don't need to deal with these objects since they get handled from vtable */
         break;
 
-    case cap_asid_pool_cap: {
+    case cap_vspace_id_pool_cap: {
         printf("%p_asid_pool = asid_pool ",
-               (void *)cap_asid_pool_cap_get_capVspaceIdPool(cap));
+               (void *)cap_vspace_id_pool_cap_get_capVspaceIdPool(cap));
         obj_asidpool_print_attrs(cap);
         break;
     }

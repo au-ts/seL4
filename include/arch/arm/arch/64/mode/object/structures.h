@@ -93,10 +93,10 @@ static inline word_t CONST cap_get_archCapSizeBits(cap_t cap)
     case cap_vspace_cap:
         return seL4_VSpaceBits;
 
-    case cap_asid_pool_cap:
+    case cap_vspace_id_pool_cap:
         return seL4_ASIDPoolBits;
 
-    case cap_asid_control_cap:
+    case cap_vspace_id_control_cap:
         return 0;
 
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
@@ -131,10 +131,10 @@ static inline bool_t CONST cap_get_archCapIsPhysical(cap_t cap)
     case cap_vspace_cap:
         return true;
 
-    case cap_asid_pool_cap:
+    case cap_vspace_id_pool_cap:
         return true;
 
-    case cap_asid_control_cap:
+    case cap_vspace_id_control_cap:
         return false;
 
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
@@ -168,11 +168,11 @@ static inline void *CONST cap_get_archCapPtr(cap_t cap)
     case cap_vspace_cap:
         return VSPACE_PTR(cap_vspace_cap_get_capVSBasePtr(cap));
 
-    case cap_asid_control_cap:
+    case cap_vspace_id_control_cap:
         return NULL;
 
-    case cap_asid_pool_cap:
-        return VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capVspaceIdPool(cap));
+    case cap_vspace_id_pool_cap:
+        return VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVspaceIdPool(cap));
 
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
     case cap_vcpu_cap:

@@ -20,7 +20,7 @@ static inline void arm_obj_iospace_print_attrs(cap_t iospace_cap)
 
 static inline void obj_asidpool_print_attrs(cap_t asid_cap)
 {
-    printf("(asid_high: 0x%lx)\n", (long unsigned int)VSPACE_ID_HIGH(cap_asid_pool_cap_get_capVSpaceIdBase(asid_cap)));
+    printf("(asid_high: 0x%lx)\n", (long unsigned int)VSPACE_ID_HIGH(cap_vspace_id_pool_cap_get_capVSpaceIdBase(asid_cap)));
 }
 
 #endif /* CONFIG_PRINTING */

@@ -76,16 +76,16 @@ block page_directory_cap(capPDMappedVSpaceId, capPDIsMapped,
     field capType            4
 }
 
--- Cap to the table of 2^8 ASID pools
-block asid_control_cap {
+-- Cap to the table of 2^8 VspaceID pools
+block vspace_id_control_cap {
     padding       32
 
     padding       28
     field capType  4
 }
 
--- Cap to a pool of 2^10 asids
-block asid_pool_cap {
+-- Cap to a pool of 2^10 vspace ids
+block vspace_id_pool_cap {
     padding                15
     field capVSpaceIdBase      17
 
@@ -165,10 +165,10 @@ tagged_union cap capType {
     -- 4-bit tag arch caps
     tag small_frame_cap      1
     tag frame_cap            3
-    tag asid_pool_cap        5
+    tag vspace_id_pool_cap        5
     tag page_table_cap       7
     tag page_directory_cap   9
-    tag asid_control_cap    11
+    tag vspace_id_control_cap    11
     -- Do not extend odd 4-bit caps types beyond 13, as we use
     -- 15 (0xf) to determine which caps are 8-bit.
 

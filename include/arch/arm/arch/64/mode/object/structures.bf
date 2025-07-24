@@ -59,8 +59,8 @@ block vspace_cap {
 #endif
 }
 
--- Cap to the table of 2^7 ASID pools
-block asid_control_cap {
+-- Cap to the table of 2^7 VspaceId pools
+block vspace_id_control_cap {
     padding                          64
 
     field capType                    5
@@ -68,7 +68,7 @@ block asid_control_cap {
 }
 
 -- Cap to a pool of 2^9 ASIDs
-block asid_pool_cap {
+block vspace_id_pool_cap {
     padding                         64
 
     field capType                   5
@@ -170,8 +170,8 @@ tagged_union cap capType {
     tag frame_cap                   1
     tag page_table_cap              3
     tag vspace_cap                  9
-    tag asid_control_cap            11
-    tag asid_pool_cap               13
+    tag vspace_id_control_cap            11
+    tag vspace_id_pool_cap               13
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
     tag vcpu_cap                    15
 #endif

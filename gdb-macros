@@ -264,12 +264,12 @@ define disp_cap
 
     set $subtype = (subcap_tag_t)(($cap.words[0] & 0xf000000) >> 24)
 
-    if( $subtype == subcap_asid_control_cap )
-      printf "Subtype: subcap_asid_control_cap\n"
+    if( $subtype == subcap_vspace_id_control_cap )
+      printf "Subtype: subcap_vspace_id_control_cap\n"
     end
 
-    if( $subtype == subcap_asid_pool_cap )
-      printf "Subtype: subcap_asid_pool_cap\n"
+    if( $subtype == subcap_vspace_id_pool_cap )
+      printf "Subtype: subcap_vspace_id_pool_cap\n"
       printf "capVSpaceIdBase: %x\n", $cap.words[1] & 0xffff
       printf "capType: %x\n", ($cap.words[0] >> 28) & 0xf
       printf "capVspaceIdPool %x\n", ($cap.words[0] << 12)

@@ -26,7 +26,7 @@ static void cap_frame_print_attrs_pt(pte_t *ptSlot);
 
 static void obj_asidpool_print_attrs(cap_t asid_cap)
 {
-    vspace_id_t vspaceId = cap_asid_pool_cap_get_capVSpaceIdBase(asid_cap);
+    vspace_id_t vspaceId = cap_vspace_id_pool_cap_get_capVSpaceIdBase(asid_cap);
     printf("(vspaceId/asid_high: 0x%lx)\n", VSPACE_ID_HIGH(vspaceId));
 }
 
@@ -139,7 +139,7 @@ void print_cap_arch(cap_t cap)
         }
         break;
     }
-    case cap_asid_control_cap: {
+    case cap_vspace_id_control_cap: {
         /* only one in the system */
         printf("asid_control\n");
         break;
@@ -152,8 +152,8 @@ void print_cap_arch(cap_t cap)
         cap_frame_print_attrs_vptr(vptr, find_ret.vspace_root);
         break;
     }
-    case cap_asid_pool_cap: {
-        printf("%p_asid_pool\n", (void *)cap_asid_pool_cap_get_capVspaceIdPool(cap));
+    case cap_vspace_id_pool_cap: {
+        printf("%p_asid_pool\n", (void *)cap_vspace_id_pool_cap_get_capVspaceIdPool(cap));
         break;
     }
     /* riscv specific caps */
@@ -178,9 +178,9 @@ void print_object_arch(cap_t cap)
         /* don't need to deal with these objects since they get handled from vtable */
         break;
 
-    case cap_asid_pool_cap: {
+    case cap_vspace_id_pool_cap: {
         printf("%p_asid_pool = asid_pool ",
-               (void *)cap_asid_pool_cap_get_capVspaceIdPool(cap));
+               (void *)cap_vspace_id_pool_cap_get_capVspaceIdPool(cap));
         obj_asidpool_print_attrs(cap);
         break;
     }

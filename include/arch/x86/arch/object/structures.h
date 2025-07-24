@@ -165,10 +165,10 @@ static inline word_t CONST cap_get_archCapSizeBits(cap_t cap)
         return seL4_IOPageTableBits;
 #endif
 
-    case cap_asid_control_cap:
+    case cap_vspace_id_control_cap:
         return 0;
 
-    case cap_asid_pool_cap:
+    case cap_vspace_id_pool_cap:
         return seL4_ASIDPoolBits;
 
 #ifdef CONFIG_VTX
@@ -218,10 +218,10 @@ static inline bool_t CONST cap_get_archCapIsPhysical(cap_t cap)
         return true;
 #endif
 
-    case cap_asid_control_cap:
+    case cap_vspace_id_control_cap:
         return false;
 
-    case cap_asid_pool_cap:
+    case cap_vspace_id_pool_cap:
         return true;
 
 #ifdef CONFIG_VTX
@@ -271,11 +271,11 @@ static inline void *CONST cap_get_archCapPtr(cap_t cap)
         return (void *)(cap_io_page_table_cap_get_capIOPTBasePtr(cap));
 #endif
 
-    case cap_asid_control_cap:
+    case cap_vspace_id_control_cap:
         return NULL;
 
-    case cap_asid_pool_cap:
-        return VSPACE_ID_POOL_PTR(cap_asid_pool_cap_get_capVspaceIdPool(cap));
+    case cap_vspace_id_pool_cap:
+        return VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVspaceIdPool(cap));
 
 #ifdef CONFIG_VTX
     case cap_ept_pt_cap:
