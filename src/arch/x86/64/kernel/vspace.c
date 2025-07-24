@@ -1192,7 +1192,7 @@ static exception_t decodeX64PageDirectoryInvocation(
     }
 
     vspace = (vspace_root_t *)pptr_of_cap(vspaceCap);
-    vspaceId = cap_get_capMappedASID(vspaceCap);
+    vspaceId = cap_get_capMappedVSpaceId(vspaceCap);
 
     if (vaddr > USER_TOP) {
         userError("X64PageDirectory: Mapping address too high.");
@@ -1356,7 +1356,7 @@ static exception_t decodeX64PDPTInvocation(
     }
 
     vspace = (vspace_root_t *)pptr_of_cap(vspaceCap);
-    vspaceId = cap_get_capMappedASID(vspaceCap);
+    vspaceId = cap_get_capMappedVSpaceId(vspaceCap);
 
     if (vaddr > USER_TOP) {
         userError("X64PDPT: Mapping address too high.");

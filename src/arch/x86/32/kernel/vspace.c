@@ -601,7 +601,7 @@ void setVMRoot(tcb_t *tcb)
         return;
     }
 
-    vspaceId = cap_get_capMappedASID(threadRoot);
+    vspaceId = cap_get_capMappedVSpaceId(threadRoot);
     find_ret = findVSpaceForVSpaceId(vspaceId);
     if (find_ret.status != EXCEPTION_NONE || find_ret.vspace_root != vspace_root) {
         SMP_COND_STATEMENT(tlb_bitmap_unset(paddr_to_pptr(getCurrentPD()), getCurrentCPUIndex());)

@@ -977,7 +977,7 @@ exception_t decodeX86FrameInvocation(
             return EXCEPTION_SYSCALL_ERROR;
         }
         vspace = (vspace_root_t *)pptr_of_cap(vspaceCap);
-        vspaceId = cap_get_capMappedASID(vspaceCap);
+        vspaceId = cap_get_capMappedVSpaceId(vspaceCap);
 
         if (cap_frame_cap_get_capFMappedVSpaceId(cap) != vspaceIdInvalid) {
             if (cap_frame_cap_get_capFMappedVSpaceId(cap) != vspaceId) {
@@ -1199,7 +1199,7 @@ static exception_t decodeX86PageTableInvocation(
     }
 
     vspace = (vspace_root_t *)pptr_of_cap(vspaceCap);
-    vspaceId = cap_get_capMappedASID(vspaceCap);
+    vspaceId = cap_get_capMappedVSpaceId(vspaceCap);
 
     if (vaddr > USER_TOP) {
         userError("X86PageTable: Mapping address too high.");
@@ -1369,7 +1369,7 @@ exception_t decodeX86MMUInvocation(
         vspaceCap = vspaceCapSlot->cap;
 
         if (!(isVTableRoot(vspaceCap) || VTX_TERNARY(cap_get_capType(vspaceCap) == cap_ept_pml4_cap, 0))
-            || cap_get_capMappedASID(vspaceCap) != vspaceIdInvalid) {
+            || cap_get_capMappedVSpaceId(vspaceCap) != vspaceIdInvalid) {
             userError("X86ASIDPool: Invalid vspace root.");
             current_syscall_error.type = seL4_InvalidCapability;
             current_syscall_error.invalidCapNumber = 1;

@@ -107,7 +107,7 @@ typedef struct vspace_id_pool vspace_id_pool_t;
 #define VSPACE_ID_LOW(a)         (a & MASK(vspaceIdLowBits))
 #define VSPACE_ID_HIGH(a)        ((a >> vspaceIdLowBits) & MASK(vspaceIdHighBits))
 
-static inline vspace_id_t PURE cap_get_capMappedASID(cap_t cap)
+static inline vspace_id_t PURE cap_get_capMappedVSpaceId(cap_t cap)
 {
     cap_tag_t ctag;
 

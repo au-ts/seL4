@@ -79,7 +79,7 @@ static inline void cap_frame_cap_ptr_set_capFMappedVSpaceId(cap_t *cap, vspace_i
     *cap = cap_frame_cap_set_capFMappedVSpaceId(*cap, vspaceId);
 }
 
-static inline vspace_id_t PURE cap_get_capMappedASID(cap_t cap)
+static inline vspace_id_t PURE cap_get_capMappedVSpaceId(cap_t cap)
 {
     cap_tag_t ctag;
 
