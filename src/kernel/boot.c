@@ -314,7 +314,7 @@ BOOT_CODE cap_t create_ipcbuf_frame_cap(cap_t root_cnode_cap, cap_t pd_cap, vptr
     clearMemory((void *)rootserver.ipc_buf, PAGE_BITS);
 
     /* create a cap of it and write it into the root CNode */
-    cap_t cap = create_mapped_it_frame_cap(pd_cap, rootserver.ipc_buf, vptr, IT_ASID, false, false);
+    cap_t cap = create_mapped_it_frame_cap(pd_cap, rootserver.ipc_buf, vptr, IT_VSPACE_ID, false, false);
     write_slot(SLOT_PTR(pptr_of_cap(root_cnode_cap), seL4_CapInitThreadIPCBuffer), cap);
 
     return cap;
@@ -323,7 +323,7 @@ BOOT_CODE cap_t create_ipcbuf_frame_cap(cap_t root_cnode_cap, cap_t pd_cap, vptr
 BOOT_CODE void create_bi_frame_cap(cap_t root_cnode_cap, cap_t pd_cap, vptr_t vptr)
 {
     /* create a cap of it and write it into the root CNode */
-    cap_t cap = create_mapped_it_frame_cap(pd_cap, rootserver.boot_info, vptr, IT_ASID, false, false);
+    cap_t cap = create_mapped_it_frame_cap(pd_cap, rootserver.boot_info, vptr, IT_VSPACE_ID, false, false);
     write_slot(SLOT_PTR(pptr_of_cap(root_cnode_cap), seL4_CapBootInfoFrame), cap);
 }
 
@@ -398,7 +398,7 @@ BOOT_CODE create_frames_of_region_ret_t create_frames_of_region(
 
     for (f = reg.start; f < reg.end; f += BIT(PAGE_BITS)) {
         if (do_map) {
-            frame_cap = create_mapped_it_frame_cap(pd_cap, f, pptr_to_paddr((void *)(f - pv_offset)), IT_ASID, false, true);
+            frame_cap = create_mapped_it_frame_cap(pd_cap, f, pptr_to_paddr((void *)(f - pv_offset)), IT_VSPACE_ID, false, true);
         } else {
             frame_cap = create_unmapped_it_frame_cap(f, false);
         }
@@ -423,7 +423,7 @@ BOOT_CODE create_frames_of_region_ret_t create_frames_of_region(
 
 BOOT_CODE cap_t create_it_asid_pool(cap_t root_cnode_cap)
 {
-    cap_t ap_cap = cap_vspace_id_pool_cap_new(VSPACE_ID_HIGH(IT_ASID), rootserver.asid_pool);
+    cap_t ap_cap = cap_vspace_id_pool_cap_new(VSPACE_ID_HIGH(IT_VSPACE_ID), rootserver.asid_pool);
     write_slot(SLOT_PTR(pptr_of_cap(root_cnode_cap), seL4_CapInitThreadASIDPool), ap_cap);
 
     /* create ASID control cap */

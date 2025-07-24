@@ -502,7 +502,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
     cap_t pd_cap =
         cap_page_directory_cap_new(
             true,    /* capPDIsMapped   */
-            IT_ASID, /* capPDMappedVSpaceId */
+            IT_VSPACE_ID, /* capPDMappedVSpaceId */
             rootserver.vspace  /* capPDBasePtr    */
         );
     slot_pos_before = ndks_boot.slot_pos_cur;
@@ -513,7 +513,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
          pt_vptr < it_v_reg.end;
          pt_vptr += BIT(PT_INDEX_BITS + PAGE_BITS)) {
         if (!provide_cap(root_cnode_cap,
-                         create_it_page_table_cap(pd_cap, it_alloc_paging(), pt_vptr, IT_ASID))
+                         create_it_page_table_cap(pd_cap, it_alloc_paging(), pt_vptr, IT_VSPACE_ID))
            ) {
             return cap_null_cap_new();
         }
@@ -591,8 +591,8 @@ BOOT_CODE void activate_kernel_vspace(void)
 BOOT_CODE void write_it_asid_pool(cap_t it_ap_cap, cap_t it_pd_cap)
 {
     vspace_id_pool_t *ap = VSPACE_ID_POOL_PTR(pptr_of_cap(it_ap_cap));
-    ap->array[VSPACE_ID_LOW(IT_ASID)] = PDE_PTR(pptr_of_cap(it_pd_cap));
-    armKSVspaceIdTable[VSPACE_ID_HIGH(IT_ASID)] = ap;
+    ap->array[VSPACE_ID_LOW(IT_VSPACE_ID)] = PDE_PTR(pptr_of_cap(it_pd_cap));
+    armKSVspaceIdTable[VSPACE_ID_HIGH(IT_VSPACE_ID)] = ap;
 }
 
 /* ==================== BOOT CODE FINISHES HERE ==================== */

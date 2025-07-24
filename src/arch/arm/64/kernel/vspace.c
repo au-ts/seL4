@@ -482,7 +482,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
 
     /* create the PGD */
     vspace_cap = cap_vspace_cap_new(
-                     IT_ASID,           /* capVSMappedVSpaceId */
+                     IT_VSPACE_ID,           /* capVSMappedVSpaceId */
                      rootserver.vspace, /* capVSBasePtr    */
                      1                  /* capVSIsMapped   */
 #ifdef CONFIG_ARM_SMMU
@@ -497,7 +497,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
     for (vptr = ROUND_DOWN(it_v_reg.start, GET_ULVL_PGSIZE_BITS(ULVL_FRM_ARM_PT_LVL(0)));
          vptr < it_v_reg.end;
          vptr += GET_ULVL_PGSIZE(ULVL_FRM_ARM_PT_LVL(0))) {
-        if (!provide_cap(root_cnode_cap, create_it_pud_cap(vspace_cap, it_alloc_paging(), vptr, IT_ASID))) {
+        if (!provide_cap(root_cnode_cap, create_it_pud_cap(vspace_cap, it_alloc_paging(), vptr, IT_VSPACE_ID))) {
             return cap_null_cap_new();
         }
     }
@@ -506,7 +506,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
     for (vptr = ROUND_DOWN(it_v_reg.start, GET_ULVL_PGSIZE_BITS(ULVL_FRM_ARM_PT_LVL(1)));
          vptr < it_v_reg.end;
          vptr += GET_ULVL_PGSIZE(ULVL_FRM_ARM_PT_LVL(1))) {
-        if (!provide_cap(root_cnode_cap, create_it_pd_cap(vspace_cap, it_alloc_paging(), vptr, IT_ASID))) {
+        if (!provide_cap(root_cnode_cap, create_it_pd_cap(vspace_cap, it_alloc_paging(), vptr, IT_VSPACE_ID))) {
             return cap_null_cap_new();
         }
     }
@@ -515,7 +515,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
     for (vptr = ROUND_DOWN(it_v_reg.start, GET_ULVL_PGSIZE_BITS(ULVL_FRM_ARM_PT_LVL(2)));
          vptr < it_v_reg.end;
          vptr += GET_ULVL_PGSIZE(ULVL_FRM_ARM_PT_LVL(2))) {
-        if (!provide_cap(root_cnode_cap, create_it_pt_cap(vspace_cap, it_alloc_paging(), vptr, IT_ASID))) {
+        if (!provide_cap(root_cnode_cap, create_it_pt_cap(vspace_cap, it_alloc_paging(), vptr, IT_VSPACE_ID))) {
             return cap_null_cap_new();
         }
     }
@@ -567,8 +567,8 @@ BOOT_CODE void write_it_asid_pool(cap_t it_ap_cap, cap_t it_vspace_cap)
                               , 0, false
 #endif
                           );
-    ap->array[VSPACE_ID_LOW(IT_ASID)] = asid_map;
-    armKSVspaceIdTable[VSPACE_ID_HIGH(IT_ASID)] = ap;
+    ap->array[VSPACE_ID_LOW(IT_VSPACE_ID)] = asid_map;
+    armKSVspaceIdTable[VSPACE_ID_HIGH(IT_VSPACE_ID)] = ap;
 }
 
 /* ==================== BOOT CODE FINISHES HERE ==================== */

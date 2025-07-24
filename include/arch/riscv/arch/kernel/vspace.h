@@ -22,7 +22,7 @@ void write_it_asid_pool(cap_t it_ap_cap, cap_t it_lvl1pt_cap);
 
 
 /* ==================== BOOT CODE FINISHES HERE ==================== */
-#define IT_ASID 1
+#define IT_VSPACE_ID 1
 
 struct lookupPTSlot_ret {
     pte_t *ptSlot;

@@ -409,7 +409,7 @@ static BOOT_CODE cap_t create_it_page_directory_cap(cap_t vspace_cap, pptr_t ppt
     cap_t cap;
     cap = cap_page_directory_cap_new(
               true,    /* capPDIsMapped   */
-              IT_ASID, /* capPDMappedVSpaceId */
+              IT_VSPACE_ID, /* capPDMappedVSpaceId */
               vptr,    /* capPDMappedAddress */
               pptr  /* capPDBasePtr    */
           );
@@ -439,7 +439,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
 
     slot_pos_before = ndks_boot.slot_pos_cur;
     copyGlobalMappings((vspace_root_t *)rootserver.vspace);
-    cap_t pd_cap = create_it_page_directory_cap(cap_null_cap_new(), rootserver.vspace, 0, IT_ASID);
+    cap_t pd_cap = create_it_page_directory_cap(cap_null_cap_new(), rootserver.vspace, 0, IT_VSPACE_ID);
     write_slot(SLOT_PTR(pptr_of_cap(root_cnode_cap), seL4_CapInitThreadVSpace), pd_cap);
     vspace_cap = pd_cap;
 
@@ -449,7 +449,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
          vptr < it_v_reg.end;
          vptr += BIT(PT_INDEX_BITS + PAGE_BITS)) {
         if (!provide_cap(root_cnode_cap,
-                         create_it_page_table_cap(vspace_cap, it_alloc_paging(), vptr, IT_ASID))
+                         create_it_page_table_cap(vspace_cap, it_alloc_paging(), vptr, IT_VSPACE_ID))
            ) {
             return cap_null_cap_new();
         }

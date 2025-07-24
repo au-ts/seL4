@@ -12,7 +12,7 @@
 #include <object/structures.h>
 #include <plat/machine.h>
 
-#define IT_ASID 1 /* initial thread's ASID */
+#define IT_VSPACE_ID 1 /* initial thread's ASID */
 
 
 struct lookupPTSlot_ret {

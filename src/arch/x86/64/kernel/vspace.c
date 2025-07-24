@@ -698,7 +698,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
     slot_pos_before = ndks_boot.slot_pos_cur;
     copyGlobalMappings(PML4_PTR(rootserver.vspace));
     vspace_cap = cap_pml4_cap_new(
-                     IT_ASID,        /* capPML4MappedVspaceId */
+                     IT_VSPACE_ID,        /* capPML4MappedVspaceId */
                      rootserver.vspace,           /* capPML4BasePtr   */
                      1               /* capPML4IsMapped   */
                  );
@@ -711,7 +711,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
          vptr < it_v_reg.end;
          vptr += BIT(PML4_INDEX_OFFSET)) {
         if (!provide_cap(root_cnode_cap,
-                         create_it_pdpt_cap(vspace_cap, it_alloc_paging(), vptr, IT_ASID))
+                         create_it_pdpt_cap(vspace_cap, it_alloc_paging(), vptr, IT_VSPACE_ID))
            ) {
             return cap_null_cap_new();
         }
@@ -722,7 +722,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
          vptr < it_v_reg.end;
          vptr += BIT(PDPT_INDEX_OFFSET)) {
         if (!provide_cap(root_cnode_cap,
-                         create_it_pd_cap(vspace_cap, it_alloc_paging(), vptr, IT_ASID))
+                         create_it_pd_cap(vspace_cap, it_alloc_paging(), vptr, IT_VSPACE_ID))
            ) {
             return cap_null_cap_new();
         }
@@ -733,7 +733,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
          vptr < it_v_reg.end;
          vptr += BIT(PD_INDEX_OFFSET)) {
         if (!provide_cap(root_cnode_cap,
-                         create_it_pt_cap(vspace_cap, it_alloc_paging(), vptr, IT_ASID))
+                         create_it_pt_cap(vspace_cap, it_alloc_paging(), vptr, IT_VSPACE_ID))
            ) {
             return cap_null_cap_new();
         }
