@@ -100,3 +100,9 @@ SECTIONS
     . = ALIGN(4K);
     ki_end = .;
 }
+
+NOCROSSREFS_TO(.boot .text .small .rodata .data .bss ._idle_thread);
+NOCROSSREFS_TO(.boot.text .text .small .rodata .data .bss ._idle_thread);
+NOCROSSREFS_TO(.boot.rodata .text .small .rodata .data .bss ._idle_thread);
+NOCROSSREFS_TO(.boot.data .text .small .rodata .data .bss ._idle_thread);
+NOCROSSREFS_TO(.boot.bss .text .small .rodata .data .bss ._idle_thread);

@@ -84,3 +84,5 @@ SECTIONS
         *(.comment)
     }
 }
+
+NOCROSSREFS_TO(.boot .text .rodata .data .bss);
