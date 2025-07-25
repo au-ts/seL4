@@ -27,7 +27,7 @@ struct vspace_id_pool {
 typedef struct vspace_id_pool vspace_id_pool_t;
 
 #define VSPACE_ID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
-#define nVSpaceIdPools          BIT(vspaceIdHighBits)
+#define nVSpaceIDPools          BIT(vspaceIdHighBits)
 #define VSPACE_ID_LOW(a)         (a & MASK(vspaceIdLowBits))
 #define VSPACE_ID_HIGH(a)        ((a >> vspaceIdLowBits) & MASK(vspaceIdHighBits))
 
@@ -100,7 +100,7 @@ static inline word_t CONST cap_get_archCapSizeBits(cap_t cap)
         return 0;
 
     case cap_vspace_id_pool_cap:
-        return seL4_VSpaceIdPoolBits;
+        return seL4_VSpaceIDPoolBits;
 
     default:
         assert(!"Unknown cap type");
@@ -127,7 +127,7 @@ static inline void *CONST cap_get_archCapPtr(cap_t cap)
         return NULL;
 
     case cap_vspace_id_pool_cap:
-        return VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap));
+        return VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap));
 
     default:
         assert(!"Unknown cap type");

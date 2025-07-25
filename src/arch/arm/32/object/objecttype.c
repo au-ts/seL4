@@ -65,12 +65,12 @@ deriveCap_ret_t Arch_deriveCap(cte_t *slot, cap_t cap)
     /* This is a deviation from haskell, which has only
      * one frame cap type on ARM */
     case cap_small_frame_cap:
-        ret.cap = cap_small_frame_cap_set_capFMappedVSpaceId(cap, vspaceIdInvalid);
+        ret.cap = cap_small_frame_cap_set_capFMappedVSpaceID(cap, vspaceIdInvalid);
         ret.status = EXCEPTION_NONE;
         return ret;
 
     case cap_frame_cap:
-        ret.cap = cap_frame_cap_set_capFMappedVSpaceId(cap, vspaceIdInvalid);
+        ret.cap = cap_frame_cap_set_capFMappedVSpaceID(cap, vspaceIdInvalid);
         ret.status = EXCEPTION_NONE;
         return ret;
 
@@ -154,14 +154,14 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     switch (cap_get_capType(cap)) {
     case cap_vspace_id_pool_cap:
         if (final) {
-            deleteVSpaceIdPool(cap_vspace_id_pool_cap_get_capVSpaceIdBase(cap),
-                           VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap)));
+            deleteVSpaceIDPool(cap_vspace_id_pool_cap_get_capVSpaceIDBase(cap),
+                           VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap)));
         }
         break;
 
     case cap_page_directory_cap:
         if (final && cap_page_directory_cap_get_capPDIsMapped(cap)) {
-            deleteVSpaceId(cap_page_directory_cap_get_capPDMappedVSpaceId(cap),
+            deleteVSpaceID(cap_page_directory_cap_get_capPDMappedVSpaceID(cap),
                        PDE_PTR(cap_page_directory_cap_get_capPDBasePtr(cap)));
         }
         break;
@@ -169,14 +169,14 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     case cap_page_table_cap:
         if (final && cap_page_table_cap_get_capPTIsMapped(cap)) {
             unmapPageTable(
-                cap_page_table_cap_get_capPTMappedVSpaceId(cap),
+                cap_page_table_cap_get_capPTMappedVSpaceID(cap),
                 cap_page_table_cap_get_capPTMappedAddress(cap),
                 PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap)));
         }
         break;
 
     case cap_small_frame_cap:
-        if (cap_small_frame_cap_get_capFMappedVSpaceId(cap)) {
+        if (cap_small_frame_cap_get_capFMappedVSpaceID(cap)) {
 #ifdef CONFIG_TK1_SMMU
             if (isIOSpaceFrameCap(cap)) {
                 unmapIOPage(cap);
@@ -185,14 +185,14 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
 #endif
 
             unmapPage(ARMSmallPage,
-                      cap_small_frame_cap_get_capFMappedVSpaceId(cap),
+                      cap_small_frame_cap_get_capFMappedVSpaceID(cap),
                       cap_small_frame_cap_get_capFMappedAddress(cap),
                       (void *)cap_small_frame_cap_get_capFBasePtr(cap));
         }
         break;
 
     case cap_frame_cap:
-        if (cap_frame_cap_get_capFMappedVSpaceId(cap)) {
+        if (cap_frame_cap_get_capFMappedVSpaceID(cap)) {
 #ifdef CONFIG_KERNEL_LOG_BUFFER
             /* If the last cap to the user-level log buffer frame is being revoked,
              * reset the ksLog so that the kernel doesn't log anymore
@@ -218,7 +218,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
 #endif /* CONFIG_BENCHMARK_KERNEL_LOG_BUFFER */
 
             unmapPage(cap_frame_cap_get_capFSize(cap),
-                      cap_frame_cap_get_capFMappedVSpaceId(cap),
+                      cap_frame_cap_get_capFMappedVSpaceID(cap),
                       cap_frame_cap_get_capFMappedAddress(cap),
                       (void *)cap_frame_cap_get_capFBasePtr(cap));
         }
@@ -300,8 +300,8 @@ bool_t CONST Arch_sameRegionAs(cap_t cap_a, cap_t cap_b)
 
     case cap_vspace_id_pool_cap:
         if (cap_get_capType(cap_b) == cap_vspace_id_pool_cap) {
-            return cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap_a) ==
-                   cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap_b);
+            return cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap_a) ==
+                   cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap_b);
         }
         break;
 

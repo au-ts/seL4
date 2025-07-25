@@ -394,7 +394,7 @@ static BOOT_CODE cap_t create_it_page_table_cap(cap_t vspace_cap, pptr_t pptr, v
     cap_t cap;
     cap = cap_page_table_cap_new(
               1,    /* capPTIsMapped      */
-              vspaceId, /* capPTMappedVSpaceId    */
+              vspaceId, /* capPTMappedVSpaceID    */
               vptr, /* capPTMappedAddress */
               pptr  /* capPTBasePtr       */
           );
@@ -409,7 +409,7 @@ static BOOT_CODE cap_t create_it_page_directory_cap(cap_t vspace_cap, pptr_t ppt
     cap_t cap;
     cap = cap_page_directory_cap_new(
               true,    /* capPDIsMapped   */
-              IT_VSPACE_ID, /* capPDMappedVSpaceId */
+              IT_VSPACE_ID, /* capPDMappedVSpaceID */
               vptr,    /* capPDMappedAddress */
               pptr  /* capPDBasePtr    */
           );
@@ -477,11 +477,11 @@ static BOOT_CODE cap_t create_it_frame_cap(pptr_t pptr, vptr_t vptr, vspace_id_t
     return
         cap_frame_cap_new(
             frame_size,                    /* capFSize           */
-            VSPACE_ID_LOW(vspaceId),                /* capFMappedVSpaceIdLow  */
+            VSPACE_ID_LOW(vspaceId),                /* capFMappedVSpaceIDLow  */
             vptr,                          /* capFMappedAddress  */
             map_type,                      /* capFMapType        */
             false,                         /* capFIsDevice       */
-            VSPACE_ID_HIGH(vspaceId),               /* capFMappedVSpaceIdHigh */
+            VSPACE_ID_HIGH(vspaceId),               /* capFMappedVSpaceIDHigh */
             wordFromVMRights(VMReadWrite), /* capFVMRights       */
             pptr                           /* capFBasePtr        */
         );
@@ -590,7 +590,7 @@ void setVMRoot(tcb_t *tcb)
     cap_t               threadRoot;
     vspace_root_t *vspace_root;
     vspace_id_t              vspaceId;
-    findVSpaceForVSpaceId_ret_t find_ret;
+    findVSpaceForVSpaceID_ret_t find_ret;
 
     threadRoot = TCB_PTR_CTE_PTR(tcb, tcbVTable)->cap;
 
@@ -601,8 +601,8 @@ void setVMRoot(tcb_t *tcb)
         return;
     }
 
-    vspaceId = cap_get_capMappedVSpaceId(threadRoot);
-    find_ret = findVSpaceForVSpaceId(vspaceId);
+    vspaceId = cap_get_capMappedVSpaceID(threadRoot);
+    find_ret = findVSpaceForVSpaceID(vspaceId);
     if (find_ret.status != EXCEPTION_NONE || find_ret.vspace_root != vspace_root) {
         SMP_COND_STATEMENT(tlb_bitmap_unset(paddr_to_pptr(getCurrentPD()), getCurrentCPUIndex());)
         setCurrentPD(kpptr_to_paddr(ia32KSGlobalPD));

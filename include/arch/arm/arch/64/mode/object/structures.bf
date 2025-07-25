@@ -21,7 +21,7 @@ base 64(48,1)
 ---- ARM-specific caps
 
 block frame_cap {
-    field capFMappedVSpaceId             16
+    field capFMappedVSpaceID             16
     field_high capFBasePtr           48
 
     field capType                    5
@@ -34,7 +34,7 @@ block frame_cap {
 
 -- Page table caps
 block page_table_cap {
-    field capPTMappedVSpaceId            16
+    field capPTMappedVSpaceID            16
     field_high capPTBasePtr          48
 
     field capType                    5
@@ -46,7 +46,7 @@ block page_table_cap {
 
 -- First-level page table (vspace_root)
 block vspace_cap {
-    field capVSMappedVSpaceId            16
+    field capVSMappedVSpaceID            16
     field_high capVSBasePtr          48
 
     field capType                    5
@@ -59,7 +59,7 @@ block vspace_cap {
 #endif
 }
 
--- Cap to the table of 2^7 VSpaceId pools
+-- Cap to the table of 2^7 VSpaceID pools
 block vspace_id_control_cap {
     padding                          64
 
@@ -67,14 +67,14 @@ block vspace_id_control_cap {
     padding                          59
 }
 
--- Cap to a pool of 2^9 VSpaceIds
+-- Cap to a pool of 2^9 VSpaceIDs
 block vspace_id_pool_cap {
     padding                         64
 
     field capType                   5
-    field capVSpaceIdBase               16
+    field capVSpaceIDBase               16
     padding                         6
-    field_high capVSpaceIdPool          37
+    field_high capVSpaceIDPool          37
 }
 
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT

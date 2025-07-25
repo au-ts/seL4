@@ -474,7 +474,7 @@ void setVMRoot(tcb_t *tcb)
     cap_t threadRoot;
     vspace_id_t vspaceId;
     pml4e_t *pml4;
-    findVSpaceForVSpaceId_ret_t find_ret;
+    findVSpaceForVSpaceID_ret_t find_ret;
     cr3_t cr3;
 
     threadRoot = TCB_PTR_CTE_PTR(tcb, tcbVTable)->cap;
@@ -486,8 +486,8 @@ void setVMRoot(tcb_t *tcb)
     }
 
     pml4 = PML4E_PTR(cap_pml4_cap_get_capPML4BasePtr(threadRoot));
-    vspaceId = cap_pml4_cap_get_capPML4MappedVSpaceId(threadRoot);
-    find_ret = findVSpaceForVSpaceId(vspaceId);
+    vspaceId = cap_pml4_cap_get_capPML4MappedVSpaceID(threadRoot);
+    find_ret = findVSpaceForVSpaceID(vspaceId);
     if (unlikely(find_ret.status != EXCEPTION_NONE || find_ret.vspace_root != pml4)) {
         setCurrentUserVSpaceRoot(kpptr_to_paddr(X86_GLOBAL_VSPACE_ROOT), (hw_asid_t){0});
         return;
@@ -533,7 +533,7 @@ BOOT_CODE void map_it_frame_cap(cap_t pd_cap, cap_t frame_cap)
     void *pptr = (void *)cap_frame_cap_get_capFBasePtr(frame_cap);
 
     assert(cap_frame_cap_get_capFMapType(frame_cap) == X86_MappingVSpace);
-    assert(cap_frame_cap_get_capFMappedVSpaceId(frame_cap) != vspaceIdInvalid);
+    assert(cap_frame_cap_get_capFMappedVSpaceID(frame_cap) != vspaceIdInvalid);
     pml4 += GET_PML4_INDEX(vptr);
     assert(pml4e_ptr_get_present(pml4));
     pdpt = paddr_to_pptr(pml4e_ptr_get_pdpt_base_address(pml4));
@@ -641,7 +641,7 @@ static BOOT_CODE cap_t create_it_pdpt_cap(cap_t vspace_cap, pptr_t pptr, vptr_t 
 {
     cap_t cap;
     cap = cap_pdpt_cap_new(
-              vspaceId,   /* capPDPTMappedVSpaceId    */
+              vspaceId,   /* capPDPTMappedVSpaceID    */
               pptr,   /* capPDPTBasePtr       */
               1,      /* capPDPTIsMapped      */
               vptr    /* capPDPTMappedAddress */
@@ -654,7 +654,7 @@ static BOOT_CODE cap_t create_it_pd_cap(cap_t vspace_cap, pptr_t pptr, vptr_t vp
 {
     cap_t cap;
     cap = cap_page_directory_cap_new(
-              vspaceId,   /* capPDMappedVSpaceId      */
+              vspaceId,   /* capPDMappedVSpaceID      */
               pptr,   /* capPDBasePtr         */
               1,      /* capPDIsMapped        */
               vptr    /* capPDMappedAddress   */
@@ -667,7 +667,7 @@ static BOOT_CODE cap_t create_it_pt_cap(cap_t vspace_cap, pptr_t pptr, vptr_t vp
 {
     cap_t cap;
     cap = cap_page_table_cap_new(
-              vspaceId,   /* capPTMappedVSpaceId      */
+              vspaceId,   /* capPTMappedVSpaceID      */
               pptr,   /* capPTBasePtr         */
               1,      /* capPTIsMapped        */
               vptr    /* capPTMappedAddress   */
@@ -698,7 +698,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
     slot_pos_before = ndks_boot.slot_pos_cur;
     copyGlobalMappings(PML4_PTR(rootserver.vspace));
     vspace_cap = cap_pml4_cap_new(
-                     IT_VSPACE_ID,        /* capPML4MappedVSpaceId */
+                     IT_VSPACE_ID,        /* capPML4MappedVSpaceID */
                      rootserver.vspace,           /* capPML4BasePtr   */
                      1               /* capPML4IsMapped   */
                  );
@@ -772,7 +772,7 @@ static BOOT_CODE cap_t create_it_frame_cap(pptr_t pptr, vptr_t vptr, vspace_id_t
 
     return
         cap_frame_cap_new(
-            vspaceId,                          /* capFMappedVSpaceId     */
+            vspaceId,                          /* capFMappedVSpaceID     */
             pptr,                          /* capFBasePtr        */
             frame_size,                    /* capFSize           */
             map_type,                      /* capFMapType        */
@@ -799,19 +799,19 @@ BOOT_CODE cap_t create_mapped_it_frame_cap(cap_t vspace_cap, pptr_t pptr, vptr_t
 
 
 
-exception_t performVSpaceIdPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot)
+exception_t performVSpaceIDPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot)
 {
     asid_map_t asid_map;
 #ifdef CONFIG_VTX
     if (cap_get_capType(vspaceCapSlot->cap) == cap_ept_pml4_cap) {
-        cap_ept_pml4_cap_ptr_set_capPML4MappedVSpaceId(&vspaceCapSlot->cap, asid);
+        cap_ept_pml4_cap_ptr_set_capPML4MappedVSpaceID(&vspaceCapSlot->cap, asid);
         cap_ept_pml4_cap_ptr_set_capPML4IsMapped(&vspaceCapSlot->cap, 1);
         asid_map = asid_map_asid_map_ept_new(cap_ept_pml4_cap_get_capPML4BasePtr(vspaceCapSlot->cap));
     } else
 #endif
     {
         assert(cap_get_capType(vspaceCapSlot->cap) == cap_pml4_cap);
-        cap_pml4_cap_ptr_set_capPML4MappedVSpaceId(&vspaceCapSlot->cap, vspaceId);
+        cap_pml4_cap_ptr_set_capPML4MappedVSpaceID(&vspaceCapSlot->cap, vspaceId);
         cap_pml4_cap_ptr_set_capPML4IsMapped(&vspaceCapSlot->cap, 1);
         asid_map = asid_map_asid_map_vspace_new(cap_pml4_cap_get_capPML4BasePtr(vspaceCapSlot->cap));
     }
@@ -1065,7 +1065,7 @@ static void flushPDPT(vspace_root_t *vspace, word_t vptr, pdpte_t *pdpt, vspace_
     hwASIDInvalidate(vspaceId, vspace);
 }
 
-/* This function is named funny, it's basically only used from VSpaceId pools (i.e software) */
+/* This function is named funny, it's basically only used from VSpaceID pools (i.e software) */
 void hwASIDInvalidate(vspace_id_t vspaceId, vspace_root_t *vspace)
 {
     /* invalidate the hw asid from the sw asid - ASID gets PCID and fixes up TLB map */
@@ -1074,10 +1074,10 @@ void hwASIDInvalidate(vspace_id_t vspaceId, vspace_root_t *vspace)
 
 void unmapPageDirectory(vspace_id_t vspaceId, vptr_t vaddr, pde_t *pd)
 {
-    findVSpaceForVSpaceId_ret_t find_ret;
+    findVSpaceForVSpaceID_ret_t find_ret;
     lookupPDPTSlot_ret_t    lu_ret;
 
-    find_ret = findVSpaceForVSpaceId(vspaceId);
+    find_ret = findVSpaceForVSpaceID(vspaceId);
     if (find_ret.status != EXCEPTION_NONE) {
         return;
     }
@@ -1109,7 +1109,7 @@ static exception_t performX64PageDirectoryInvocationUnmap(cap_t cap, cte_t *ctSl
     if (cap_page_directory_cap_get_capPDIsMapped(cap)) {
         pde_t *pd = PDE_PTR(cap_page_directory_cap_get_capPDBasePtr(cap));
         unmapPageDirectory(
-            cap_page_directory_cap_get_capPDMappedVSpaceId(cap),
+            cap_page_directory_cap_get_capPDMappedVSpaceID(cap),
             cap_page_directory_cap_get_capPDMappedAddress(cap),
             pd
         );
@@ -1126,7 +1126,7 @@ static exception_t performX64PageDirectoryInvocationMap(cap_t cap, cte_t *ctSlot
 {
     ctSlot->cap = cap;
     *pdptSlot = pdpte;
-    invalidatePageStructureCacheASID(pptr_to_paddr(vspace), cap_page_directory_cap_get_capPDMappedVSpaceId(cap),
+    invalidatePageStructureCacheASID(pptr_to_paddr(vspace), cap_page_directory_cap_get_capPDMappedVSpaceID(cap),
                                      SMP_TERNARY(tlb_bitmap_get(vspace), 0));
     return EXCEPTION_NONE;
 }
@@ -1192,7 +1192,7 @@ static exception_t decodeX64PageDirectoryInvocation(
     }
 
     vspace = (vspace_root_t *)pptr_of_cap(vspaceCap);
-    vspaceId = cap_get_capMappedVSpaceId(vspaceCap);
+    vspaceId = cap_get_capMappedVSpaceID(vspaceCap);
 
     if (vaddr > USER_TOP) {
         userError("X64PageDirectory: Mapping address too high.");
@@ -1202,9 +1202,9 @@ static exception_t decodeX64PageDirectoryInvocation(
         return EXCEPTION_SYSCALL_ERROR;
     }
 
-    findVSpaceForVSpaceId_ret_t find_ret;
+    findVSpaceForVSpaceID_ret_t find_ret;
 
-    find_ret = findVSpaceForVSpaceId(vspaceId);
+    find_ret = findVSpaceForVSpaceID(vspaceId);
     if (find_ret.status != EXCEPTION_NONE) {
         current_syscall_error.type = seL4_FailedLookup;
         current_syscall_error.failedLookupWasSource = false;
@@ -1240,7 +1240,7 @@ static exception_t decodeX64PageDirectoryInvocation(
     pdpte = makeUserPDPTEPageDirectory(paddr, vm_attr);
 
     cap = cap_page_directory_cap_set_capPDIsMapped(cap, 1);
-    cap = cap_page_directory_cap_set_capPDMappedVSpaceId(cap, vspaceId);
+    cap = cap_page_directory_cap_set_capPDMappedVSpaceID(cap, vspaceId);
     cap = cap_page_directory_cap_set_capPDMappedAddress(cap, vaddr);
 
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
@@ -1249,10 +1249,10 @@ static exception_t decodeX64PageDirectoryInvocation(
 
 static void unmapPDPT(vspace_id_t vspaceId, vptr_t vaddr, pdpte_t *pdpt)
 {
-    findVSpaceForVSpaceId_ret_t find_ret;
+    findVSpaceForVSpaceID_ret_t find_ret;
     pml4e_t *pml4Slot;
 
-    find_ret = findVSpaceForVSpaceId(vspaceId);
+    find_ret = findVSpaceForVSpaceID(vspaceId);
     if (find_ret.status != EXCEPTION_NONE) {
         return;
     }
@@ -1274,7 +1274,7 @@ static exception_t performX64PDPTInvocationUnmap(cap_t cap, cte_t *ctSlot)
 {
     if (cap_pdpt_cap_get_capPDPTIsMapped(cap)) {
         pdpte_t *pdpt = PDPTE_PTR(cap_pdpt_cap_get_capPDPTBasePtr(cap));
-        unmapPDPT(cap_pdpt_cap_get_capPDPTMappedVSpaceId(cap),
+        unmapPDPT(cap_pdpt_cap_get_capPDPTMappedVSpaceID(cap),
                   cap_pdpt_cap_get_capPDPTMappedAddress(cap),
                   pdpt);
         clearMemory((void *)pdpt, cap_get_capSizeBits(cap));
@@ -1290,7 +1290,7 @@ static exception_t performX64PDPTInvocationMap(cap_t cap, cte_t *ctSlot, pml4e_t
 {
     ctSlot->cap = cap;
     *pml4Slot = pml4e;
-    invalidatePageStructureCacheASID(pptr_to_paddr(vspace), cap_pdpt_cap_get_capPDPTMappedVSpaceId(cap),
+    invalidatePageStructureCacheASID(pptr_to_paddr(vspace), cap_pdpt_cap_get_capPDPTMappedVSpaceID(cap),
                                      SMP_TERNARY(tlb_bitmap_get(vspace), 0));
 
     return EXCEPTION_NONE;
@@ -1356,7 +1356,7 @@ static exception_t decodeX64PDPTInvocation(
     }
 
     vspace = (vspace_root_t *)pptr_of_cap(vspaceCap);
-    vspaceId = cap_get_capMappedVSpaceId(vspaceCap);
+    vspaceId = cap_get_capMappedVSpaceID(vspaceCap);
 
     if (vaddr > USER_TOP) {
         userError("X64PDPT: Mapping address too high.");
@@ -1366,9 +1366,9 @@ static exception_t decodeX64PDPTInvocation(
         return EXCEPTION_SYSCALL_ERROR;
     }
 
-    findVSpaceForVSpaceId_ret_t find_ret;
+    findVSpaceForVSpaceID_ret_t find_ret;
 
-    find_ret = findVSpaceForVSpaceId(vspaceId);
+    find_ret = findVSpaceForVSpaceID(vspaceId);
     if (find_ret.status != EXCEPTION_NONE) {
         current_syscall_error.type = seL4_FailedLookup;
         current_syscall_error.failedLookupWasSource = false;
@@ -1395,7 +1395,7 @@ static exception_t decodeX64PDPTInvocation(
     pml4e = makeUserPML4E(paddr, attr);
 
     cap = cap_pdpt_cap_set_capPDPTIsMapped(cap, 1);
-    cap = cap_pdpt_cap_set_capPDPTMappedVSpaceId(cap, vspaceId);
+    cap = cap_pdpt_cap_set_capPDPTMappedVSpaceID(cap, vspaceId);
     cap = cap_pdpt_cap_set_capPDPTMappedAddress(cap, vaddr);
 
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
@@ -1465,7 +1465,7 @@ static exception_t updatePDPTE(vspace_id_t vspaceId, pdpte_t pdpte, pdpte_t *pdp
 static exception_t performX64ModeMap(cap_t cap, cte_t *ctSlot, pdpte_t pdpte, pdpte_t *pdptSlot, vspace_root_t *vspace)
 {
     ctSlot->cap = cap;
-    return updatePDPTE(cap_frame_cap_get_capFMappedVSpaceId(cap), pdpte, pdptSlot, vspace);
+    return updatePDPTE(cap_frame_cap_get_capFMappedVSpaceID(cap), pdpte, pdptSlot, vspace);
 }
 
 struct create_mapping_pdpte_return {

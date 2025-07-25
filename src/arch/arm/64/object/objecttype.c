@@ -57,7 +57,7 @@ deriveCap_ret_t Arch_deriveCap(cte_t *slot, cap_t cap)
         return ret;
 
     case cap_frame_cap:
-        ret.cap = cap_frame_cap_set_capFMappedVSpaceId(cap, vspaceIdInvalid);
+        ret.cap = cap_frame_cap_set_capFMappedVSpaceID(cap, vspaceIdInvalid);
         ret.status = EXCEPTION_NONE;
         return ret;
 
@@ -143,8 +143,8 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     switch (cap_get_capType(cap)) {
     case cap_vspace_id_pool_cap:
         if (final) {
-            deleteVSpaceIdPool(cap_vspace_id_pool_cap_get_capVSpaceIdBase(cap),
-                           VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap)));
+            deleteVSpaceIDPool(cap_vspace_id_pool_cap_get_capVSpaceIDBase(cap),
+                           VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap)));
         }
         break;
 
@@ -152,27 +152,27 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
 #ifdef CONFIG_ARM_SMMU
         if (cap_vspace_cap_get_capVSMappedCB(cap) != CB_INVALID) {
             smmu_cb_delete_vspace(cap_vspace_cap_get_capVSMappedCB(cap),
-                                  cap_vspace_cap_get_capVSMappedVSpaceId(cap));
+                                  cap_vspace_cap_get_capVSMappedVSpaceID(cap));
         }
 #endif
         if (final && cap_vspace_cap_get_capVSIsMapped(cap)) {
-            deleteVSpaceId(cap_vspace_cap_get_capVSMappedVSpaceId(cap),
+            deleteVSpaceID(cap_vspace_cap_get_capVSMappedVSpaceID(cap),
                        VSPACE_PTR(cap_vspace_cap_get_capVSBasePtr(cap)));
         }
         break;
 
     case cap_page_table_cap:
         if (final && cap_page_table_cap_get_capPTIsMapped(cap)) {
-            unmapPageTable(cap_page_table_cap_get_capPTMappedVSpaceId(cap),
+            unmapPageTable(cap_page_table_cap_get_capPTMappedVSpaceID(cap),
                            cap_page_table_cap_get_capPTMappedAddress(cap),
                            PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap)));
         }
         break;
 
     case cap_frame_cap:
-        if (cap_frame_cap_get_capFMappedVSpaceId(cap)) {
+        if (cap_frame_cap_get_capFMappedVSpaceID(cap)) {
             unmapPage(cap_frame_cap_get_capFSize(cap),
-                      cap_frame_cap_get_capFMappedVSpaceId(cap),
+                      cap_frame_cap_get_capFMappedVSpaceID(cap),
                       cap_frame_cap_get_capFMappedAddress(cap),
                       cap_frame_cap_get_capFBasePtr(cap));
         }
@@ -250,8 +250,8 @@ bool_t CONST Arch_sameRegionAs(cap_t cap_a, cap_t cap_b)
 
     case cap_vspace_id_pool_cap:
         if (cap_get_capType(cap_b) == cap_vspace_id_pool_cap) {
-            return cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap_a) ==
-                   cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap_b);
+            return cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap_a) ==
+                   cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap_b);
         }
         break;
 
@@ -386,7 +386,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                 addrFromPPtr(regionBase));
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,           /* capFMappedVSpaceId */
+                   vspaceIdInvalid,           /* capFMappedVSpaceID */
                    (word_t)regionBase,    /* capFBasePtr */
                    ARMSmallPage,          /* capFSize */
                    0,                     /* capFMappedAddress */
@@ -412,7 +412,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                 addrFromPPtr(regionBase));
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,           /* capFMappedVSpaceId */
+                   vspaceIdInvalid,           /* capFMappedVSpaceID */
                    (word_t)regionBase,    /* capFBasePtr */
                    ARMLargePage,          /* capFSize */
                    0,                     /* capFMappedAddress */
@@ -438,7 +438,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                 addrFromPPtr(regionBase));
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,           /* capFMappedVSpaceId */
+                   vspaceIdInvalid,           /* capFMappedVSpaceID */
                    (word_t)regionBase,    /* capFBasePtr */
                    ARMHugePage,           /* capFSize */
                    0,                     /* capFMappedAddress */
@@ -454,14 +454,14 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                             addrFromPPtr(regionBase));
 #ifdef CONFIG_ARM_SMMU
         return cap_vspace_cap_new(
-                   vspaceIdInvalid,           /* capVSMappedVSpaceId */
+                   vspaceIdInvalid,           /* capVSMappedVSpaceID */
                    (word_t)regionBase,    /* capVSBasePtr    */
                    0,                     /* capVSIsMapped   */
                    CB_INVALID             /* capVSMappedCB   */
                );
 #else
         return cap_vspace_cap_new(
-                   vspaceIdInvalid,           /* capVSMappedVSpaceId */
+                   vspaceIdInvalid,           /* capVSMappedVSpaceID */
                    (word_t)regionBase,    /* capVSBasePtr    */
                    0                      /* capVSIsMapped   */
                );
@@ -474,7 +474,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                             (word_t)regionBase + MASK(seL4_PageTableBits),
                             addrFromPPtr(regionBase));
         return cap_page_table_cap_new(
-                   vspaceIdInvalid,           /* capPTMappedVSpaceId    */
+                   vspaceIdInvalid,           /* capPTMappedVSpaceID    */
                    (word_t)regionBase,    /* capPTBasePtr       */
                    0,                     /* capPTIsMapped      */
                    0                      /* capPTMappedAddress */

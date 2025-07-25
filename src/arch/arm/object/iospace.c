@@ -271,7 +271,7 @@ exception_t decodeARMIOMapInvocation(
         return EXCEPTION_SYSCALL_ERROR;
     }
 
-    if (cap_small_frame_cap_get_capFMappedVSpaceId(cap) != vspaceIdInvalid) {
+    if (cap_small_frame_cap_get_capFMappedVSpaceID(cap) != vspaceIdInvalid) {
         userError("IOMap: Frame all ready mapped.");
         current_syscall_error.type = seL4_InvalidCapability;
         current_syscall_error.invalidCapNumber = 0;
@@ -362,7 +362,7 @@ exception_t decodeARMIOMapInvocation(
     }
 
     cap = cap_small_frame_cap_set_capFIsIOSpace(cap, 1);
-    cap = cap_small_frame_cap_set_capFMappedVSpaceId(cap, asid);
+    cap = cap_small_frame_cap_set_capFMappedVSpaceID(cap, asid);
     cap = cap_small_frame_cap_set_capFMappedAddress(cap, io_address);
 
     return performARMIOMapInvocation(cap, slot, lu_ret.ioptSlot, iopte);
@@ -415,7 +415,7 @@ void unmapIOPage(cap_t cap)
     uint32_t asid;
 
     io_address = cap_small_frame_cap_get_capFMappedAddress(cap);
-    vspaceId = cap_small_frame_cap_get_capFMappedVSpaceId(cap);
+    vspaceId = cap_small_frame_cap_get_capFMappedVSpaceID(cap);
     assert(asid != vspaceIdInvalid);
     pd = plat_smmu_lookup_iopd_by_asid(asid);
 
@@ -462,7 +462,7 @@ exception_t performPageInvocationUnmapIO(
     unmapIOPage(slot->cap);
     slot->cap = cap_small_frame_cap_set_capFMappedAddress(slot->cap, 0);
     slot->cap = cap_small_frame_cap_set_capFIsIOSpace(slot->cap, 0);
-    slot->cap = cap_small_frame_cap_set_capFMappedVSpaceId(slot->cap, vspaceIdInvalid);
+    slot->cap = cap_small_frame_cap_set_capFMappedVSpaceID(slot->cap, vspaceIdInvalid);
 
     return EXCEPTION_NONE;
 }

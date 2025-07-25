@@ -270,9 +270,9 @@ define disp_cap
 
     if( $subtype == subcap_vspace_id_pool_cap )
       printf "Subtype: subcap_vspace_id_pool_cap\n"
-      printf "capVSpaceIdBase: %x\n", $cap.words[1] & 0xffff
+      printf "capVSpaceIDBase: %x\n", $cap.words[1] & 0xffff
       printf "capType: %x\n", ($cap.words[0] >> 28) & 0xf
-      printf "capVSpaceIdPool %x\n", ($cap.words[0] << 12)
+      printf "capVSpaceIDPool %x\n", ($cap.words[0] << 12)
     end
 
     if( $subtype == subcap_io_port_cap )
@@ -392,7 +392,7 @@ end
 
 define pd_for_vspace_id
   set $vspaceId = $arg0
-  set $poolPtr = x86KSVSpaceIdTable[$vspaceId >> vspaceIdLowBits];
+  set $poolPtr = x86KSVSpaceIDTable[$vspaceId >> vspaceIdLowBits];
   set $pd = poolPtr->array[$vspaceId & ((1<<vspaceIdLowBits)-1)];
   if( !$vspaceId || !$poolPtr )
     printf "Something went wrong\n"

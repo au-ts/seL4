@@ -103,11 +103,11 @@ struct vspace_id_pool {
 typedef struct vspace_id_pool vspace_id_pool_t;
 
 #define VSPACE_ID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
-#define nVSpaceIdPools          BIT(vspaceIdHighBits)
+#define nVSpaceIDPools          BIT(vspaceIdHighBits)
 #define VSPACE_ID_LOW(a)         (a & MASK(vspaceIdLowBits))
 #define VSPACE_ID_HIGH(a)        ((a >> vspaceIdLowBits) & MASK(vspaceIdHighBits))
 
-static inline vspace_id_t PURE cap_get_capMappedVSpaceId(cap_t cap)
+static inline vspace_id_t PURE cap_get_capMappedVSpaceID(cap_t cap)
 {
     cap_tag_t ctag;
 
@@ -116,17 +116,17 @@ static inline vspace_id_t PURE cap_get_capMappedVSpaceId(cap_t cap)
     switch (ctag) {
 
     case cap_pml4_cap:
-        return cap_pml4_cap_get_capPML4MappedVSpaceId(cap);
+        return cap_pml4_cap_get_capPML4MappedVSpaceID(cap);
 
     case cap_pdpt_cap:
-        return cap_pdpt_cap_get_capPDPTMappedVSpaceId(cap);
+        return cap_pdpt_cap_get_capPDPTMappedVSpaceID(cap);
 
     case cap_page_directory_cap:
-        return cap_page_directory_cap_get_capPDMappedVSpaceId(cap);
+        return cap_page_directory_cap_get_capPDMappedVSpaceID(cap);
 
 #ifdef CONFIG_VTX
     case cap_ept_pml4_cap:
-        return cap_ept_pml4_cap_get_capPML4MappedVSpaceId(cap);
+        return cap_ept_pml4_cap_get_capPML4MappedVSpaceID(cap);
 #endif
 
     default:

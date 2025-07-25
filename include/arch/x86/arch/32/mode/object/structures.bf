@@ -19,13 +19,13 @@ base 32
 block frame_cap {
     padding                         1
     field       capFSize            1
-    field       capFMappedVSpaceIdLow   10
+    field       capFMappedVSpaceIDLow   10
     field_high  capFMappedAddress   20
 
     padding                         1
     field       capFMapType         2
     field       capFIsDevice        1
-    field       capFMappedVSpaceIdHigh  2
+    field       capFMappedVSpaceIDHigh  2
     field       capFVMRights        2
     field_high  capFBasePtr         20
     field       capType             4
@@ -35,7 +35,7 @@ block frame_cap {
 block page_table_cap {
     padding                         8
     field       capPTIsMapped       1
-    field       capPTMappedVSpaceId     12
+    field       capPTMappedVSpaceID     12
     field_high  capPTMappedAddress  11
 
     padding                         8
@@ -47,7 +47,7 @@ block page_table_cap {
 block page_directory_cap {
     padding                         17
     field       capPDIsMapped       1
-    field       capPDMappedVSpaceId     12
+    field       capPDMappedVSpaceID     12
     field_high  capPDMappedAddress  2
 
     padding                         8
@@ -55,20 +55,20 @@ block page_directory_cap {
     field       capType             4
 }
 
--- Cap to the table of 2^6 VSpaceId pools
+-- Cap to the table of 2^6 VSpaceID pools
 block vspace_id_control_cap {
     padding             32
     padding             28
     field   capType     4
 }
 
--- Cap to a pool of 2^10 VSpaceIds
+-- Cap to a pool of 2^10 VSpaceIDs
 block vspace_id_pool_cap {
     padding                     20
-    field       capVSpaceIdBase     12
+    field       capVSpaceIDBase     12
 
     padding                     8
-    field_high  capVSpaceIdPool     20
+    field_high  capVSpaceIDPool     20
     field       capType         4
 }
 
@@ -139,7 +139,7 @@ block ept_pt_cap {
     field_high  capPTMappedAddress  11
     padding                         4
     field       capPTIsMapped       1
-    field       capPTMappedVSpaceId     16
+    field       capPTMappedVSpaceID     16
 
     field_high  capPTBasePtr        20
     padding                         4
@@ -151,7 +151,7 @@ block ept_pd_cap {
     field_high  capPDMappedAddress  3
     padding                         12
     field       capPDIsMapped       1
-    field       capPDMappedVSpaceId     16
+    field       capPDMappedVSpaceID     16
 
     field_high  capPDBasePtr        20
     padding                         4
@@ -163,7 +163,7 @@ block ept_pdpt_cap {
     field_high  capPDPTMappedAddress 1
     padding                         14
     field       capPDPTIsMapped     1
-    field       capPDPTMappedVSpaceId   16
+    field       capPDPTMappedVSpaceID   16
 
     field_high  capPDPTBasePtr      20
     padding                         4
@@ -174,7 +174,7 @@ block ept_pdpt_cap {
 block ept_pml4_cap {
     padding                         15
     field       capPML4IsMapped     1
-    field       capPML4MappedVSpaceId   16
+    field       capPML4MappedVSpaceID   16
 
     field_high  capPML4BasePtr      20
     padding                         4

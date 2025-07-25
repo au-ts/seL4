@@ -178,7 +178,7 @@ BOOT_CODE static word_t calculate_rootserver_size(v_region_t it_v_reg, word_t ex
     size += BIT(seL4_TCBBits); // root thread tcb
     size += BIT(seL4_PageBits); // ipc buf
     size += BIT(seL4_BootInfoFrameBits); // boot info
-    size += BIT(seL4_VSpaceIdPoolBits);
+    size += BIT(seL4_VSpaceIDPoolBits);
     size += extra_bi_size_bits > 0 ? BIT(extra_bi_size_bits) : 0;
     size += BIT(seL4_VSpaceBits); // root vspace
 #ifdef CONFIG_KERNEL_MCS
@@ -225,8 +225,8 @@ BOOT_CODE static void create_rootserver_objects(pptr_t start, v_region_t it_v_re
     /* at this point we are up to creating 4k objects - which is the min size of
      * extra_bi so this is the last chance to allocate it */
     maybe_alloc_extra_bi(seL4_PageBits, extra_bi_size_bits);
-    compile_assert(invalid_seL4_VSpaceIdPoolBits, seL4_VSpaceIdPoolBits == seL4_PageBits);
-    rootserver.asid_pool = alloc_rootserver_obj(seL4_VSpaceIdPoolBits, 1);
+    compile_assert(invalid_seL4_VSpaceIDPoolBits, seL4_VSpaceIDPoolBits == seL4_PageBits);
+    rootserver.asid_pool = alloc_rootserver_obj(seL4_VSpaceIDPoolBits, 1);
     rootserver.ipc_buf = alloc_rootserver_obj(seL4_PageBits, 1);
     /* The boot info size must be at least one page. Due to the hard-coded order
      * of allocations used in the current implementation here, it can't be any

@@ -20,7 +20,7 @@ base 64(48,1)
 block frame_cap {
     -- The ASID doubles as the PCI bus/dev/fun when used in an IOMMU context
     -- so it is 16 instead of 12
-    field       capFMappedVSpaceId      16
+    field       capFMappedVSpaceID      16
     field_high  capFBasePtr         48
 
     field       capType             5
@@ -35,7 +35,7 @@ block frame_cap {
 -- Second-level page table
 block page_table_cap {
     padding                         4
-    field       capPTMappedVSpaceId     12
+    field       capPTMappedVSpaceID     12
     field_high  capPTBasePtr        48
 
     field       capType             5
@@ -49,7 +49,7 @@ block page_table_cap {
 -- First-level page table (page directory)
 block page_directory_cap {
     padding                         4
-    field       capPDMappedVSpaceId     12
+    field       capPDMappedVSpaceID     12
     field_high  capPDBasePtr        48
 
     field       capType             5
@@ -62,7 +62,7 @@ block page_directory_cap {
 
 block pdpt_cap {
     padding                          4
-    field       capPDPTMappedVSpaceId    12
+    field       capPDPTMappedVSpaceID    12
     field_high  capPDPTBasePtr       48
 
     field       capType              5
@@ -71,16 +71,16 @@ block pdpt_cap {
     padding                          48
 }
 
-block pml4_cap(capPML4MappedVSpaceId, capPML4BasePtr, capType, capPML4IsMapped) {
+block pml4_cap(capPML4MappedVSpaceID, capPML4BasePtr, capType, capPML4IsMapped) {
     field       capPML4BasePtr      64
 
     field       capType             5
     field       capPML4IsMapped     1
     padding                         46
-    field       capPML4MappedVSpaceId   12
+    field       capPML4MappedVSpaceID   12
 }
 
--- Cap to the table of 2^6 VSpaceId pools
+-- Cap to the table of 2^6 VSpaceID pools
 block vspace_id_control_cap {
     padding 64
 
@@ -88,14 +88,14 @@ block vspace_id_control_cap {
     padding             59
 }
 
--- Cap to a pool of 2^9 VSpaceIds
+-- Cap to a pool of 2^9 VSpaceIDs
 block vspace_id_pool_cap {
     padding 64
 
     field       capType         5
-    field       capVSpaceIdBase     12
+    field       capVSpaceIDBase     12
     padding                     10
-    field_high  capVSpaceIdPool     37
+    field_high  capVSpaceIDPool     37
 }
 
 -- IO Port Control Cap
@@ -165,50 +165,50 @@ block vcpu_cap {
 }
 
 -- Fourth-level EPT page table
-block ept_pt_cap (capType, capPTMappedAddress, capPTIsMapped, capPTMappedVSpaceId, capPTBasePtr) {
+block ept_pt_cap (capType, capPTMappedAddress, capPTIsMapped, capPTMappedVSpaceID, capPTBasePtr) {
     field       capPTBasePtr        64
 
     field       capType             5
     field       capPTIsMapped       1
     padding                         9
     field_high  capPTMappedAddress  28
-    field       capPTMappedVSpaceId     16
+    field       capPTMappedVSpaceID     16
     padding                         5
 }
 
 -- third-level EPT page table (page directory)
-block ept_pd_cap (capType, capPDMappedAddress, capPDIsMapped, capPDMappedVSpaceId, capPDBasePtr) {
+block ept_pd_cap (capType, capPDMappedAddress, capPDIsMapped, capPDMappedVSpaceID, capPDBasePtr) {
     field       capPDBasePtr        64
 
     field       capType             5
     field       capPDIsMapped       1
     padding                         9
     field_high  capPDMappedAddress  20
-    field       capPDMappedVSpaceId     16
+    field       capPDMappedVSpaceID     16
     padding                         13
 }
 
 -- Second-level EPT page table (page directory pointer table)
-block ept_pdpt_cap (capType, capPDPTMappedAddress, capPDPTIsMapped, capPDPTMappedVSpaceId, capPDPTBasePtr) {
+block ept_pdpt_cap (capType, capPDPTMappedAddress, capPDPTIsMapped, capPDPTMappedVSpaceID, capPDPTBasePtr) {
     field       capPDPTBasePtr      64
 
     field       capType             5
     field       capPDPTIsMapped     1
     padding                         9
     field_high  capPDPTMappedAddress 18
-    field       capPDPTMappedVSpaceId   16
+    field       capPDPTMappedVSpaceID   16
     padding                         15
 }
 
 -- First-level EPT pml4
-block ept_pml4_cap (capType, capPML4IsMapped, capPML4MappedVSpaceId, capPML4BasePtr) {
+block ept_pml4_cap (capType, capPML4IsMapped, capPML4MappedVSpaceID, capPML4BasePtr) {
     field       capPML4BasePtr      64
 
     field       capType             5
     field       capPML4IsMapped     1
     padding                         42
 
-    field       capPML4MappedVSpaceId   16
+    field       capPML4MappedVSpaceID   16
 }
 
 #endif

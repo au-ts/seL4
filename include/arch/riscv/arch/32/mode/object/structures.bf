@@ -17,7 +17,7 @@ base 32
 
 -- frames
 block frame_cap {
-    field       capFMappedVSpaceId      9
+    field       capFMappedVSpaceID      9
     field_high  capFBasePtr         20
     padding                         3
 
@@ -31,7 +31,7 @@ block frame_cap {
 
 -- N-level page table
 block page_table_cap {
-    field       capPTMappedVSpaceId     9
+    field       capPTMappedVSpaceID     9
     field_high  capPTBasePtr        20
     padding                         3
 
@@ -41,7 +41,7 @@ block page_table_cap {
     field       capType             4
 }
 
--- Cap to the table of 1 VSpaceId pool
+-- Cap to the table of 1 VSpaceID pool
 block vspace_id_control_cap {
     padding             32
 
@@ -49,12 +49,12 @@ block vspace_id_control_cap {
     field   capType     4
 }
 
--- Cap to a pool of 2^9 VSpaceIds
+-- Cap to a pool of 2^9 VSpaceIDs
 block vspace_id_pool_cap {
     padding                     23
-    field       capVSpaceIdBase     9
+    field       capVSpaceIDBase     9
 
-    field_high  capVSpaceIdPool     28
+    field_high  capVSpaceIDPool     28
     field       capType         4
 }
 

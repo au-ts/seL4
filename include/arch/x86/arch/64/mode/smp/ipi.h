@@ -15,7 +15,7 @@
 
 typedef enum {
     IpiRemoteCall_InvalidatePCID = IpiNumArchRemoteCall,
-    IpiRemoteCall_InvalidateVSpaceId,
+    IpiRemoteCall_InvalidateVSpaceID,
     IpiNumModeRemoteCall
 } IpiModeRemoteCall_t;
 
@@ -29,7 +29,7 @@ static inline void doRemoteInvalidatePCID(word_t type, void *vaddr, hw_asid_t pc
 /* see tlb.h invalidateLocalASID for why these are different */
 static inline void doRemoteInvalidateASID(vspace_root_t *vspace, vspace_id_t vspaceId, word_t mask)
 {
-    doRemoteMaskOp2Arg((IpiRemoteCall_t)IpiRemoteCall_InvalidateVSpaceId, (word_t)vspace, (word_t)vspaceId, mask);
+    doRemoteMaskOp2Arg((IpiRemoteCall_t)IpiRemoteCall_InvalidateVSpaceID, (word_t)vspace, (word_t)vspaceId, mask);
 }
 
 #endif /* ENABLE_SMP_SUPPORT */

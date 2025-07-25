@@ -1488,11 +1488,11 @@ static void setEPTRoot(cap_t vmxSpace, vcpu_t *vcpu)
         !cap_ept_pml4_cap_get_capPML4IsMapped(vmxSpace)) {
         ept_root = kpptr_to_paddr(null_ept_space);
     } else {
-        findEPTForVSpaceId_ret_t find_ret;
+        findEPTForVSpaceID_ret_t find_ret;
         ept_pml4e_t *pml4;
 
         pml4 = (ept_pml4e_t *)cap_ept_pml4_cap_get_capPML4BasePtr(vmxSpace);
-        find_ret = findEPTForVSpaceId(cap_ept_pml4_cap_get_capPML4MappedVSpaceId(vmxSpace));
+        find_ret = findEPTForVSpaceID(cap_ept_pml4_cap_get_capPML4MappedVSpaceID(vmxSpace));
         if (find_ret.status != EXCEPTION_NONE || find_ret.ept != pml4) {
             ept_root = kpptr_to_paddr(null_ept_space);
         } else {

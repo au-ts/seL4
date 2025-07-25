@@ -29,11 +29,11 @@ struct createMappingEntries_ret {
 };
 typedef struct createMappingEntries_ret createMappingEntries_ret_t;
 
-struct findVSpaceForVSpaceId_ret {
+struct findVSpaceForVSpaceID_ret {
     exception_t status;
     pde_t *pd;
 };
-typedef struct findVSpaceForVSpaceId_ret findVSpaceForVSpaceId_ret_t;
+typedef struct findVSpaceForVSpaceID_ret findVSpaceForVSpaceID_ret_t;
 
 struct lookupPTSlot_ret {
     exception_t status;
@@ -45,11 +45,11 @@ typedef struct lookupPTSlot_ret lookupPTSlot_ret_t;
 hw_asid_t getHWASID(vspace_id_t vspaceId);
 #endif
 void copyGlobalMappings(pde_t *newPD);
-findVSpaceForVSpaceId_ret_t findVSpaceForVSpaceId(vspace_id_t asid);
+findVSpaceForVSpaceID_ret_t findVSpaceForVSpaceID(vspace_id_t asid);
 lookupPTSlot_ret_t lookupPTSlot(pde_t *pd, vptr_t vptr);
 pde_t *CONST lookupPDSlot(pde_t *pd, vptr_t vptr);
-void deleteVSpaceIdPool(vspace_id_t base, vspace_id_pool_t *pool);
-void deleteVSpaceId(vspace_id_t vspaceId, pde_t *pd);
+void deleteVSpaceIDPool(vspace_id_t base, vspace_id_pool_t *pool);
+void deleteVSpaceID(vspace_id_t vspaceId, pde_t *pd);
 pde_t *pageTableMapped(vspace_id_t vspaceId, vptr_t vaddr, pte_t *pt);
 void unmapPageTable(vspace_id_t vspaceId, vptr_t vaddr, pte_t *pt);
 void unmapPage(vm_page_size_t page_size, vspace_id_t vspaceId, vptr_t vptr, void *pptr);
@@ -58,7 +58,7 @@ hw_asid_t findFreeHWASID(void);
 void flushPage(vm_page_size_t page_size, pde_t *pd, vspace_id_t vspaceId, word_t vptr);
 void flushTable(pde_t *pd, vspace_id_t vspaceId, word_t vptr, pte_t *pt);
 void flushSpace(vspace_id_t vspaceId);
-void invalidateTLBByVSpaceId(vspace_id_t vspaceId);
+void invalidateTLBByVSpaceID(vspace_id_t vspaceId);
 
 bool_t CONST isIOSpaceFrameCap(cap_t cap);
 

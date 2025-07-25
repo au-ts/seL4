@@ -13,9 +13,9 @@
 #include <sel4/sel4_arch/deprecated.h>
 
 /* XXX: DEPRECATED */
-#define seL4_ASIDPoolBits seL4_VSpaceIdPoolBits
-#define seL4_NumASIDPoolsBits seL4_NumVSpaceIdPoolsBits
-#define seL4_ASIDPoolIndexBits seL4_VSpaceIdPoolIndexBits
+#define seL4_ASIDPoolBits seL4_VSpaceIDPoolBits
+#define seL4_NumASIDPoolsBits seL4_NumVSpaceIDPoolsBits
+#define seL4_ASIDPoolIndexBits seL4_VSpaceIDPoolIndexBits
 
 #define SEL4_PFIPC_LABEL SEL4_DEPRECATE_MACRO(seL4_Fault_VMFault)
 #define SEL4_PFIPC_LENGTH SEL4_DEPRECATE_MACRO(seL4_VMFault_Length)

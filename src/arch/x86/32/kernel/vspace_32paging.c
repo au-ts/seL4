@@ -132,7 +132,7 @@ BOOT_CODE void map_it_frame_cap(cap_t pd_cap, cap_t frame_cap)
     void  *frame = (void *)cap_frame_cap_get_capFBasePtr(frame_cap);
     vptr_t vptr  = cap_frame_cap_get_capFMappedAddress(frame_cap);
 
-    assert(cap_frame_cap_get_capFMappedVSpaceId(frame_cap) != 0);
+    assert(cap_frame_cap_get_capFMappedVSpaceID(frame_cap) != 0);
     pd += (vptr >> seL4_LargePageBits);
     pt = paddr_to_pptr(pde_pde_pt_ptr_get_pt_base_address(pd));
     *(pt + ((vptr & MASK(seL4_LargePageBits)) >> seL4_PageBits)) = pte_new(
@@ -194,19 +194,19 @@ void copyGlobalMappings(vspace_root_t *new_vspace)
     }
 }
 
-exception_t performVSpaceIdPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot)
+exception_t performVSpaceIDPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot)
 {
     asid_map_t asid_map;
 #ifdef CONFIG_VTX
     if (cap_get_capType(vspaceCapSlot->cap) == cap_ept_pml4_cap) {
-        cap_ept_pml4_cap_ptr_set_capPML4MappedVSpaceId(&vspaceCapSlot->cap, vspaceId);
+        cap_ept_pml4_cap_ptr_set_capPML4MappedVSpaceID(&vspaceCapSlot->cap, vspaceId);
         cap_ept_pml4_cap_ptr_set_capPML4IsMapped(&vspaceCapSlot->cap, 1);
         asid_map = asid_map_asid_map_ept_new(cap_ept_pml4_cap_get_capPML4BasePtr(vspaceCapSlot->cap));
     } else
 #endif
     {
         assert(cap_get_capType(vspaceCapSlot->cap) == cap_page_directory_cap);
-        cap_page_directory_cap_ptr_set_capPDMappedVSpaceId(&vspaceCapSlot->cap, vspaceId);
+        cap_page_directory_cap_ptr_set_capPDMappedVSpaceID(&vspaceCapSlot->cap, vspaceId);
         cap_page_directory_cap_ptr_set_capPDIsMapped(&vspaceCapSlot->cap, 1);
         asid_map = asid_map_asid_map_vspace_new(cap_page_directory_cap_get_capPDBasePtr(vspaceCapSlot->cap));
     }
@@ -217,7 +217,7 @@ exception_t performVSpaceIdPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t
 
 void unmapPageDirectory(vspace_id_t vspaceId, vptr_t vaddr, pde_t *pd)
 {
-    deleteVSpaceId(vspaceId, pd);
+    deleteVSpaceID(vspaceId, pd);
 }
 
 static exception_t performIA32PageDirectoryGetStatusBits(lookupPTSlot_ret_t ptSlot, lookupPDSlot_ret_t pdSlot,

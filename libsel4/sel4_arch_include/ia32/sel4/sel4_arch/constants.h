@@ -39,9 +39,9 @@
 #define seL4_VSpaceBits seL4_PageDirBits
 
 #define seL4_IOPageTableBits 12
-#define seL4_NumVSpaceIdPoolsBits 2
-#define seL4_VSpaceIdPoolBits    12
-#define seL4_VSpaceIdPoolIndexBits 10
+#define seL4_NumVSpaceIDPoolsBits 2
+#define seL4_VSpaceIDPoolBits    12
+#define seL4_VSpaceIDPoolIndexBits 10
 #define seL4_WordSizeBits 2
 
 #define seL4_HugePageBits    30 /* 1GB */
@@ -51,7 +51,7 @@
 #ifndef __ASSEMBLER__
 SEL4_SIZE_SANITY(seL4_PageTableEntryBits, seL4_PageTableIndexBits, seL4_PageTableBits);
 SEL4_SIZE_SANITY(seL4_PageDirEntryBits, seL4_PageDirIndexBits, seL4_PageDirBits);
-SEL4_SIZE_SANITY(seL4_WordSizeBits, seL4_VSpaceIdPoolIndexBits, seL4_VSpaceIdPoolBits);
+SEL4_SIZE_SANITY(seL4_WordSizeBits, seL4_VSpaceIDPoolIndexBits, seL4_VSpaceIDPoolBits);
 #endif
 
 /* Previously large frames were explicitly assumed to be 4M. If not using

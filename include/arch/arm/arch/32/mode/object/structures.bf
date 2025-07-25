@@ -18,16 +18,16 @@ base 32
 -- 4k frame (these have a separate cap type as there is no room to
 -- store their size)
 block small_frame_cap {
-    field capFMappedVSpaceIdLow  10
+    field capFMappedVSpaceIDLow  10
     field capFVMRights       2
     field_high capFMappedAddress 20
 
     field capFIsDevice       1
 #ifdef CONFIG_TK1_SMMU
     field capFIsIOSpace      1
-    field capFMappedVSpaceIdHigh 6
+    field capFMappedVSpaceIDHigh 6
 #else
-    field capFMappedVSpaceIdHigh 7
+    field capFMappedVSpaceIDHigh 7
 #endif
     field_high capFBasePtr  20
     field capType            4
@@ -36,13 +36,13 @@ block small_frame_cap {
 -- 64k, 1M, 16M frames
 block frame_cap {
     field capFSize           2
-    field capFMappedVSpaceIdLow  10
+    field capFMappedVSpaceIDLow  10
     field capFVMRights       2
     field_high capFMappedAddress 18
 
     padding                  2
     field capFIsDevice       1
-    field capFMappedVSpaceIdHigh 7
+    field capFMappedVSpaceIDHigh 7
     field_high capFBasePtr  18
     field capType            4
 }
@@ -51,7 +51,7 @@ block frame_cap {
 block page_table_cap {
     padding                   2
     field capPTIsMapped       1
-    field capPTMappedVSpaceId    17
+    field capPTMappedVSpaceID    17
 #ifndef CONFIG_ARM_HYPERVISOR_SUPPORT
     field_high capPTMappedAddress 12
 #else
@@ -65,10 +65,10 @@ block page_table_cap {
 }
 
 -- First-level page table (page directory)
-block page_directory_cap(capPDMappedVSpaceId, capPDIsMapped,
+block page_directory_cap(capPDMappedVSpaceID, capPDIsMapped,
                          capPDBasePtr, capType) {
     padding                 15
-    field capPDMappedVSpaceId   17
+    field capPDMappedVSpaceID   17
 
     field_high capPDBasePtr 18
     padding                  9
@@ -87,9 +87,9 @@ block vspace_id_control_cap {
 -- Cap to a pool of 2^10 vspace ids
 block vspace_id_pool_cap {
     padding                15
-    field capVSpaceIdBase      17
+    field capVSpaceIDBase      17
 
-    field_high capVSpaceIdPool 28
+    field_high capVSpaceIDPool 28
     field capType          4
 }
 

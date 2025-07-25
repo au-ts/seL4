@@ -258,8 +258,8 @@ static void cap_frame_print_attrs_vptr(word_t vptr, pde_t *pd)
 void print_ipc_buffer_slot(tcb_t *tcb)
 {
     word_t vptr = tcb->tcbIPCBuffer;
-    vspace_id_t vspaceId = cap_page_directory_cap_get_capPDMappedVSpaceId(TCB_PTR_CTE_PTR(tcb, tcbVTable)->cap);
-    findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
+    vspace_id_t vspaceId = cap_page_directory_cap_get_capPDMappedVSpaceID(TCB_PTR_CTE_PTR(tcb, tcbVTable)->cap);
+    findVSpaceForVSpaceID_ret_t find_ret = findVSpaceForVSpaceID(vspaceId);
     printf("ipc_buffer_slot: ");
     cap_frame_print_attrs_vptr(vptr, find_ret.pd);
 }
@@ -268,8 +268,8 @@ void print_cap_arch(cap_t cap)
 {
     switch (cap_get_capType(cap)) {
     case cap_page_table_cap: {
-        vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceId(cap);
-        findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
+        vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceID(cap);
+        findVSpaceForVSpaceID_ret_t find_ret = findVSpaceForVSpaceID(vspaceId);
         vptr_t vptr = cap_page_table_cap_get_capPTMappedAddress(cap);
         if (vspaceId != vspaceIdInvalid) {
             printf("pt_%p_%04lu (vspaceId: %lu)\n",
@@ -280,8 +280,8 @@ void print_cap_arch(cap_t cap)
         break;
     }
     case cap_page_directory_cap: {
-        vspace_id_t vspaceId = cap_page_directory_cap_get_capPDMappedVSpaceId(cap);
-        findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
+        vspace_id_t vspaceId = cap_page_directory_cap_get_capPDMappedVSpaceID(cap);
+        findVSpaceForVSpaceID_ret_t find_ret = findVSpaceForVSpaceID(vspaceId);
         if (vspaceId != vspaceIdInvalid) {
             printf("%p_pd (vspaceId: %lu)\n",
                    find_ret.pd, (long unsigned int)vspaceId);
@@ -297,20 +297,20 @@ void print_cap_arch(cap_t cap)
     }
     case cap_small_frame_cap: {
         vptr_t vptr = cap_small_frame_cap_get_capFMappedAddress(cap);
-        findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(cap_small_frame_cap_get_capFMappedVSpaceId(cap));
+        findVSpaceForVSpaceID_ret_t find_ret = findVSpaceForVSpaceID(cap_small_frame_cap_get_capFMappedVSpaceID(cap));
         assert(find_ret.status == EXCEPTION_NONE);
         cap_frame_print_attrs_vptr(vptr, find_ret.pd);
         break;
     }
     case cap_frame_cap: {
         vptr_t vptr = cap_frame_cap_get_capFMappedAddress(cap);
-        findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(cap_frame_cap_get_capFMappedVSpaceId(cap));
+        findVSpaceForVSpaceID_ret_t find_ret = findVSpaceForVSpaceID(cap_frame_cap_get_capFMappedVSpaceID(cap));
         assert(find_ret.status == EXCEPTION_NONE);
         cap_frame_print_attrs_vptr(vptr, find_ret.pd);
         break;
     }
     case cap_vspace_id_pool_cap: {
-        printf("%p_asid_pool\n", (void *)cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap));
+        printf("%p_asid_pool\n", (void *)cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap));
         break;
     }
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
@@ -347,7 +347,7 @@ void print_object_arch(cap_t cap)
 
     case cap_vspace_id_pool_cap: {
         printf("%p_asid_pool = asid_pool ",
-               (void *)cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap));
+               (void *)cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap));
         obj_asidpool_print_attrs(cap);
         break;
     }

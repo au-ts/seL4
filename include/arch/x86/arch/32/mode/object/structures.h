@@ -52,34 +52,34 @@ struct vspace_id_pool {
 typedef struct vspace_id_pool vspace_id_pool_t;
 
 #define VSPACE_ID_POOL_PTR(r)    ((vspace_id_pool_t*)r)
-#define nVSpaceIdPools          BIT(vspaceIdHighBits)
+#define nVSpaceIDPools          BIT(vspaceIdHighBits)
 #define VSPACE_ID_LOW(a)         (a & MASK(vspaceIdLowBits))
 #define VSPACE_ID_HIGH(a)        ((a >> vspaceIdLowBits) & MASK(vspaceIdHighBits))
 
-static inline vspace_id_t CONST cap_frame_cap_get_capFMappedVSpaceId(cap_t cap)
+static inline vspace_id_t CONST cap_frame_cap_get_capFMappedVSpaceID(cap_t cap)
 {
     return
-        (cap_frame_cap_get_capFMappedVSpaceIdHigh(cap) << vspaceIdLowBits) +
-        cap_frame_cap_get_capFMappedVSpaceIdLow(cap);
+        (cap_frame_cap_get_capFMappedVSpaceIDHigh(cap) << vspaceIdLowBits) +
+        cap_frame_cap_get_capFMappedVSpaceIDLow(cap);
 }
 
-static inline cap_t CONST cap_frame_cap_set_capFMappedVSpaceId(cap_t cap, vspace_id_t vspaceId)
+static inline cap_t CONST cap_frame_cap_set_capFMappedVSpaceID(cap_t cap, vspace_id_t vspaceId)
 {
-    cap = cap_frame_cap_set_capFMappedVSpaceIdLow(cap, VSPACE_ID_LOW(vspaceId));
-    return cap_frame_cap_set_capFMappedVSpaceIdHigh(cap, VSPACE_ID_HIGH(vspaceId));
+    cap = cap_frame_cap_set_capFMappedVSpaceIDLow(cap, VSPACE_ID_LOW(vspaceId));
+    return cap_frame_cap_set_capFMappedVSpaceIDHigh(cap, VSPACE_ID_HIGH(vspaceId));
 }
 
-static inline vspace_id_t PURE cap_frame_cap_ptr_get_capFMappedVSpaceId(cap_t *cap)
+static inline vspace_id_t PURE cap_frame_cap_ptr_get_capFMappedVSpaceID(cap_t *cap)
 {
-    return cap_frame_cap_get_capFMappedVSpaceId(*cap);
+    return cap_frame_cap_get_capFMappedVSpaceID(*cap);
 }
 
-static inline void cap_frame_cap_ptr_set_capFMappedVSpaceId(cap_t *cap, vspace_id_t vspaceId)
+static inline void cap_frame_cap_ptr_set_capFMappedVSpaceID(cap_t *cap, vspace_id_t vspaceId)
 {
-    *cap = cap_frame_cap_set_capFMappedVSpaceId(*cap, vspaceId);
+    *cap = cap_frame_cap_set_capFMappedVSpaceID(*cap, vspaceId);
 }
 
-static inline vspace_id_t PURE cap_get_capMappedVSpaceId(cap_t cap)
+static inline vspace_id_t PURE cap_get_capMappedVSpaceID(cap_t cap)
 {
     cap_tag_t ctag;
 
@@ -87,11 +87,11 @@ static inline vspace_id_t PURE cap_get_capMappedVSpaceId(cap_t cap)
 
     switch (ctag) {
     case cap_page_directory_cap:
-        return cap_page_directory_cap_get_capPDMappedVSpaceId(cap);
+        return cap_page_directory_cap_get_capPDMappedVSpaceID(cap);
 
 #ifdef CONFIG_VTX
     case cap_ept_pml4_cap:
-        return cap_ept_pml4_cap_get_capPML4MappedVSpaceId(cap);
+        return cap_ept_pml4_cap_get_capPML4MappedVSpaceID(cap);
 #endif
 
     default:

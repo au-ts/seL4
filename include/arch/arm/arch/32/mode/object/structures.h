@@ -98,36 +98,36 @@ typedef struct vspace_id_pool vspace_id_pool_t;
 
 #define HW_ASID_SIZE_BITS 1
 
-#define nVSpaceIdPools BIT(vspaceIdHighBits)
+#define nVSpaceIDPools BIT(vspaceIdHighBits)
 
 #define VSPACE_ID_LOW(a) (a & MASK(vspaceIdLowBits))
 #define VSPACE_ID_HIGH(a) ((a >> vspaceIdLowBits) & MASK(vspaceIdHighBits))
 
-static inline cap_t CONST cap_small_frame_cap_set_capFMappedVSpaceId(cap_t cap, vspace_id_t vspaceId)
+static inline cap_t CONST cap_small_frame_cap_set_capFMappedVSpaceID(cap_t cap, vspace_id_t vspaceId)
 {
-    cap = cap_small_frame_cap_set_capFMappedVSpaceIdLow(cap, VSPACE_ID_LOW(vspaceId));
-    return cap_small_frame_cap_set_capFMappedVSpaceIdHigh(cap, VSPACE_ID_HIGH(vspaceId));
+    cap = cap_small_frame_cap_set_capFMappedVSpaceIDLow(cap, VSPACE_ID_LOW(vspaceId));
+    return cap_small_frame_cap_set_capFMappedVSpaceIDHigh(cap, VSPACE_ID_HIGH(vspaceId));
 }
 
-static inline word_t CONST cap_small_frame_cap_get_capFMappedVSpaceId(cap_t cap)
+static inline word_t CONST cap_small_frame_cap_get_capFMappedVSpaceID(cap_t cap)
 {
-    return (cap_small_frame_cap_get_capFMappedVSpaceIdHigh(cap) << vspaceIdLowBits) +
-           cap_small_frame_cap_get_capFMappedVSpaceIdLow(cap);
+    return (cap_small_frame_cap_get_capFMappedVSpaceIDHigh(cap) << vspaceIdLowBits) +
+           cap_small_frame_cap_get_capFMappedVSpaceIDLow(cap);
 }
 
-static inline cap_t CONST cap_frame_cap_set_capFMappedVSpaceId(cap_t cap, vspace_id_t vspaceId)
+static inline cap_t CONST cap_frame_cap_set_capFMappedVSpaceID(cap_t cap, vspace_id_t vspaceId)
 {
-    cap = cap_frame_cap_set_capFMappedVSpaceIdLow(cap, VSPACE_ID_LOW(vspaceId));
-    return cap_frame_cap_set_capFMappedVSpaceIdHigh(cap, VSPACE_ID_HIGH(vspaceId));
+    cap = cap_frame_cap_set_capFMappedVSpaceIDLow(cap, VSPACE_ID_LOW(vspaceId));
+    return cap_frame_cap_set_capFMappedVSpaceIDHigh(cap, VSPACE_ID_HIGH(vspaceId));
 }
 
-static inline word_t CONST cap_frame_cap_get_capFMappedVSpaceId(cap_t cap)
+static inline word_t CONST cap_frame_cap_get_capFMappedVSpaceID(cap_t cap)
 {
-    return (cap_frame_cap_get_capFMappedVSpaceIdHigh(cap) << vspaceIdLowBits) +
-           cap_frame_cap_get_capFMappedVSpaceIdLow(cap);
+    return (cap_frame_cap_get_capFMappedVSpaceIDHigh(cap) << vspaceIdLowBits) +
+           cap_frame_cap_get_capFMappedVSpaceIDLow(cap);
 }
 
-static inline word_t CONST generic_frame_cap_get_capFMappedVSpaceId(cap_t cap)
+static inline word_t CONST generic_frame_cap_get_capFMappedVSpaceID(cap_t cap)
 {
     cap_tag_t ctag;
 
@@ -137,9 +137,9 @@ static inline word_t CONST generic_frame_cap_get_capFMappedVSpaceId(cap_t cap)
            ctag == cap_frame_cap);
 
     if (ctag == cap_small_frame_cap) {
-        return cap_small_frame_cap_get_capFMappedVSpaceId(cap);
+        return cap_small_frame_cap_get_capFMappedVSpaceID(cap);
     } else {
-        return cap_frame_cap_get_capFMappedVSpaceId(cap);
+        return cap_frame_cap_get_capFMappedVSpaceID(cap);
     }
 }
 
@@ -152,11 +152,11 @@ static inline cap_t CONST generic_frame_cap_set_capFMappedAddress(cap_t cap, vsp
            ctag == cap_frame_cap);
 
     if (ctag == cap_small_frame_cap) {
-        cap = cap_small_frame_cap_set_capFMappedVSpaceId(cap, vspaceId);
+        cap = cap_small_frame_cap_set_capFMappedVSpaceID(cap, vspaceId);
         cap = cap_small_frame_cap_set_capFMappedAddress(cap, addr);
         return cap;
     } else {
-        cap = cap_frame_cap_set_capFMappedVSpaceId(cap, vspaceId);
+        cap = cap_frame_cap_set_capFMappedVSpaceID(cap, vspaceId);
         cap = cap_frame_cap_set_capFMappedAddress(cap, addr);
         return cap;
     }
@@ -230,7 +230,7 @@ static inline word_t CONST generic_frame_cap_get_capFSize(cap_t cap)
 
 static inline word_t CONST generic_frame_cap_get_capFIsMapped(cap_t cap)
 {
-    return generic_frame_cap_get_capFMappedVSpaceId(cap) != 0;
+    return generic_frame_cap_get_capFMappedVSpaceID(cap) != 0;
 }
 
 static inline word_t CONST generic_frame_cap_get_capFMappedAddress(cap_t cap)
@@ -281,7 +281,7 @@ static inline word_t CONST cap_get_archCapSizeBits(cap_t cap)
         return seL4_PageDirBits;
 
     case cap_vspace_id_pool_cap:
-        return seL4_VSpaceIdPoolBits;
+        return seL4_VSpaceIDPoolBits;
 
     case cap_vspace_id_control_cap:
         return 0;
@@ -370,7 +370,7 @@ static inline void *CONST cap_get_archCapPtr(cap_t cap)
         return PD_PTR(cap_page_directory_cap_get_capPDBasePtr(cap));
 
     case cap_vspace_id_pool_cap:
-        return VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap));
+        return VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap));
 
     case cap_vspace_id_control_cap:
         return NULL;

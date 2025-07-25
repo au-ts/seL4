@@ -179,7 +179,7 @@ RISC-V is such a case:
 
 ```bf_gen
 block page_table_cap {
-    field       capPTMappedVSpaceId     9
+    field       capPTMappedVSpaceID     9
     field_high  capPTBasePtr        20
     padding                         3
 
@@ -236,8 +236,8 @@ after the block name:
 
 
 ```bf_gen
-block page_table_cap(capPTBasePtr, capPTMappedVSpaceId) {
-    field       capPTMappedVSpaceId     9
+block page_table_cap(capPTBasePtr, capPTMappedVSpaceID) {
+    field       capPTMappedVSpaceID     9
     field_high  capPTBasePtr        20
     padding                         3
 }

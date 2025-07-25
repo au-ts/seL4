@@ -34,12 +34,12 @@ static exception_t performPageGetAddress(void *vbase_ptr, bool_t call)
     return EXCEPTION_NONE;
 }
 
-void deleteVSpaceIdPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
+void deleteVSpaceIDPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
 {
     /* Haskell error: "ASID pool's base must be aligned" */
     assert(IS_ALIGNED(vspaceId_base, vspaceIdLowBits));
 
-    if (x86KSVSpaceIdTable[vspaceId_base >> vspaceIdLowBits] == pool) {
+    if (x86KSVSpaceIDTable[vspaceId_base >> vspaceIdLowBits] == pool) {
         for (unsigned int offset = 0; offset < BIT(vspaceIdLowBits); offset++) {
             asid_map_t asid_map = pool->array[offset];
             if (asid_map_get_type(asid_map) == asid_map_asid_map_vspace) {
@@ -47,12 +47,12 @@ void deleteVSpaceIdPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
                 hwASIDInvalidate(vspaceId_base + offset, vspace);
             }
         }
-        x86KSVSpaceIdTable[vspaceId_base >> vspaceIdLowBits] = NULL;
+        x86KSVSpaceIDTable[vspaceId_base >> vspaceIdLowBits] = NULL;
         setVMRoot(NODE_STATE(ksCurThread));
     }
 }
 
-exception_t performVSpaceIdControlInvocationInvocation(void *frame, cte_t *slot, cte_t *parent, vspace_id_t vspaceId_base)
+exception_t performVSpaceIDControlInvocationInvocation(void *frame, cte_t *slot, cte_t *parent, vspace_id_t vspaceId_base)
 {
     /** AUXUPD: "(True, typ_region_bytes (ptr_val \<acute>frame) 12)" */
     /** GHOSTUPD: "(True, gs_clear_region (ptr_val \<acute>frame) 12)" */
@@ -64,24 +64,24 @@ exception_t performVSpaceIdControlInvocationInvocation(void *frame, cte_t *slot,
 
     cteInsert(
         cap_vspace_id_pool_cap_new(
-            vspaceId_base,          /* capVSpaceIdBase  */
-            WORD_REF(frame)     /* capVSpaceIdPool  */
+            vspaceId_base,          /* capVSpaceIDBase  */
+            WORD_REF(frame)     /* capVSpaceIDPool  */
         ),
         parent,
         slot
     );
     /* Haskell error: "ASID pool's base must be aligned" */
     assert((vspaceId_base & MASK(vspaceIdLowBits)) == 0);
-    x86KSVSpaceIdTable[vspaceId_base >> vspaceIdLowBits] = (vspace_id_pool_t *)frame;
+    x86KSVSpaceIDTable[vspaceId_base >> vspaceIdLowBits] = (vspace_id_pool_t *)frame;
 
     return EXCEPTION_NONE;
 }
 
-void deleteVSpaceId(vspace_id_t vspaceId, vspace_root_t *vspace)
+void deleteVSpaceID(vspace_id_t vspaceId, vspace_root_t *vspace)
 {
     vspace_id_pool_t *poolPtr;
 
-    poolPtr = x86KSVSpaceIdTable[VSPACE_ID_HIGH(vspaceId)];
+    poolPtr = x86KSVSpaceIDTable[VSPACE_ID_HIGH(vspaceId)];
     if (poolPtr != NULL) {
         asid_map_t asid_map = poolPtr->array[VSPACE_ID_LOW(vspaceId)];
         if (asid_map_get_type(asid_map) == asid_map_asid_map_vspace &&
@@ -532,14 +532,14 @@ BOOT_CODE void write_it_asid_pool(cap_t it_ap_cap, cap_t it_vspace_cap)
 {
     vspace_id_pool_t *ap = VSPACE_ID_POOL_PTR(pptr_of_cap(it_ap_cap));
     ap->array[VSPACE_ID_LOW(IT_VSPACE_ID)] = asid_map_asid_map_vspace_new(pptr_of_cap(it_vspace_cap));
-    x86KSVSpaceIdTable[VSPACE_ID_HIGH(IT_VSPACE_ID)] = ap;
+    x86KSVSpaceIDTable[VSPACE_ID_HIGH(IT_VSPACE_ID)] = ap;
 }
 
-asid_map_t findHWASIDMapForVSpaceId(vspace_id_t vspaceId)
+asid_map_t findHWASIDMapForVSpaceID(vspace_id_t vspaceId)
 {
     vspace_id_pool_t        *poolPtr;
 
-    poolPtr = x86KSVSpaceIdTable[VSPACE_ID_HIGH(vspaceId)];
+    poolPtr = x86KSVSpaceIDTable[VSPACE_ID_HIGH(vspaceId)];
     if (!poolPtr) {
         return asid_map_asid_map_none_new();
     }
@@ -547,12 +547,12 @@ asid_map_t findHWASIDMapForVSpaceId(vspace_id_t vspaceId)
     return poolPtr->array[VSPACE_ID_LOW(vspaceId)];
 }
 
-findVSpaceForVSpaceId_ret_t findVSpaceForVSpaceId(vspace_id_t vspaceId)
+findVSpaceForVSpaceID_ret_t findVSpaceForVSpaceID(vspace_id_t vspaceId)
 {
-    findVSpaceForVSpaceId_ret_t ret;
+    findVSpaceForVSpaceID_ret_t ret;
     asid_map_t asid_map;
 
-    asid_map = findHWASIDMapForVSpaceId(vspaceId);
+    asid_map = findHWASIDMapForVSpaceID(vspaceId);
     if (asid_map_get_type(asid_map) != asid_map_asid_map_vspace) {
         current_lookup_fault = lookup_fault_invalid_root_new();
 
@@ -717,12 +717,12 @@ void flushTable(vspace_root_t *vspace, word_t vptr, pte_t *pt, vspace_id_t vspac
 
 void unmapPage(vm_page_size_t page_size, vspace_id_t vspaceId, vptr_t vptr, void *pptr)
 {
-    findVSpaceForVSpaceId_ret_t find_ret;
+    findVSpaceForVSpaceID_ret_t find_ret;
     lookupPTSlot_ret_t  lu_ret;
     lookupPDSlot_ret_t  pd_ret;
     pde_t               *pde;
 
-    find_ret = findVSpaceForVSpaceId(vspaceId);
+    find_ret = findVSpaceForVSpaceID(vspaceId);
     if (find_ret.status != EXCEPTION_NONE) {
         return;
     }
@@ -769,10 +769,10 @@ void unmapPage(vm_page_size_t page_size, vspace_id_t vspaceId, vptr_t vptr, void
 
 void unmapPageTable(vspace_id_t vspaceId, vptr_t vaddr, pte_t *pt)
 {
-    findVSpaceForVSpaceId_ret_t find_ret;
+    findVSpaceForVSpaceID_ret_t find_ret;
     lookupPDSlot_ret_t    lu_ret;
 
-    find_ret = findVSpaceForVSpaceId(vspaceId);
+    find_ret = findVSpaceForVSpaceID(vspaceId);
     if (find_ret.status != EXCEPTION_NONE) {
         return;
     }
@@ -802,7 +802,7 @@ static exception_t performX86PageInvocationMapPTE(cap_t cap, cte_t *ctSlot, pte_
 {
     ctSlot->cap = cap;
     *ptSlot = pte;
-    invalidatePageStructureCacheASID(pptr_to_paddr(vspace), cap_frame_cap_get_capFMappedVSpaceId(cap),
+    invalidatePageStructureCacheASID(pptr_to_paddr(vspace), cap_frame_cap_get_capFMappedVSpaceID(cap),
                                      SMP_TERNARY(tlb_bitmap_get(vspace), 0));
     return EXCEPTION_NONE;
 }
@@ -812,7 +812,7 @@ static exception_t performX86PageInvocationMapPDE(cap_t cap, cte_t *ctSlot, pde_
 {
     ctSlot->cap = cap;
     *pdSlot = pde;
-    invalidatePageStructureCacheASID(pptr_to_paddr(vspace), cap_frame_cap_get_capFMappedVSpaceId(cap),
+    invalidatePageStructureCacheASID(pptr_to_paddr(vspace), cap_frame_cap_get_capFMappedVSpaceID(cap),
                                      SMP_TERNARY(tlb_bitmap_get(vspace), 0));
     return EXCEPTION_NONE;
 }
@@ -820,22 +820,22 @@ static exception_t performX86PageInvocationMapPDE(cap_t cap, cte_t *ctSlot, pde_
 
 static exception_t performX86PageInvocationUnmap(cap_t cap, cte_t *ctSlot)
 {
-    assert(cap_frame_cap_get_capFMappedVSpaceId(cap));
+    assert(cap_frame_cap_get_capFMappedVSpaceID(cap));
     assert(cap_frame_cap_get_capFMapType(cap) == X86_MappingVSpace);
     // We have this `if` for something we just asserted to be true for simplicity of verification
     // This has no performance implications as when this function is inlined this `if` will be
     // inside an identical `if` and will therefore be elided
-    if (cap_frame_cap_get_capFMappedVSpaceId(cap)) {
+    if (cap_frame_cap_get_capFMappedVSpaceID(cap)) {
         unmapPage(
             cap_frame_cap_get_capFSize(cap),
-            cap_frame_cap_get_capFMappedVSpaceId(cap),
+            cap_frame_cap_get_capFMappedVSpaceID(cap),
             cap_frame_cap_get_capFMappedAddress(cap),
             (void *)cap_frame_cap_get_capFBasePtr(cap)
         );
     }
 
     cap_frame_cap_ptr_set_capFMappedAddress(&ctSlot->cap, 0);
-    cap_frame_cap_ptr_set_capFMappedVSpaceId(&ctSlot->cap, vspaceIdInvalid);
+    cap_frame_cap_ptr_set_capFMappedVSpaceID(&ctSlot->cap, vspaceIdInvalid);
     cap_frame_cap_ptr_set_capFMapType(&ctSlot->cap, X86_MappingNone);
 
     return EXCEPTION_NONE;
@@ -843,7 +843,7 @@ static exception_t performX86PageInvocationUnmap(cap_t cap, cte_t *ctSlot)
 
 static exception_t performX86FrameInvocationUnmap(cap_t cap, cte_t *cte)
 {
-    if (cap_frame_cap_get_capFMappedVSpaceId(cap) != vspaceIdInvalid) {
+    if (cap_frame_cap_get_capFMappedVSpaceID(cap) != vspaceIdInvalid) {
         switch (cap_frame_cap_get_capFMapType(cap)) {
         case X86_MappingVSpace:
             return performX86PageInvocationUnmap(cap, cte);
@@ -977,10 +977,10 @@ exception_t decodeX86FrameInvocation(
             return EXCEPTION_SYSCALL_ERROR;
         }
         vspace = (vspace_root_t *)pptr_of_cap(vspaceCap);
-        vspaceId = cap_get_capMappedVSpaceId(vspaceCap);
+        vspaceId = cap_get_capMappedVSpaceID(vspaceCap);
 
-        if (cap_frame_cap_get_capFMappedVSpaceId(cap) != vspaceIdInvalid) {
-            if (cap_frame_cap_get_capFMappedVSpaceId(cap) != vspaceId) {
+        if (cap_frame_cap_get_capFMappedVSpaceID(cap) != vspaceIdInvalid) {
+            if (cap_frame_cap_get_capFMappedVSpaceID(cap) != vspaceId) {
                 current_syscall_error.type = seL4_InvalidCapability;
                 current_syscall_error.invalidCapNumber = 1;
 
@@ -1015,9 +1015,9 @@ exception_t decodeX86FrameInvocation(
         }
 
         {
-            findVSpaceForVSpaceId_ret_t find_ret;
+            findVSpaceForVSpaceID_ret_t find_ret;
 
-            find_ret = findVSpaceForVSpaceId(vspaceId);
+            find_ret = findVSpaceForVSpaceID(vspaceId);
             if (find_ret.status != EXCEPTION_NONE) {
                 current_syscall_error.type = seL4_FailedLookup;
                 current_syscall_error.failedLookupWasSource = false;
@@ -1043,7 +1043,7 @@ exception_t decodeX86FrameInvocation(
 
         paddr = pptr_to_paddr((void *)cap_frame_cap_get_capFBasePtr(cap));
 
-        cap = cap_frame_cap_set_capFMappedVSpaceId(cap, vspaceId);
+        cap = cap_frame_cap_set_capFMappedVSpaceID(cap, vspaceId);
         cap = cap_frame_cap_set_capFMappedAddress(cap, vaddr);
         cap = cap_frame_cap_set_capFMapType(cap, X86_MappingVSpace);
 
@@ -1119,7 +1119,7 @@ static exception_t performX86PageTableInvocationUnmap(cap_t cap, cte_t *ctSlot)
     if (cap_page_table_cap_get_capPTIsMapped(cap)) {
         pte_t *pt = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
         unmapPageTable(
-            cap_page_table_cap_get_capPTMappedVSpaceId(cap),
+            cap_page_table_cap_get_capPTMappedVSpaceID(cap),
             cap_page_table_cap_get_capPTMappedAddress(cap),
             pt
         );
@@ -1135,7 +1135,7 @@ static exception_t performX86PageTableInvocationMap(cap_t cap, cte_t *ctSlot, pd
 {
     ctSlot->cap = cap;
     *pdSlot = pde;
-    invalidatePageStructureCacheASID(pptr_to_paddr(root), cap_page_table_cap_get_capPTMappedVSpaceId(cap),
+    invalidatePageStructureCacheASID(pptr_to_paddr(root), cap_page_table_cap_get_capPTMappedVSpaceID(cap),
                                      SMP_TERNARY(tlb_bitmap_get(root), 0));
     return EXCEPTION_NONE;
 }
@@ -1199,7 +1199,7 @@ static exception_t decodeX86PageTableInvocation(
     }
 
     vspace = (vspace_root_t *)pptr_of_cap(vspaceCap);
-    vspaceId = cap_get_capMappedVSpaceId(vspaceCap);
+    vspaceId = cap_get_capMappedVSpaceID(vspaceCap);
 
     if (vaddr > USER_TOP) {
         userError("X86PageTable: Mapping address too high.");
@@ -1210,9 +1210,9 @@ static exception_t decodeX86PageTableInvocation(
     }
 
     {
-        findVSpaceForVSpaceId_ret_t find_ret;
+        findVSpaceForVSpaceID_ret_t find_ret;
 
-        find_ret = findVSpaceForVSpaceId(vspaceId);
+        find_ret = findVSpaceForVSpaceID(vspaceId);
         if (find_ret.status != EXCEPTION_NONE) {
             current_syscall_error.type = seL4_FailedLookup;
             current_syscall_error.failedLookupWasSource = false;
@@ -1247,7 +1247,7 @@ static exception_t decodeX86PageTableInvocation(
     pde = makeUserPDEPageTable(paddr, attr);
 
     cap = cap_page_table_cap_set_capPTIsMapped(cap, 1);
-    cap = cap_page_table_cap_set_capPTMappedVSpaceId(cap, vspaceId);
+    cap = cap_page_table_cap_set_capPTMappedVSpaceID(cap, vspaceId);
     cap = cap_page_table_cap_set_capPTMappedAddress(cap, vaddr);
 
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
@@ -1304,9 +1304,9 @@ exception_t decodeX86MMUInvocation(
         root = current_extra_caps.excaprefs[1]->cap;
 
         /* Find first free pool */
-        for (i = 0; i < nVSpaceIdPools && x86KSVSpaceIdTable[i]; i++);
+        for (i = 0; i < nVSpaceIDPools && x86KSVSpaceIDTable[i]; i++);
 
-        if (i == nVSpaceIdPools) {
+        if (i == nVSpaceIDPools) {
             userError("ASIDControlMakePool: No unallocated pools found.");
             current_syscall_error.type = seL4_DeleteFirst;
 
@@ -1317,7 +1317,7 @@ exception_t decodeX86MMUInvocation(
 
 
         if (cap_get_capType(untyped) != cap_untyped_cap ||
-            cap_untyped_cap_get_capBlockSize(untyped) != seL4_VSpaceIdPoolBits ||
+            cap_untyped_cap_get_capBlockSize(untyped) != seL4_VSpaceIDPoolBits ||
             cap_untyped_cap_get_capIsDevice(untyped)) {
             current_syscall_error.type = seL4_InvalidCapability;
             current_syscall_error.invalidCapNumber = 1;
@@ -1344,7 +1344,7 @@ exception_t decodeX86MMUInvocation(
         }
 
         setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
-        return performVSpaceIdControlInvocationInvocation(frame, destSlot, parentSlot, vspaceId_base);
+        return performVSpaceIDControlInvocationInvocation(frame, destSlot, parentSlot, vspaceId_base);
     }
 
     case cap_vspace_id_pool_cap: {
@@ -1369,7 +1369,7 @@ exception_t decodeX86MMUInvocation(
         vspaceCap = vspaceCapSlot->cap;
 
         if (!(isVTableRoot(vspaceCap) || VTX_TERNARY(cap_get_capType(vspaceCap) == cap_ept_pml4_cap, 0))
-            || cap_get_capMappedVSpaceId(vspaceCap) != vspaceIdInvalid) {
+            || cap_get_capMappedVSpaceID(vspaceCap) != vspaceIdInvalid) {
             userError("X86ASIDPool: Invalid vspace root.");
             current_syscall_error.type = seL4_InvalidCapability;
             current_syscall_error.invalidCapNumber = 1;
@@ -1377,7 +1377,7 @@ exception_t decodeX86MMUInvocation(
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        pool = x86KSVSpaceIdTable[cap_vspace_id_pool_cap_get_capVSpaceIdBase(cap) >> vspaceIdLowBits];
+        pool = x86KSVSpaceIDTable[cap_vspace_id_pool_cap_get_capVSpaceIDBase(cap) >> vspaceIdLowBits];
         if (!pool) {
             current_syscall_error.type = seL4_FailedLookup;
             current_syscall_error.failedLookupWasSource = false;
@@ -1385,14 +1385,14 @@ exception_t decodeX86MMUInvocation(
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        if (pool != VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap))) {
+        if (pool != VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap))) {
             current_syscall_error.type = seL4_InvalidCapability;
             current_syscall_error.invalidCapNumber = 0;
             return EXCEPTION_SYSCALL_ERROR;
         }
 
         /* Find first free ASID */
-        vspaceId = cap_vspace_id_pool_cap_get_capVSpaceIdBase(cap);
+        vspaceId = cap_vspace_id_pool_cap_get_capVSpaceIDBase(cap);
         for (i = 0; i < BIT(vspaceIdLowBits) && (vspaceId + i == 0
                                              || asid_map_get_type(pool->array[i]) != asid_map_asid_map_none); i++);
 
@@ -1405,7 +1405,7 @@ exception_t decodeX86MMUInvocation(
         vspaceId += i;
 
         setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
-        return performVSpaceIdPoolInvocation(vspaceId, pool, vspaceCapSlot);
+        return performVSpaceIDPoolInvocation(vspaceId, pool, vspaceCapSlot);
     }
 
     default:

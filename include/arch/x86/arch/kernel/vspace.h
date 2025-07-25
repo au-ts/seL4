@@ -27,11 +27,11 @@ struct lookupPDSlot_ret {
 };
 typedef struct lookupPDSlot_ret lookupPDSlot_ret_t;
 
-struct findVSpaceForVSpaceId_ret {
+struct findVSpaceForVSpaceID_ret {
     exception_t status;
     vspace_root_t *vspace_root;
 };
-typedef struct findVSpaceForVSpaceId_ret findVSpaceForVSpaceId_ret_t;
+typedef struct findVSpaceForVSpaceID_ret findVSpaceForVSpaceID_ret_t;
 
 void init_boot_pd(void);
 void enable_paging(void);
@@ -69,7 +69,7 @@ cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_reg);
 
 bool_t isVTableRoot(cap_t cap);
 
-asid_map_t findHWASIDMapForVSpaceId(vspace_id_t vspaceId);
+asid_map_t findHWASIDMapForVSpaceID(vspace_id_t vspaceId);
 
 lookupPTSlot_ret_t lookupPTSlot(vspace_root_t *vspace, vptr_t vptr);
 lookupPDSlot_ret_t lookupPDSlot(vspace_root_t *vspace, vptr_t vptr);
@@ -79,12 +79,12 @@ exception_t handleVMFault(tcb_t *thread, vm_fault_type_t vm_faultType);
 void unmapPageDirectory(vspace_id_t vspaceId, vptr_t vaddr, pde_t *pd);
 void unmapPageTable(vspace_id_t, vptr_t vaddr, pte_t *pt);
 
-exception_t performVSpaceIdPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot);
-exception_t performVSpaceIdControlInvocationInvocation(void *frame, cte_t *slot, cte_t *parent, vspace_id_t vspaceId_base);
+exception_t performVSpaceIDPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot);
+exception_t performVSpaceIDControlInvocationInvocation(void *frame, cte_t *slot, cte_t *parent, vspace_id_t vspaceId_base);
 void hwASIDInvalidate(vspace_id_t vspaceId, vspace_root_t *vspace);
-void deleteVSpaceIdPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool);
-void deleteVSpaceId(vspace_id_t vspaceId, vspace_root_t *vspace);
-findVSpaceForVSpaceId_ret_t findVSpaceForVSpaceId(vspace_id_t vspaceId);
+void deleteVSpaceIDPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool);
+void deleteVSpaceID(vspace_id_t vspaceId, vspace_root_t *vspace);
+findVSpaceForVSpaceID_ret_t findVSpaceForVSpaceID(vspace_id_t vspaceId);
 
 void unmapPage(vm_page_size_t page_size, vspace_id_t vspaceId, vptr_t vptr, void *pptr);
 /* returns whether the translation was removed and needs to be flushed from the hardware (i.e. tlb) */

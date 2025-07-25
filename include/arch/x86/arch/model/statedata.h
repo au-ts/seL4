@@ -66,7 +66,7 @@ compile_assert(x86_arch_global_state_padded, (sizeof(x86_arch_global_state_t) % 
 
 extern x86_arch_global_state_t x86KSGlobalState[CONFIG_MAX_NUM_NODES] ALIGN(L1_CACHE_LINE_SIZE) SKIM_BSS;
 
-extern vspace_id_pool_t *x86KSVSpaceIdTable[];
+extern vspace_id_pool_t *x86KSVSpaceIDTable[];
 extern uint32_t x86KScacheLineSizeBits;
 extern user_fpu_state_t x86KSnullFpuState ALIGN(MIN_FPU_ALIGNMENT);
 

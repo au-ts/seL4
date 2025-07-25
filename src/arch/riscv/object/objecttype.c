@@ -33,7 +33,7 @@ deriveCap_ret_t Arch_deriveCap(cte_t *slot, cap_t cap)
 
     case cap_frame_cap:
         cap = cap_frame_cap_set_capFMappedAddress(cap, 0);
-        ret.cap = cap_frame_cap_set_capFMappedVSpaceId(cap, vspaceIdInvalid);
+        ret.cap = cap_frame_cap_set_capFMappedVSpaceID(cap, vspaceIdInvalid);
         ret.status = EXCEPTION_NONE;
         return ret;
 
@@ -75,9 +75,9 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     switch (cap_get_capType(cap)) {
     case cap_frame_cap:
 
-        if (cap_frame_cap_get_capFMappedVSpaceId(cap)) {
+        if (cap_frame_cap_get_capFMappedVSpaceID(cap)) {
             unmapPage(cap_frame_cap_get_capFSize(cap),
-                      cap_frame_cap_get_capFMappedVSpaceId(cap),
+                      cap_frame_cap_get_capFMappedVSpaceID(cap),
                       cap_frame_cap_get_capFMappedAddress(cap),
                       cap_frame_cap_get_capFBasePtr(cap));
         }
@@ -91,11 +91,11 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
              * a mapped PageTable and unmap it from whatever page table it is mapped
              * into.
              */
-            vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceId(cap);
-            findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
+            vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceID(cap);
+            findVSpaceForVSpaceID_ret_t find_ret = findVSpaceForVSpaceID(vspaceId);
             pte_t *pte = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
             if (find_ret.status == EXCEPTION_NONE && find_ret.vspace_root == pte) {
-                deleteVSpaceId(vspaceId, pte);
+                deleteVSpaceID(vspaceId, pte);
             } else {
                 unmapPageTable(vspaceId, cap_page_table_cap_get_capPTMappedAddress(cap), pte);
             }
@@ -103,9 +103,9 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
         break;
     case cap_vspace_id_pool_cap:
         if (final) {
-            deleteVSpaceIdPool(
-                cap_vspace_id_pool_cap_get_capVSpaceIdBase(cap),
-                VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap))
+            deleteVSpaceIDPool(
+                cap_vspace_id_pool_cap_get_capVSpaceIDBase(cap),
+                VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap))
             );
         }
         break;
@@ -145,8 +145,8 @@ bool_t CONST Arch_sameRegionAs(cap_t cap_a, cap_t cap_b)
 
     case cap_vspace_id_pool_cap:
         if (cap_get_capType(cap_b) == cap_vspace_id_pool_cap) {
-            return cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap_a) ==
-                   cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap_b);
+            return cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap_a) ==
+                   cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap_b);
         }
         break;
     }
@@ -210,7 +210,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
                                                     (unat RISCVPageBits))" */
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,                    /* capFMappedVSpaceId       */
+                   vspaceIdInvalid,                    /* capFMappedVSpaceID       */
                    (word_t) regionBase,            /* capFBasePtr          */
                    RISCV_4K_Page,                  /* capFSize             */
                    wordFromVMRights(VMReadWrite),  /* capFVMRights         */
@@ -233,7 +233,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
                                                     (unat RISCVMegaPageBits))" */
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,                    /* capFMappedVSpaceId       */
+                   vspaceIdInvalid,                    /* capFMappedVSpaceID       */
                    (word_t) regionBase,            /* capFBasePtr          */
                    RISCV_Mega_Page,                  /* capFSize             */
                    wordFromVMRights(VMReadWrite),  /* capFVMRights         */
@@ -258,7 +258,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
                                                     (unat RISCVGigaPageBits))" */
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,                    /* capFMappedVSpaceId       */
+                   vspaceIdInvalid,                    /* capFMappedVSpaceID       */
                    (word_t) regionBase,            /* capFBasePtr          */
                    RISCV_Giga_Page,                  /* capFSize             */
                    wordFromVMRights(VMReadWrite),  /* capFVMRights         */
@@ -272,7 +272,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
         /** AUXUPD: "(True, ptr_retyps 1
               (Ptr (ptr_val \<acute>regionBase) :: (pte_C[512]) ptr))" */
         return cap_page_table_cap_new(
-                   vspaceIdInvalid,            /* capPTMappedVSpaceId    */
+                   vspaceIdInvalid,            /* capPTMappedVSpaceID    */
                    (word_t)regionBase,     /* capPTBasePtr       */
                    0,                      /* capPTIsMapped      */
                    0                       /* capPTMappedAddress */

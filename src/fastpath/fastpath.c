@@ -94,7 +94,7 @@ void NORETURN fastpath_call(word_t cptr, word_t msgInfo)
 #ifdef CONFIG_ARCH_X86_64
     /* borrow the stored_hw_asid for PCID */
     /* the asid is the 12-bit PCID */
-    stored_hw_asid = (hw_asid_t){cap_pml4_cap_get_capPML4MappedVSpaceId_fp(newVTable) & 0xfff};
+    stored_hw_asid = (hw_asid_t){cap_pml4_cap_get_capPML4MappedVSpaceID_fp(newVTable) & 0xfff};
 #endif
 
 #ifdef CONFIG_ARCH_IA32
@@ -103,8 +103,8 @@ void NORETURN fastpath_call(word_t cptr, word_t msgInfo)
 #endif
 #ifdef CONFIG_ARCH_AARCH64
     /* Need to test that the ASID is still valid */
-    vspace_id_t vspaceId = cap_vspace_cap_get_capVSMappedVSpaceId(newVTable);
-    asid_map_t asid_map = findHWASIDMapForVSpaceId(vspaceId);
+    vspace_id_t vspaceId = cap_vspace_cap_get_capVSMappedVSpaceID(newVTable);
+    asid_map_t asid_map = findHWASIDMapForVSpaceID(vspaceId);
     if (unlikely(asid_map_get_type(asid_map) != asid_map_asid_map_vspace ||
                  VSPACE_PTR(asid_map_asid_map_vspace_get_vspace_root(asid_map)) != cap_pd)) {
         slowpath(SysCall);
@@ -123,7 +123,7 @@ void NORETURN fastpath_call(word_t cptr, word_t msgInfo)
 
 #ifdef CONFIG_ARCH_RISCV
     /* Get HW(???) ASID */
-    stored_hw_asid = (hw_asid_t){cap_page_table_cap_get_capPTMappedVSpaceId(newVTable)};
+    stored_hw_asid = (hw_asid_t){cap_page_table_cap_get_capPTMappedVSpaceID(newVTable)};
 #endif
 
     /* let gcc optimise this out for 1 domain */
@@ -373,7 +373,7 @@ void NORETURN fastpath_reply_recv(word_t cptr, word_t msgInfo)
 #ifdef CONFIG_ARCH_X86_64
     /* borrow the stored_hw_asid for PCID */
     /* the asid is the 12-bit PCID */
-    stored_hw_asid = (hw_asid_t){cap_pml4_cap_get_capPML4MappedVSpaceId_fp(newVTable) & 0xfff};
+    stored_hw_asid = (hw_asid_t){cap_pml4_cap_get_capPML4MappedVSpaceID_fp(newVTable) & 0xfff};
 #endif
 #ifdef CONFIG_ARCH_IA32
     /* stored_hw_asid is unused on ia32 fastpath, but gets passed into a function below. */
@@ -381,8 +381,8 @@ void NORETURN fastpath_reply_recv(word_t cptr, word_t msgInfo)
 #endif
 #ifdef CONFIG_ARCH_AARCH64
     /* Need to test that the ASID is still valid */
-    vspace_id_t vspaceId = cap_vspace_cap_get_capVSMappedVSpaceId(newVTable);
-    asid_map_t asid_map = findHWASIDMapForVSpaceId(vspaceId);
+    vspace_id_t vspaceId = cap_vspace_cap_get_capVSMappedVSpaceID(newVTable);
+    asid_map_t asid_map = findHWASIDMapForVSpaceID(vspaceId);
     if (unlikely(asid_map_get_type(asid_map) != asid_map_asid_map_vspace ||
                  VSPACE_PTR(asid_map_asid_map_vspace_get_vspace_root(asid_map)) != cap_pd)) {
         slowpath(SysReplyRecv);
@@ -401,7 +401,7 @@ void NORETURN fastpath_reply_recv(word_t cptr, word_t msgInfo)
 #endif
 
 #ifdef CONFIG_ARCH_RISCV
-    stored_hw_asid = (hw_asid_t){cap_page_table_cap_get_capPTMappedVSpaceId(newVTable)};
+    stored_hw_asid = (hw_asid_t){cap_page_table_cap_get_capPTMappedVSpaceID(newVTable)};
 #endif
 
     /* Ensure the original caller can be scheduled directly. */
@@ -774,8 +774,8 @@ void NORETURN fastpath_vm_fault(vm_fault_type_t type)
 
 #ifdef CONFIG_ARCH_AARCH64
     /* Need to test that the ASID is still valid */
-    vspace_id_t vspaceId = cap_vspace_cap_get_capVSMappedVSpaceId(newVTable);
-    asid_map_t asid_map = findHWASIDMapForVSpaceId(asid);
+    vspace_id_t vspaceId = cap_vspace_cap_get_capVSMappedVSpaceID(newVTable);
+    asid_map_t asid_map = findHWASIDMapForVSpaceID(asid);
     if (unlikely(asid_map_get_type(asid_map) != asid_map_asid_map_vspace ||
                  VSPACE_PTR(asid_map_asid_map_vspace_get_vspace_root(asid_map)) != cap_pd)) {
         vm_fault_slowpath(type);

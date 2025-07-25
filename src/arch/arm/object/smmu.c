@@ -272,7 +272,7 @@ exception_t decodeARMCBInvocation(word_t label, word_t length, cptr_t cptr,
         cb = cap_cb_cap_get_capCB(cap);
         cbSlot = smmuStateCBNode + cb;
         setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
-        smmu_tlb_invalidate_cb(cb, cap_vspace_cap_get_capVSMappedVSpaceId(cbSlot->cap));
+        smmu_tlb_invalidate_cb(cb, cap_vspace_cap_get_capVSMappedVSpaceID(cbSlot->cap));
         return EXCEPTION_NONE;
 
     case ARMCBAssignVspace:
@@ -303,13 +303,13 @@ exception_t decodeARMCBInvocation(word_t label, word_t length, cptr_t cptr,
         setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
         /*setting up vspace for the context bank in SMMU*/
         smmu_cb_assign_vspace(cb, VSPACE_PTR(cap_vspace_cap_get_capVSBasePtr(vspaceCap)),
-                              cap_vspace_cap_get_capVSMappedVSpaceId(vspaceCap));
+                              cap_vspace_cap_get_capVSMappedVSpaceID(vspaceCap));
         /*Connecting vspace cap to context bank*/
         cteInsert(vspaceCap, vspaceCapSlot, cbSlot);
         cap_vspace_cap_ptr_set_capVSMappedCB(&(cbSlot->cap), cb);
         /*set relationship between CB and ASID*/
-        smmuStateCBAsidTable[cb] = cap_vspace_cap_get_capVSMappedVSpaceId(vspaceCap);
-        increaseASIDBindCB(cap_vspace_cap_get_capVSMappedVSpaceId(vspaceCap));
+        smmuStateCBAsidTable[cb] = cap_vspace_cap_get_capVSMappedVSpaceID(vspaceCap);
+        increaseASIDBindCB(cap_vspace_cap_get_capVSMappedVSpaceID(vspaceCap));
         return EXCEPTION_NONE;
 
     case ARMCBUnassignVspace:

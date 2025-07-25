@@ -65,7 +65,7 @@ deriveCap_ret_t Mode_deriveCap(cte_t *slot, cap_t cap)
 
     case cap_frame_cap:
         cap = cap_frame_cap_set_capFMapType(cap, X86_MappingNone);
-        ret.cap = cap_frame_cap_set_capFMappedVSpaceId(cap, vspaceIdInvalid);
+        ret.cap = cap_frame_cap_set_capFMappedVSpaceID(cap, vspaceIdInvalid);
         ret.status = EXCEPTION_NONE;
         return ret;
 
@@ -82,8 +82,8 @@ finaliseCap_ret_t Mode_finaliseCap(cap_t cap, bool_t final)
 
     case cap_pml4_cap:
         if (final && cap_pml4_cap_get_capPML4IsMapped(cap)) {
-            deleteVSpaceId(
-                cap_pml4_cap_get_capPML4MappedVSpaceId(cap),
+            deleteVSpaceID(
+                cap_pml4_cap_get_capPML4MappedVSpaceID(cap),
                 PML4E_PTR(cap_pml4_cap_get_capPML4BasePtr(cap))
             );
         }
@@ -92,7 +92,7 @@ finaliseCap_ret_t Mode_finaliseCap(cap_t cap, bool_t final)
     case cap_pdpt_cap:
         if (final && cap_pdpt_cap_get_capPDPTIsMapped(cap)) {
             unmapPDPT(
-                cap_pdpt_cap_get_capPDPTMappedVSpaceId(cap),
+                cap_pdpt_cap_get_capPDPTMappedVSpaceID(cap),
                 cap_pdpt_cap_get_capPDPTMappedAddress(cap),
                 PDPTE_PTR(cap_pdpt_cap_get_capPDPTBasePtr(cap))
             );
@@ -100,13 +100,13 @@ finaliseCap_ret_t Mode_finaliseCap(cap_t cap, bool_t final)
         break;
 
     case cap_frame_cap:
-        if (cap_frame_cap_get_capFMappedVSpaceId(cap)) {
+        if (cap_frame_cap_get_capFMappedVSpaceID(cap)) {
             switch (cap_frame_cap_get_capFMapType(cap)) {
 #ifdef CONFIG_VTX
             case X86_MappingEPT:
                 unmapEPTPage(
                     cap_frame_cap_get_capFSize(cap),
-                    cap_frame_cap_get_capFMappedVSpaceId(cap),
+                    cap_frame_cap_get_capFMappedVSpaceID(cap),
                     cap_frame_cap_get_capFMappedAddress(cap),
                     (void *)cap_frame_cap_get_capFBasePtr(cap)
                 );
@@ -120,7 +120,7 @@ finaliseCap_ret_t Mode_finaliseCap(cap_t cap, bool_t final)
             case X86_MappingVSpace:
                 unmapPage(
                     cap_frame_cap_get_capFSize(cap),
-                    cap_frame_cap_get_capFMappedVSpaceId(cap),
+                    cap_frame_cap_get_capFMappedVSpaceID(cap),
                     cap_frame_cap_get_capFMappedAddress(cap),
                     (void *)cap_frame_cap_get_capFBasePtr(cap)
                 );
@@ -196,7 +196,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                                     (unat X64SmallPageBits))" */
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,        /* capFMappedVSpaceId           */
+                   vspaceIdInvalid,        /* capFMappedVSpaceID           */
                    (word_t)regionBase, /* capFBasePtr              */
                    X86_SmallPage,      /* capFSize                 */
                    X86_MappingNone,    /* capFMapType              */
@@ -220,7 +220,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                                     (unat X64LargePageBits))" */
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,        /* capFMappedVSpaceId           */
+                   vspaceIdInvalid,        /* capFMappedVSpaceID           */
                    (word_t)regionBase, /* capFBasePtr              */
                    X86_LargePage,      /* capFSize                 */
                    X86_MappingNone,    /* capFMapType              */
@@ -244,7 +244,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
                                                     (unat X64HugePageBits))" */
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,        /* capFMappedVSpaceId           */
+                   vspaceIdInvalid,        /* capFMappedVSpaceID           */
                    (word_t)regionBase, /* capFBasePtr              */
                    X64_HugePage,       /* capFSize                 */
                    X86_MappingNone,    /* capFMapType              */
@@ -257,7 +257,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
         /** AUXUPD: "(True, ptr_retyps 1
               (Ptr (ptr_val \<acute>regionBase) :: (pte_C[512]) ptr))" */
         return cap_page_table_cap_new(
-                   vspaceIdInvalid,            /* capPTMappedVSpaceId    */
+                   vspaceIdInvalid,            /* capPTMappedVSpaceID    */
                    (word_t)regionBase,     /* capPTBasePtr       */
                    0,                      /* capPTIsMapped      */
                    0                       /* capPTMappedAddress */
@@ -267,7 +267,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
         /** AUXUPD: "(True, ptr_retyps 1
               (Ptr (ptr_val \<acute>regionBase) :: (pde_C[512]) ptr))" */
         return cap_page_directory_cap_new(
-                   vspaceIdInvalid,                /* capPDMappedVSpaceId      */
+                   vspaceIdInvalid,                /* capPDMappedVSpaceID      */
                    (word_t)regionBase,         /* capPDBasePtr         */
                    0,                          /* capPDIsMapped        */
                    0                           /* capPDMappedAddress   */
@@ -277,7 +277,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
         /** AUXUPD: "(True, ptr_retyps 1
               (Ptr (ptr_val \<acute>regionBase) :: (pdpte_C[512]) ptr))" */
         return cap_pdpt_cap_new(
-                   vspaceIdInvalid,                /* capPDPTMappedVSpaceId    */
+                   vspaceIdInvalid,                /* capPDPTMappedVSpaceID    */
                    (word_t)regionBase,         /* capPDPTBasePtr       */
                    0,                          /* capPDPTIsMapped      */
                    0                           /* capPDPTMappedAddress */
@@ -288,7 +288,7 @@ cap_t Mode_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
               (Ptr (ptr_val \<acute>regionBase) :: (pml4e_C[512]) ptr))" */
         copyGlobalMappings(PML4_PTR(regionBase));
         return cap_pml4_cap_new(
-                   vspaceIdInvalid,                /* capPML4MappedVSpaceId   */
+                   vspaceIdInvalid,                /* capPML4MappedVSpaceID   */
                    (word_t)regionBase,         /* capPML4BasePtr      */
                    0                           /* capPML4IsMapped     */
                );

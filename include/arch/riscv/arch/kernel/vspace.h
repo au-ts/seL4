@@ -31,11 +31,11 @@ struct lookupPTSlot_ret {
 
 typedef struct lookupPTSlot_ret lookupPTSlot_ret_t;
 
-struct findVSpaceForVSpaceId_ret {
+struct findVSpaceForVSpaceID_ret {
     exception_t status;
     pte_t *vspace_root;
 };
-typedef struct findVSpaceForVSpaceId_ret findVSpaceForVSpaceId_ret_t;
+typedef struct findVSpaceForVSpaceID_ret findVSpaceForVSpaceID_ret_t;
 
 void copyGlobalMappings(pte_t *newlvl1pt);
 word_t *PURE lookupIPCBuffer(bool_t isReceiver, tcb_t *thread);
@@ -43,8 +43,8 @@ lookupPTSlot_ret_t lookupPTSlot(pte_t *lvl1pt, vptr_t vptr);
 exception_t handleVMFault(tcb_t *thread, vm_fault_type_t vm_faultType);
 void unmapPageTable(vspace_id_t vspaceId, vptr_t vaddr, pte_t *pt);
 void unmapPage(vm_page_size_t page_size, vspace_id_t vspaceId, vptr_t vptr, pptr_t pptr);
-void deleteVSpaceId(vspace_id_t vspaceId, pte_t *vspace);
-void deleteVSpaceIdPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool);
+void deleteVSpaceID(vspace_id_t vspaceId, pte_t *vspace);
+void deleteVSpaceIDPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool);
 bool_t CONST isValidVTableRoot(cap_t cap);
 exception_t checkValidIPCBuffer(vptr_t vptr, cap_t cap);
 vm_rights_t CONST maskVMRights(vm_rights_t vm_rights,

@@ -33,8 +33,8 @@ typedef struct dschedule {
 } dschedule_t;
 
 enum vspaceIdSizeConstants {
-    vspaceIdHighBits = seL4_NumVSpaceIdPoolsBits,
-    vspaceIdLowBits = seL4_VSpaceIdPoolIndexBits
+    vspaceIdHighBits = seL4_NumVSpaceIDPoolsBits,
+    vspaceIdLowBits = seL4_VSpaceIDPoolIndexBits
 };
 
 /* Arch-independent object types */

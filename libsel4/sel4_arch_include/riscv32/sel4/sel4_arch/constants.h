@@ -42,9 +42,9 @@
 #define seL4_PageTableBits      12
 #define seL4_VSpaceBits         seL4_PageTableBits
 
-#define seL4_NumVSpaceIdPoolsBits    5
-#define seL4_VSpaceIdPoolIndexBits  4
-#define seL4_VSpaceIdPoolBits       12
+#define seL4_NumVSpaceIDPoolsBits    5
+#define seL4_VSpaceIDPoolIndexBits  4
+#define seL4_VSpaceIDPoolBits       12
 #ifndef __ASSEMBLER__
 
 typedef enum {

@@ -56,7 +56,7 @@ static vtd_cte_t *lookup_vtd_context_slot(cap_t cap)
         break;
 
     case cap_frame_cap:
-        pci_request_id = cap_frame_cap_get_capFMappedVSpaceId(cap);
+        pci_request_id = cap_frame_cap_get_capFMappedVSpaceID(cap);
         break;
 
     default:
@@ -324,7 +324,7 @@ exception_t decodeX86IOMapInvocation(
         return EXCEPTION_SYSCALL_ERROR;
     }
 
-    if (cap_frame_cap_get_capFMappedVSpaceId(cap) != vspaceIdInvalid) {
+    if (cap_frame_cap_get_capFMappedVSpaceID(cap) != vspaceIdInvalid) {
         userError("X86PageMapIO: Page already mapped.");
         current_syscall_error.type = seL4_InvalidCapability;
         current_syscall_error.invalidCapNumber = 0;
@@ -387,7 +387,7 @@ exception_t decodeX86IOMapInvocation(
     }
 
     cap = cap_frame_cap_set_capFMapType(cap, X86_MappingIOSpace);
-    cap = cap_frame_cap_set_capFMappedVSpaceId(cap, pci_request_id);
+    cap = cap_frame_cap_set_capFMappedVSpaceID(cap, pci_request_id);
     cap = cap_frame_cap_set_capFMappedAddress(cap, io_address);
 
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
@@ -492,7 +492,7 @@ exception_t performX86IOUnMapInvocation(cap_t cap, cte_t *ctSlot)
 
     ctSlot->cap = cap_frame_cap_set_capFMappedAddress(ctSlot->cap, 0);
     ctSlot->cap = cap_frame_cap_set_capFMapType(ctSlot->cap, X86_MappingNone);
-    ctSlot->cap = cap_frame_cap_set_capFMappedVSpaceId(ctSlot->cap, vspaceIdInvalid);
+    ctSlot->cap = cap_frame_cap_set_capFMappedVSpaceID(ctSlot->cap, vspaceIdInvalid);
 
     return EXCEPTION_NONE;
 }

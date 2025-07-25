@@ -22,7 +22,7 @@ base 64(39,1)
 
 -- frames
 block frame_cap {
-    field       capFMappedVSpaceId      16
+    field       capFMappedVSpaceID      16
     field_high  capFBasePtr         39
     padding                         9
 
@@ -36,7 +36,7 @@ block frame_cap {
 
 -- N-level page table
 block page_table_cap {
-    field       capPTMappedVSpaceId     16
+    field       capPTMappedVSpaceID     16
     field_high  capPTBasePtr        39
     padding                         9
 
@@ -46,7 +46,7 @@ block page_table_cap {
     field_high  capPTMappedAddress  39
 }
 
--- Cap to the table of 2^6 VSpaceId pools
+-- Cap to the table of 2^6 VSpaceID pools
 block vspace_id_control_cap {
     padding 64
 
@@ -54,14 +54,14 @@ block vspace_id_control_cap {
     padding             59
 }
 
--- Cap to a pool of 2^10 VSpaceIds
+-- Cap to a pool of 2^10 VSpaceIDs
 block vspace_id_pool_cap {
     padding 64
 
     field       capType         5
-    field       capVSpaceIdBase     16
+    field       capVSpaceIDBase     16
     padding                     6
-    field_high  capVSpaceIdPool     37
+    field_high  capVSpaceIDPool     37
 }
 
 -- NB: odd numbers are arch caps (see isArchCap())

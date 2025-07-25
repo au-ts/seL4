@@ -185,7 +185,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     case cap_page_directory_cap:
         if (final && cap_page_directory_cap_get_capPDIsMapped(cap)) {
             unmapPageDirectory(
-                cap_page_directory_cap_get_capPDMappedVSpaceId(cap),
+                cap_page_directory_cap_get_capPDMappedVSpaceID(cap),
                 cap_page_directory_cap_get_capPDMappedAddress(cap),
                 PDE_PTR(cap_page_directory_cap_get_capPDBasePtr(cap))
             );
@@ -195,7 +195,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     case cap_page_table_cap:
         if (final && cap_page_table_cap_get_capPTIsMapped(cap)) {
             unmapPageTable(
-                cap_page_table_cap_get_capPTMappedVSpaceId(cap),
+                cap_page_table_cap_get_capPTMappedVSpaceID(cap),
                 cap_page_table_cap_get_capPTMappedAddress(cap),
                 PT_PTR(cap_page_table_cap_get_capPTBasePtr(cap))
             );
@@ -204,9 +204,9 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
 
     case cap_vspace_id_pool_cap:
         if (final) {
-            deleteVSpaceIdPool(
-                cap_vspace_id_pool_cap_get_capVSpaceIdBase(cap),
-                VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap))
+            deleteVSpaceIDPool(
+                cap_vspace_id_pool_cap_get_capVSpaceIDBase(cap),
+                VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap))
             );
         }
         break;
@@ -247,7 +247,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
         break;
     case cap_ept_pml4_cap:
         if (final && cap_ept_pml4_cap_get_capPML4IsMapped(cap)) {
-            deleteEPTVSpaceId(cap_ept_pml4_cap_get_capPML4MappedVSpaceId(cap),
+            deleteEPTVSpaceID(cap_ept_pml4_cap_get_capPML4MappedVSpaceID(cap),
                           (ept_pml4e_t *)cap_ept_pml4_cap_get_capPML4BasePtr(cap));
         }
         break;
@@ -255,7 +255,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     case cap_ept_pdpt_cap:
         if (final && cap_ept_pdpt_cap_get_capPDPTIsMapped(cap)) {
             unmapEPTPDPT(
-                cap_ept_pdpt_cap_get_capPDPTMappedVSpaceId(cap),
+                cap_ept_pdpt_cap_get_capPDPTMappedVSpaceID(cap),
                 cap_ept_pdpt_cap_get_capPDPTMappedAddress(cap),
                 (ept_pdpte_t *)cap_ept_pdpt_cap_get_capPDPTBasePtr(cap));
         }
@@ -264,7 +264,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     case cap_ept_pd_cap:
         if (final && cap_ept_pd_cap_get_capPDIsMapped(cap)) {
             unmapEPTPageDirectory(
-                cap_ept_pd_cap_get_capPDMappedVSpaceId(cap),
+                cap_ept_pd_cap_get_capPDMappedVSpaceID(cap),
                 cap_ept_pd_cap_get_capPDMappedAddress(cap),
                 (ept_pde_t *)cap_ept_pd_cap_get_capPDBasePtr(cap));
         }
@@ -273,7 +273,7 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     case cap_ept_pt_cap:
         if (final && cap_ept_pt_cap_get_capPTIsMapped(cap)) {
             unmapEPTPageTable(
-                cap_ept_pt_cap_get_capPTMappedVSpaceId(cap),
+                cap_ept_pt_cap_get_capPTMappedVSpaceID(cap),
                 cap_ept_pt_cap_get_capPTMappedAddress(cap),
                 (ept_pte_t *)cap_ept_pt_cap_get_capPTBasePtr(cap));
         }
@@ -325,8 +325,8 @@ bool_t CONST Arch_sameRegionAs(cap_t cap_a, cap_t cap_b)
 
     case cap_vspace_id_pool_cap:
         if (cap_get_capType(cap_b) == cap_vspace_id_pool_cap) {
-            return cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap_a) ==
-                   cap_vspace_id_pool_cap_get_capVSpaceIdPool(cap_b);
+            return cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap_a) ==
+                   cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap_b);
         }
         break;
 
@@ -469,28 +469,28 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
     case seL4_X86_EPTPML4Object:
         return cap_ept_pml4_cap_new(
                    0,                  /* capPML4IsMapped      */
-                   VPID_INVALID,       /* capPML4MappedVSpaceId    */
+                   VPID_INVALID,       /* capPML4MappedVSpaceID    */
                    (word_t)regionBase  /* capPML4BasePtr       */
                );
     case seL4_X86_EPTPDPTObject:
         return cap_ept_pdpt_cap_new(
                    0,                  /* capPDPTMappedAddress */
                    0,                  /* capPDPTIsMapped      */
-                   VPID_INVALID,       /* capPDPTMappedVSpaceId    */
+                   VPID_INVALID,       /* capPDPTMappedVSpaceID    */
                    (word_t)regionBase   /* capPDPTBasePtr      */
                );
     case seL4_X86_EPTPDObject:
         return cap_ept_pd_cap_new(
                    0,                  /* capPDMappedAddress   */
                    0,                  /* capPDIsMapped        */
-                   VPID_INVALID,       /* capPDMappedVSpaceId      */
+                   VPID_INVALID,       /* capPDMappedVSpaceID      */
                    (word_t)regionBase  /* capPDBasePtr         */
                );
     case seL4_X86_EPTPTObject:
         return cap_ept_pt_cap_new(
                    0,                  /* capPTMappedAddress   */
                    0,                  /* capPTIsMapped        */
-                   VPID_INVALID,       /* capPTMappedVSpaceId      */
+                   VPID_INVALID,       /* capPTMappedVSpaceID      */
                    (word_t)regionBase  /* capPTBasePtr         */
                );
     default:

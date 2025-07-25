@@ -495,7 +495,7 @@ contain the mapping"/>
             <error name="seL4_DeleteFirst">
                 <description>
                     The destination slot contains a capability.
-                    Or, there are no more VSpaceId pools available.
+                    Or, there are no more VSpaceID pools available.
                 </description>
             </error>
             <error name="seL4_FailedLookup">

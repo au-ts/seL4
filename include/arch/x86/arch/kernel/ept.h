@@ -32,18 +32,18 @@ struct EPTPageTableMapped_ret {
 };
 typedef struct EPTPageTableMapped_ret EPTPageTableMapped_ret_t;
 
-struct findEPTForVSpaceId_ret {
+struct findEPTForVSpaceID_ret {
     exception_t status;
     ept_pml4e_t *ept;
 };
-typedef struct findEPTForVSpaceId_ret findEPTForVSpaceId_ret_t;
+typedef struct findEPTForVSpaceID_ret findEPTForVSpaceID_ret_t;
 
 EPTPDPTMapped_ret_t EPTPDPTMapped(vspace_id_t vspaceId, vptr_t vptr, ept_pdpte_t *pdpt);
 EPTPageDirectoryMapped_ret_t EPTPageDirectoryMapped(vspace_id_t vspaceId, vptr_t vaddr, ept_pde_t *pd);
 EPTPageTableMapped_ret_t EPTPageTableMapped(vspace_id_t vspaceId, vptr_t vaddr, ept_pte_t *pt);
-findEPTForVSpaceId_ret_t findEPTForVSpaceId(vspace_id_t vspaceId);
+findEPTForVSpaceID_ret_t findEPTForVSpaceID(vspace_id_t vspaceId);
 
-void deleteEPTVSpaceId(vspace_id_t vspaceId, ept_pml4e_t *ept);
+void deleteEPTVSpaceID(vspace_id_t vspaceId, ept_pml4e_t *ept);
 exception_t decodeX86EPTInvocation(word_t invLabel, word_t length, cptr_t cptr, cte_t *cte, cap_t cap,
                                    word_t *buffer);
 exception_t decodeX86EPTPDInvocation(word_t invLabel, word_t length, cte_t *cte, cap_t cap, word_t *buffer);
