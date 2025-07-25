@@ -418,9 +418,13 @@ void cteInsert(cap_t newCap, cte_t *srcSlot, cte_t *destSlot)
 
     newCapIsRevocable = isCapRevocable(newCap, srcCap);
 
+    /* src = { next = OTHER1, revocable/firstBadged = true/false, prev = OTHER2 }*/
+
     newMDB = mdb_node_set_mdbPrev(srcMDB, CTE_REF(srcSlot));
     newMDB = mdb_node_set_mdbRevocable(newMDB, newCapIsRevocable);
     newMDB = mdb_node_set_mdbFirstBadged(newMDB, newCapIsRevocable);
+
+    /* newMDB = { next = src->next = OTHER1, revocable/firstBadged = true/false, prev = src } */
 
     /* Haskell error: "cteInsert to non-empty destination" */
     assert(cap_get_capType(destSlot->cap) == cap_null_cap);
@@ -435,11 +439,36 @@ void cteInsert(cap_t newCap, cte_t *srcSlot, cte_t *destSlot)
     destSlot->cap = newCap;
     destSlot->cteMDBNode = newMDB;
     mdb_node_ptr_set_mdbNext(&srcSlot->cteMDBNode, CTE_REF(destSlot));
-    if (mdb_node_get_mdbNext(newMDB)) {
+
+    /* src = { next = newMDB, recovable/firstBadged = true/false, prev = OTHER2 } */
+
+    if (mdb_node_get_mdbNext(newMDB)) { /* if src->next (OTHER1) exists */
+
         mdb_node_ptr_set_mdbPrev(
+            /* src->next / OTHER1 */
             &CTE_PTR(mdb_node_get_mdbNext(newMDB))->cteMDBNode,
             CTE_REF(destSlot));
+
+        /* OTHER1 = { prev = newMDB, (unmodified) } */
     }
+
+    /* I think this is basically the same */
+
+// void insertNewCap(cte_t *parent, cte_t *slot, cap_t cap)
+// {
+//     cte_t *next;
+
+//     next = CTE_PTR(mdb_node_get_mdbNext(parent->cteMDBNode));
+//     slot->cap = cap;
+//     /* recovable and firstBadged */
+//     slot->cteMDBNode = mdb_node_new(CTE_REF(next), true, true, CTE_REF(parent));
+//     if (next) {
+//         mdb_node_ptr_set_mdbPrev(&next->cteMDBNode, CTE_REF(slot));
+//     }
+//     mdb_node_ptr_set_mdbNext(&parent->cteMDBNode, CTE_REF(slot));
+// }
+
+
 }
 
 void cteMove(cap_t newCap, cte_t *srcSlot, cte_t *destSlot)
