@@ -71,14 +71,16 @@ static inline bool_t CONST cap_get_archCapIsPhysical(cap_t cap)
     case cap_page_table_cap:
         return true;
 
-    case cap_vspace_id_control_cap:
-        return false;
+    /* hmm: these don't actually have the info though. */
+    case cap_mapped_frame_cap:
+        return true;
 
-    case cap_vspace_id_pool_cap:
+    case cap_mapped_page_table_cap:
         return true;
 
     default:
-        /* unreachable */
+        assert(!"Unknown cap type");
+        /* Unreachable, but GCC can't figure that out */
         return false;
     }
 }
@@ -93,14 +95,12 @@ static inline word_t CONST cap_get_archCapSizeBits(cap_t cap)
     case cap_frame_cap:
         return pageBitsForSize(cap_frame_cap_get_capFSize(cap));
 
+    case cap_mapped_frame_cap:
+        return pageBitsForSize(cap_mapped_frame_cap_get_capFSize(cap));
+
     case cap_page_table_cap:
+    case cap_mapped_page_table_cap:
         return PT_SIZE_BITS;
-
-    case cap_vspace_id_control_cap:
-        return 0;
-
-    case cap_vspace_id_pool_cap:
-        return seL4_VSpaceIDPoolBits;
 
     default:
         assert(!"Unknown cap type");
@@ -120,14 +120,16 @@ static inline void *CONST cap_get_archCapPtr(cap_t cap)
     case cap_frame_cap:
         return (void *)(cap_frame_cap_get_capFBasePtr(cap));
 
+    case cap_mapped_frame_cap:
+        /* XXX: TODO, follow the mapping back. */
+        return (void *)0;
+
     case cap_page_table_cap:
         return PT_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
 
-    case cap_vspace_id_control_cap:
-        return NULL;
-
-    case cap_vspace_id_pool_cap:
-        return VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap));
+    case cap_mapped_page_table_cap:
+        /* TODO: follow the mapping back */
+        return ( void *)0;
 
     default:
         assert(!"Unknown cap type");

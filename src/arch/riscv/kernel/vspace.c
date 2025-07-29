@@ -164,11 +164,10 @@ BOOT_CODE VISIBLE void map_kernel_window(void)
     map_kernel_devices();
 }
 
-BOOT_CODE void map_it_pt_cap(cap_t vspace_cap, cap_t pt_cap)
+BOOT_CODE void map_it_pt_cap(cap_t vspace_cap, cap_t pt_cap, vptr_t vptr)
 {
     lookupPTSlot_ret_t pt_ret;
     pte_t *targetSlot;
-    vptr_t vptr = cap_page_table_cap_get_capPTMappedAddress(pt_cap);
     pte_t *lvl1pt = PTE_PTR(pptr_of_cap(vspace_cap));
 
     /* pt to be mapped */
@@ -194,11 +193,10 @@ BOOT_CODE void map_it_pt_cap(cap_t vspace_cap, cap_t pt_cap)
     sfence();
 }
 
-BOOT_CODE void map_it_frame_cap(cap_t vspace_cap, cap_t frame_cap)
+BOOT_CODE void map_it_frame_cap(cap_t vspace_cap, cap_t frame_cap, vptr_t frame_vptr)
 {
     pte_t *lvl1pt   = PTE_PTR(pptr_of_cap(vspace_cap));
     pte_t *frame_pptr   = PTE_PTR(pptr_of_cap(frame_cap));
-    vptr_t frame_vptr = cap_frame_cap_get_capFMappedAddress(frame_cap);
 
     /* We deal with a frame as 4KiB */
     lookupPTSlot_ret_t lu_ret = lookupPTSlot(lvl1pt, frame_vptr);
@@ -224,29 +222,24 @@ BOOT_CODE void map_it_frame_cap(cap_t vspace_cap, cap_t frame_cap)
 BOOT_CODE cap_t create_unmapped_it_frame_cap(pptr_t pptr, bool_t use_large)
 {
     cap_t cap = cap_frame_cap_new(
-                    vspaceIdInvalid,                     /* capFMappedVSpaceID       */
                     pptr,                            /* capFBasePtr          */
                     0,                               /* capFSize             */
                     0,                               /* capFVMRights         */
-                    0,
-                    0                                /* capFMappedAddress    */
+                    0                                /* capFIsDevice         */
                 );
 
     return cap;
 }
 
 /* Create a page table for the initial thread */
-static BOOT_CODE cap_t create_it_pt_cap(cap_t vspace_cap, pptr_t pptr, vptr_t vptr, vspace_id_t vspaceId)
+static BOOT_CODE cap_t create_it_pt_cap(cap_t vspace_cap, pptr_t pptr, vptr_t vptr)
 {
     cap_t cap;
     cap = cap_page_table_cap_new(
-              vspaceId,   /* capPTMappedVSpaceID      */
-              pptr,   /* capPTBasePtr         */
-              1,      /* capPTIsMapped        */
-              vptr    /* capPTMappedAddress   */
+              pptr    /* capPTBasePtr         */
           );
 
-    map_it_pt_cap(vspace_cap, cap);
+    map_it_pt_cap(vspace_cap, cap, vptr);
     return cap;
 }
 
@@ -270,10 +263,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
 
     lvl1pt_cap =
         cap_page_table_cap_new(
-            IT_VSPACE_ID,               /* capPTMappedVSpaceID    */
-            (word_t) rootserver.vspace,  /* capPTBasePtr       */
-            1,                     /* capPTIsMapped      */
-            (word_t) rootserver.vspace   /* capPTMappedAddress */
+            (word_t) rootserver.vspace   /* capPTBasePtr       */
         );
 
     seL4_SlotPos slot_pos_before = ndks_boot.slot_pos_cur;
@@ -286,7 +276,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
              pt_vptr < it_v_reg.end;
              pt_vptr += RISCV_GET_LVL_PGSIZE(i)) {
             if (!provide_cap(root_cnode_cap,
-                             create_it_pt_cap(lvl1pt_cap, it_alloc_paging(), pt_vptr, IT_VSPACE_ID))
+                             create_it_pt_cap(lvl1pt_cap, it_alloc_paging(), pt_vptr))
                ) {
                 return cap_null_cap_new();
             }
@@ -308,43 +298,7 @@ BOOT_CODE void activate_kernel_vspace(void)
     setVSpaceRoot(kpptr_to_paddr(&kernel_root_pageTable), (hw_asid_t){0});
 }
 
-BOOT_CODE void write_it_asid_pool(cap_t it_ap_cap, cap_t it_lvl1pt_cap)
-{
-    vspace_id_pool_t *ap = VSPACE_ID_POOL_PTR(pptr_of_cap(it_ap_cap));
-    ap->array[VSPACE_ID_LOW(IT_VSPACE_ID)] = PTE_PTR(pptr_of_cap(it_lvl1pt_cap));
-    riscvKSVSpaceIDTable[VSPACE_ID_HIGH(IT_VSPACE_ID)] = ap;
-}
-
 /* ==================== BOOT CODE FINISHES HERE ==================== */
-
-static findVSpaceForVSpaceID_ret_t findVSpaceForVSpaceID(vspace_id_t vspaceId)
-{
-    findVSpaceForVSpaceID_ret_t ret;
-    vspace_id_pool_t        *poolPtr;
-    pte_t     *vspace_root;
-
-    poolPtr = riscvKSVSpaceIDTable[VSPACE_ID_HIGH(vspaceId)];
-    if (!poolPtr) {
-        current_lookup_fault = lookup_fault_invalid_root_new();
-
-        ret.vspace_root = NULL;
-        ret.status = EXCEPTION_LOOKUP_FAULT;
-        return ret;
-    }
-
-    vspace_root = poolPtr->array[VSPACE_ID_LOW(vspaceId)];
-    if (!vspace_root) {
-        current_lookup_fault = lookup_fault_invalid_root_new();
-
-        ret.vspace_root = NULL;
-        ret.status = EXCEPTION_LOOKUP_FAULT;
-        return ret;
-    }
-
-    ret.vspace_root = vspace_root;
-    ret.status = EXCEPTION_NONE;
-    return ret;
-}
 
 void copyGlobalMappings(pte_t *newLvl1pt)
 {
@@ -440,113 +394,76 @@ exception_t handleVMFault(tcb_t *thread, vm_fault_type_t vm_faultType)
     }
 }
 
-void deleteVSpaceIDPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool)
+// XXX: Copy global mappings.
+// static exception_t performVSpaceIdPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot)
+// {
+//     cap_t cap = vspaceCapSlot->cap;
+//     pte_t *regionBase = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
+//     cap = cap_page_table_cap_set_capPTMappedVSpaceId(cap, vspaceId);
+//     cap = cap_page_table_cap_set_capPTMappedAddress(cap, 0);
+//     cap = cap_page_table_cap_set_capPTIsMapped(cap, 1);
+//     vspaceCapSlot->cap = cap;
+
+//     copyGlobalMappings(regionBase);
+
+//     poolPtr->array[VSPACE_ID_LOW(vspaceId)] = regionBase;
+
+//     return EXCEPTION_NONE;
+// }
+
+// void deleteVSpaceId(vspace_id_t vspaceId, pte_t *vspace)
+// {
+//     vspace_id_pool_t *poolPtr;
+
+//     poolPtr = riscvKSVSpaceIdTable[VSPACE_ID_HIGH(vspaceId)];
+//     if (poolPtr != NULL && poolPtr->array[VSPACE_ID_LOW(vspaceId)] == vspace) {
+//         hw_asid_t hw_asid = (hw_asid_t){vspaceId};
+//         hwASIDFlush(hw_asid);
+//         poolPtr->array[VSPACE_ID_LOW(vspaceId)] = NULL;
+//         setVMRoot(NODE_STATE(ksCurThread));
+//     }
+// }
+
+void unmapPageTable(vptr_t vptr, pte_t *target_pt)
 {
-    /* Haskell error: "ASID pool's base must be aligned" */
-    assert(IS_ALIGNED(vspaceId_base, vspaceIdLowBits));
-
-    if (riscvKSVSpaceIDTable[vspaceId_base >> vspaceIdLowBits] == pool) {
-        riscvKSVSpaceIDTable[vspaceId_base >> vspaceIdLowBits] = NULL;
-        setVMRoot(NODE_STATE(ksCurThread));
-    }
-}
-
-/* XXX: base. */
-static exception_t performVSpaceIDControlInvocationInvocation(void *frame, cte_t *slot, cte_t *parent, vspace_id_t vspace_id_base)
-{
-    /** AUXUPD: "(True, typ_region_bytes (ptr_val \<acute>frame) 12)" */
-    /** GHOSTUPD: "(True, gs_clear_region (ptr_val \<acute>frame) 12)" */
-    cap_untyped_cap_ptr_set_capFreeIndex(&(parent->cap),
-                                         MAX_FREE_INDEX(cap_untyped_cap_get_capBlockSize(parent->cap)));
-
-    memzero(frame, BIT(pageBitsForSize(RISCV_4K_Page)));
-    /** AUXUPD: "(True, ptr_retyps 1 (Ptr (ptr_val \<acute>frame) :: asid_pool_C ptr))" */
-
-    cteInsert(
-        cap_vspace_id_pool_cap_new(
-            vspace_id_base,          /* capVSpaceIDBase  */
-            WORD_REF(frame)     /* capVSpaceIDPool  */
-        ),
-        parent,
-        slot
-    );
-    /* Haskell error: "ASID pool's base must be aligned" */
-    assert((vspace_id_base & MASK(vspaceIdLowBits)) == 0);
-    riscvKSVSpaceIDTable[vspace_id_base >> vspaceIdLowBits] = (vspace_id_pool_t *)frame;
-
-    return EXCEPTION_NONE;
-}
-
-/* XXX: RENAME */
-static exception_t performVSpaceIDPoolInvocation(vspace_id_t vspaceId, vspace_id_pool_t *poolPtr, cte_t *vspaceCapSlot)
-{
-    cap_t cap = vspaceCapSlot->cap;
-    pte_t *regionBase = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
-    cap = cap_page_table_cap_set_capPTMappedVSpaceID(cap, vspaceId);
-    cap = cap_page_table_cap_set_capPTMappedAddress(cap, 0);
-    cap = cap_page_table_cap_set_capPTIsMapped(cap, 1);
-    vspaceCapSlot->cap = cap;
-
-    copyGlobalMappings(regionBase);
-
-    poolPtr->array[VSPACE_ID_LOW(vspaceId)] = regionBase;
-
-    return EXCEPTION_NONE;
-}
-
-void deleteVSpaceID(vspace_id_t vspaceId, pte_t *vspace)
-{
-    vspace_id_pool_t *poolPtr;
-
-    poolPtr = riscvKSVSpaceIDTable[VSPACE_ID_HIGH(vspaceId)];
-    if (poolPtr != NULL && poolPtr->array[VSPACE_ID_LOW(vspaceId)] == vspace) {
-        hw_asid_t hw_asid = (hw_asid_t){vspaceId};
-        hwASIDFlush(hw_asid);
-        poolPtr->array[VSPACE_ID_LOW(vspaceId)] = NULL;
-        setVMRoot(NODE_STATE(ksCurThread));
-    }
-}
-
-void unmapPageTable(vspace_id_t vspaceId, vptr_t vptr, pte_t *target_pt)
-{
-    findVSpaceForVSpaceID_ret_t find_ret = findVSpaceForVSpaceID(vspaceId);
-    if (unlikely(find_ret.status != EXCEPTION_NONE)) {
-        /* nothing to do */
-        return;
-    }
+    // findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
+    // if (unlikely(find_ret.status != EXCEPTION_NONE)) {
+    //     /* nothing to do */
+    //     return;
+    // }
     /* We won't ever unmap a top level page table */
-    assert(find_ret.vspace_root != target_pt);
-    pte_t *ptSlot = NULL;
-    pte_t *pt = find_ret.vspace_root;
+    // assert(find_ret.vspace_root != target_pt);
+    // pte_t *ptSlot = NULL;
+    // pte_t *pt = find_ret.vspace_root;
 
-    for (word_t i = 0; i < CONFIG_PT_LEVELS - 1 && pt != target_pt; i++) {
-        ptSlot = pt + RISCV_GET_PT_INDEX(vptr, i);
-        if (unlikely(!isPTEPageTable(ptSlot))) {
-            /* couldn't find it */
-            return;
-        }
-        pt = getPPtrFromHWPTE(ptSlot);
-    }
+    // for (word_t i = 0; i < CONFIG_PT_LEVELS - 1 && pt != target_pt; i++) {
+    //     ptSlot = pt + RISCV_GET_PT_INDEX(vptr, i);
+    //     if (unlikely(!isPTEPageTable(ptSlot))) {
+    //         /* couldn't find it */
+    //         return;
+    //     }
+    //     pt = getPPtrFromHWPTE(ptSlot);
+    // }
 
-    if (pt != target_pt) {
-        /* didn't find it */
-        return;
-    }
-    /* If we found a pt then ptSlot won't be null */
-    assert(ptSlot != NULL);
-    *ptSlot = pte_new(
-                  0,  /* phy_address */
-                  0,  /* sw */
-                  0,  /* dirty (reserved non-leaf) */
-                  0,  /* accessed (reserved non-leaf) */
-                  0,  /* global */
-                  0,  /* user (reserved non-leaf) */
-                  0,  /* execute */
-                  0,  /* write */
-                  0,  /* read */
-                  0  /* valid */
-              );
-    sfence();
+    // if (pt != target_pt) {
+    //     /* didn't find it */
+    //     return;
+    // }
+    // /* If we found a pt then ptSlot won't be null */
+    // assert(ptSlot != NULL);
+    // *ptSlot = pte_new(
+    //               0,  /* phy_address */
+    //               0,  /* sw */
+    //               0,  /* dirty (reserved non-leaf) */
+    //               0,  /* accessed (reserved non-leaf) */
+    //               0,  /* global */
+    //               0,  /* user (reserved non-leaf) */
+    //               0,  /* execute */
+    //               0,  /* write */
+    //               0,  /* read */
+    //               0  /* valid */
+    //           );
+    // sfence();
 }
 
 static pte_t pte_pte_invalid_new(void)
@@ -556,33 +473,32 @@ static pte_t pte_pte_invalid_new(void)
     };
 }
 
-void unmapPage(vm_page_size_t page_size, vspace_id_t vspaceId, vptr_t vptr, pptr_t pptr)
+void unmapPage(vm_page_size_t page_size, vptr_t vptr, pptr_t pptr)
 {
-    findVSpaceForVSpaceID_ret_t find_ret;
-    lookupPTSlot_ret_t  lu_ret;
+    // findVSpaceForVSpaceId_ret_t find_ret;
+    // lookupPTSlot_ret_t  lu_ret;
 
-    find_ret = findVSpaceForVSpaceID(vspaceId);
-    if (find_ret.status != EXCEPTION_NONE) {
-        return;
-    }
+    // find_ret = findVSpaceForVSpaceId(vspaceId);
+    // if (find_ret.status != EXCEPTION_NONE) {
+    //     return;
+    // }
 
-    lu_ret = lookupPTSlot(find_ret.vspace_root, vptr);
-    if (unlikely(lu_ret.ptBitsLeft != pageBitsForSize(page_size))) {
-        return;
-    }
-    if (!pte_ptr_get_valid(lu_ret.ptSlot) || isPTEPageTable(lu_ret.ptSlot)
-        || (pte_ptr_get_ppn(lu_ret.ptSlot) << seL4_PageBits) != pptr_to_paddr((void *)pptr)) {
-        return;
-    }
+    // lu_ret = lookupPTSlot(find_ret.vspace_root, vptr);
+    // if (unlikely(lu_ret.ptBitsLeft != pageBitsForSize(page_size))) {
+    //     return;
+    // }
+    // if (!pte_ptr_get_valid(lu_ret.ptSlot) || isPTEPageTable(lu_ret.ptSlot)
+    //     || (pte_ptr_get_ppn(lu_ret.ptSlot) << seL4_PageBits) != pptr_to_paddr((void *)pptr)) {
+    //     return;
+    // }
 
-    lu_ret.ptSlot[0] = pte_pte_invalid_new();
-    sfence();
+    // lu_ret.ptSlot[0] = pte_pte_invalid_new();
+    // sfence();
 }
 
 void setVMRoot(tcb_t *tcb)
 {
     cap_t threadRoot;
-    vspace_id_t vspaceId;
     pte_t *lvl1pt;
     findVSpaceForVSpaceID_ret_t  find_ret;
 
@@ -596,21 +512,22 @@ void setVMRoot(tcb_t *tcb)
 
     lvl1pt = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(threadRoot));
 
-    vspaceId = cap_page_table_cap_get_capPTMappedVSpaceID(threadRoot);
-    find_ret = findVSpaceForVSpaceID(vspaceId);
-    if (unlikely(find_ret.status != EXCEPTION_NONE || find_ret.vspace_root != lvl1pt)) {
-        setVSpaceRoot(kpptr_to_paddr(&kernel_root_pageTable), (hw_asid_t){0});
-        return;
-    }
+    // find_ret = findVSpaceForVSpaceId(vspaceId);
+    // if (unlikely(find_ret.status != EXCEPTION_NONE || find_ret.vspace_root != lvl1pt)) {
+    //     setVSpaceRoot(kpptr_to_paddr(&kernel_root_pageTable), (hw_asid_t){0});
+    //     return;
+    // }
 
-    hw_asid_t hw_asid = (hw_asid_t){vspaceId};
+    hw_asid_t hw_asid = (hw_asid_t){0};
     setVSpaceRoot(addrFromPPtr(lvl1pt), hw_asid);
 }
 
 bool_t CONST isValidVTableRoot(cap_t cap)
 {
-    return (cap_get_capType(cap) == cap_page_table_cap &&
-            cap_page_table_cap_get_capPTIsMapped(cap));
+    return true;
+    /* capPTIsVTableRoot */
+    // return (cap_get_capType(cap) == cap_page_table_cap &&
+    //         cap_page_table_cap_get_capPTIsMapped(cap));
 }
 
 exception_t checkValidIPCBuffer(vptr_t vptr, cap_t cap)
@@ -689,119 +606,121 @@ static inline bool_t CONST checkVPAlignment(vm_page_size_t sz, word_t w)
 static exception_t decodeRISCVPageTableInvocation(word_t label, word_t length,
                                                   cte_t *cte, cap_t cap, word_t *buffer)
 {
-    if (label == RISCVPageTableUnmap) {
-        if (unlikely(!isFinalCapability(cte))) {
-            userError("RISCVPageTableUnmap: cannot unmap if more than once cap exists");
-            current_syscall_error.type = seL4_RevokeFirst;
-            return EXCEPTION_SYSCALL_ERROR;
-        }
-        /* Ensure that if the page table is mapped, it is not a top level table */
-        if (likely(cap_page_table_cap_get_capPTIsMapped(cap))) {
-            vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceID(cap);
-            findVSpaceForVSpaceID_ret_t find_ret = findVSpaceForVSpaceID(vspaceId);
-            pte_t *pte = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
-            if (unlikely(find_ret.status == EXCEPTION_NONE &&
-                         find_ret.vspace_root == pte)) {
-                userError("RISCVPageTableUnmap: cannot call unmap on top level PageTable");
-                current_syscall_error.type = seL4_RevokeFirst;
-                return EXCEPTION_SYSCALL_ERROR;
-            }
-        }
+    // if (label == RISCVPageTableUnmap) {
+    //     if (unlikely(!isFinalCapability(cte))) {
+    //         userError("RISCVPageTableUnmap: cannot unmap if more than once cap exists");
+    //         current_syscall_error.type = seL4_RevokeFirst;
+    //         return EXCEPTION_SYSCALL_ERROR;
+    //     }
+    //     /* Ensure that if the page table is mapped, it is not a top level table */
+    //     if (likely(cap_page_table_cap_get_capPTIsMapped(cap))) {
+    //         vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceId(cap);
+    //         findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
+    //         pte_t *pte = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
+    //         if (unlikely(find_ret.status == EXCEPTION_NONE &&
+    //                      find_ret.vspace_root == pte)) {
+    //             userError("RISCVPageTableUnmap: cannot call unmap on top level PageTable");
+    //             current_syscall_error.type = seL4_RevokeFirst;
+    //             return EXCEPTION_SYSCALL_ERROR;
+    //         }
+    //     }
 
-        setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
-        return performPageTableInvocationUnmap(cap, cte);
-    }
+    //     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
+    //     return performPageTableInvocationUnmap(cap, cte);
+    // }
 
-    if (unlikely((label != RISCVPageTableMap))) {
-        userError("RISCVPageTable: Illegal Operation");
-        current_syscall_error.type = seL4_IllegalOperation;
-        return EXCEPTION_SYSCALL_ERROR;
-    }
+    // if (unlikely((label != RISCVPageTableMap))) {
+    //     userError("RISCVPageTable: Illegal Operation");
+    //     current_syscall_error.type = seL4_IllegalOperation;
+    //     return EXCEPTION_SYSCALL_ERROR;
+    // }
 
-    if (unlikely(length < 2 || current_extra_caps.excaprefs[0] == NULL)) {
-        userError("RISCVPageTable: truncated message");
-        current_syscall_error.type = seL4_TruncatedMessage;
-        return EXCEPTION_SYSCALL_ERROR;
-    }
-    if (unlikely(cap_page_table_cap_get_capPTIsMapped(cap))) {
-        userError("RISCVPageTable: PageTable is already mapped.");
-        current_syscall_error.type = seL4_InvalidCapability;
-        current_syscall_error.invalidCapNumber = 0;
-        return EXCEPTION_SYSCALL_ERROR;
-    }
+    // if (unlikely(length < 2 || current_extra_caps.excaprefs[0] == NULL)) {
+    //     userError("RISCVPageTable: truncated message");
+    //     current_syscall_error.type = seL4_TruncatedMessage;
+    //     return EXCEPTION_SYSCALL_ERROR;
+    // }
+    // if (unlikely(cap_page_table_cap_get_capPTIsMapped(cap))) {
+    //     userError("RISCVPageTable: PageTable is already mapped.");
+    //     current_syscall_error.type = seL4_InvalidCapability;
+    //     current_syscall_error.invalidCapNumber = 0;
+    //     return EXCEPTION_SYSCALL_ERROR;
+    // }
 
-    word_t vaddr = getSyscallArg(0, buffer);
-    cap_t lvl1ptCap = current_extra_caps.excaprefs[0]->cap;
+    // word_t vaddr = getSyscallArg(0, buffer);
+    // cap_t lvl1ptCap = current_extra_caps.excaprefs[0]->cap;
 
-    if (unlikely(cap_get_capType(lvl1ptCap) != cap_page_table_cap ||
-                 cap_page_table_cap_get_capPTIsMapped(lvl1ptCap) == vspaceIdInvalid)) {
-        userError("RISCVPageTableMap: Invalid top-level PageTable.");
-        current_syscall_error.type = seL4_InvalidCapability;
-        current_syscall_error.invalidCapNumber = 1;
+    // if (unlikely(cap_get_capType(lvl1ptCap) != cap_page_table_cap ||
+    //              cap_page_table_cap_get_capPTIsMapped(lvl1ptCap) == vspaceIdInvalid)) {
+    //     userError("RISCVPageTableMap: Invalid top-level PageTable.");
+    //     current_syscall_error.type = seL4_InvalidCapability;
+    //     current_syscall_error.invalidCapNumber = 1;
 
-        return EXCEPTION_SYSCALL_ERROR;
-    }
+    //     return EXCEPTION_SYSCALL_ERROR;
+    // }
 
-    pte_t *lvl1pt = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(lvl1ptCap));
-    vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceID(lvl1ptCap);
+    // pte_t *lvl1pt = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(lvl1ptCap));
+    // vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceId(lvl1ptCap);
 
-    if (unlikely(vaddr >= USER_TOP)) {
-        userError("RISCVPageTableMap: Virtual address cannot be in kernel window.");
-        current_syscall_error.type = seL4_InvalidArgument;
-        current_syscall_error.invalidArgumentNumber = 0;
+    // if (unlikely(vaddr >= USER_TOP)) {
+    //     userError("RISCVPageTableMap: Virtual address cannot be in kernel window.");
+    //     current_syscall_error.type = seL4_InvalidArgument;
+    //     current_syscall_error.invalidArgumentNumber = 0;
 
-        return EXCEPTION_SYSCALL_ERROR;
-    }
+    //     return EXCEPTION_SYSCALL_ERROR;
+    // }
 
-    findVSpaceForVSpaceID_ret_t find_ret = findVSpaceForVSpaceID(vspaceId);
-    if (unlikely(find_ret.status != EXCEPTION_NONE)) {
-        userError("RISCVPageTableMap: ASID lookup failed");
-        current_syscall_error.type = seL4_FailedLookup;
-        current_syscall_error.failedLookupWasSource = false;
-        return EXCEPTION_SYSCALL_ERROR;
-    }
+    // findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
+    // if (unlikely(find_ret.status != EXCEPTION_NONE)) {
+    //     userError("RISCVPageTableMap: ASID lookup failed");
+    //     current_syscall_error.type = seL4_FailedLookup;
+    //     current_syscall_error.failedLookupWasSource = false;
+    //     return EXCEPTION_SYSCALL_ERROR;
+    // }
 
-    if (unlikely(find_ret.vspace_root != lvl1pt)) {
-        userError("RISCVPageTableMap: ASID lookup failed");
-        current_syscall_error.type = seL4_InvalidCapability;
-        current_syscall_error.invalidCapNumber = 1;
-        return EXCEPTION_SYSCALL_ERROR;
-    }
+    // if (unlikely(find_ret.vspace_root != lvl1pt)) {
+    //     userError("RISCVPageTableMap: ASID lookup failed");
+    //     current_syscall_error.type = seL4_InvalidCapability;
+    //     current_syscall_error.invalidCapNumber = 1;
+    //     return EXCEPTION_SYSCALL_ERROR;
+    // }
 
-    lookupPTSlot_ret_t lu_ret = lookupPTSlot(lvl1pt, vaddr);
+    // lookupPTSlot_ret_t lu_ret = lookupPTSlot(lvl1pt, vaddr);
 
-    /* if there is already something mapped (valid is set) or we have traversed far enough
-     * that a page table is not valid to map then tell the user that they have to delete
-     * something before they can put a PT here */
-    if (lu_ret.ptBitsLeft == seL4_PageBits || pte_ptr_get_valid(lu_ret.ptSlot)) {
-        userError("RISCVPageTableMap: All objects mapped at this address");
-        current_syscall_error.type = seL4_DeleteFirst;
-        return EXCEPTION_SYSCALL_ERROR;
-    }
+    // /* if there is already something mapped (valid is set) or we have traversed far enough
+    //  * that a page table is not valid to map then tell the user that they have to delete
+    //  * something before they can put a PT here */
+    // if (lu_ret.ptBitsLeft == seL4_PageBits || pte_ptr_get_valid(lu_ret.ptSlot)) {
+    //     userError("RISCVPageTableMap: All objects mapped at this address");
+    //     current_syscall_error.type = seL4_DeleteFirst;
+    //     return EXCEPTION_SYSCALL_ERROR;
+    // }
 
-    /* Get the slot to install the PT in */
-    pte_t *ptSlot = lu_ret.ptSlot;
+    // /* Get the slot to install the PT in */
+    // pte_t *ptSlot = lu_ret.ptSlot;
 
-    paddr_t paddr = addrFromPPtr(
-                        PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap)));
-    pte_t pte = pte_new((paddr >> seL4_PageBits),
-                        0, /* sw */
-                        0, /* dirty (reserved non-leaf) */
-                        0, /* accessed (reserved non-leaf) */
-                        0,  /* global */
-                        0,  /* user (reserved non-leaf) */
-                        0,  /* execute */
-                        0,  /* write */
-                        0,  /* read */
-                        1 /* valid */
-                       );
+    // paddr_t paddr = addrFromPPtr(
+    //                     PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap)));
+    // pte_t pte = pte_new((paddr >> seL4_PageBits),
+    //                     0, /* sw */
+    //                     0, /* dirty (reserved non-leaf) */
+    //                     0, /* accessed (reserved non-leaf) */
+    //                     0,  /* global */
+    //                     0,  /* user (reserved non-leaf) */
+    //                     0,  /* execute */
+    //                     0,  /* write */
+    //                     0,  /* read */
+    //                     1 /* valid */
+    //                    );
 
-    cap = cap_page_table_cap_set_capPTIsMapped(cap, 1);
-    cap = cap_page_table_cap_set_capPTMappedVSpaceID(cap, vspaceId);
-    cap = cap_page_table_cap_set_capPTMappedAddress(cap, (vaddr & ~MASK(lu_ret.ptBitsLeft)));
+    // cap = cap_page_table_cap_set_capPTIsMapped(cap, 1);
+    // cap = cap_page_table_cap_set_capPTMappedVSpaceId(cap, vspaceId);
+    // cap = cap_page_table_cap_set_capPTMappedAddress(cap, (vaddr & ~MASK(lu_ret.ptBitsLeft)));
 
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
-    return performPageTableInvocationMap(cap, cte, pte, ptSlot);
+    // return performPageTableInvocationMap(cap, cte, pte, ptSlot);
+    userError("TODO");
+    return EXCEPTION_SYSCALL_ERROR;
 }
 
 static exception_t decodeRISCVFrameInvocation(word_t label, word_t length,
@@ -809,108 +728,110 @@ static exception_t decodeRISCVFrameInvocation(word_t label, word_t length,
 {
     switch (label) {
     case RISCVPageMap: {
-        if (unlikely(length < 3 || current_extra_caps.excaprefs[0] == NULL)) {
-            userError("RISCVPageMap: Truncated message.");
-            current_syscall_error.type = seL4_TruncatedMessage;
-            return EXCEPTION_SYSCALL_ERROR;
-        }
+        // if (unlikely(length < 3 || current_extra_caps.excaprefs[0] == NULL)) {
+        //     userError("RISCVPageMap: Truncated message.");
+        //     current_syscall_error.type = seL4_TruncatedMessage;
+        //     return EXCEPTION_SYSCALL_ERROR;
+        // }
 
-        word_t vaddr = getSyscallArg(0, buffer);
-        word_t w_rightsMask = getSyscallArg(1, buffer);
-        vm_attributes_t attr = vmAttributesFromWord(getSyscallArg(2, buffer));
-        cap_t lvl1ptCap = current_extra_caps.excaprefs[0]->cap;
+        // word_t vaddr = getSyscallArg(0, buffer);
+        // word_t w_rightsMask = getSyscallArg(1, buffer);
+        // vm_attributes_t attr = vmAttributesFromWord(getSyscallArg(2, buffer));
+        // cap_t lvl1ptCap = current_extra_caps.excaprefs[0]->cap;
 
-        vm_page_size_t frameSize = cap_frame_cap_get_capFSize(cap);
-        vm_rights_t capVMRights = cap_frame_cap_get_capFVMRights(cap);
+        // vm_page_size_t frameSize = cap_frame_cap_get_capFSize(cap);
+        // vm_rights_t capVMRights = cap_frame_cap_get_capFVMRights(cap);
 
-        if (unlikely(cap_get_capType(lvl1ptCap) != cap_page_table_cap ||
-                     !cap_page_table_cap_get_capPTIsMapped(lvl1ptCap))) {
-            userError("RISCVPageMap: Bad PageTable cap.");
-            current_syscall_error.type = seL4_InvalidCapability;
-            current_syscall_error.invalidCapNumber = 1;
-            return EXCEPTION_SYSCALL_ERROR;
-        }
+        // if (unlikely(cap_get_capType(lvl1ptCap) != cap_page_table_cap ||
+        //              !cap_page_table_cap_get_capPTIsMapped(lvl1ptCap))) {
+        //     userError("RISCVPageMap: Bad PageTable cap.");
+        //     current_syscall_error.type = seL4_InvalidCapability;
+        //     current_syscall_error.invalidCapNumber = 1;
+        //     return EXCEPTION_SYSCALL_ERROR;
+        // }
 
-        pte_t *lvl1pt = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(lvl1ptCap));
-        vspace_id_t page_table_vspace_id = cap_page_table_cap_get_capPTMappedVSpaceID(lvl1ptCap);
+        // pte_t *lvl1pt = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(lvl1ptCap));
+        // vspace_id_t page_table_vspace_id = cap_page_table_cap_get_capPTMappedVSpaceId(lvl1ptCap);
 
-        findVSpaceForVSpaceID_ret_t find_ret = findVSpaceForVSpaceID(page_table_vspace_id);
-        if (unlikely(find_ret.status != EXCEPTION_NONE)) {
-            userError("RISCVPageMap: No PageTable for ASID");
-            current_syscall_error.type = seL4_FailedLookup;
-            current_syscall_error.failedLookupWasSource = false;
-            return EXCEPTION_SYSCALL_ERROR;
-        }
+        // findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(page_table_vspace_id);
+        // if (unlikely(find_ret.status != EXCEPTION_NONE)) {
+        //     userError("RISCVPageMap: No PageTable for ASID");
+        //     current_syscall_error.type = seL4_FailedLookup;
+        //     current_syscall_error.failedLookupWasSource = false;
+        //     return EXCEPTION_SYSCALL_ERROR;
+        // }
 
-        if (unlikely(find_ret.vspace_root != lvl1pt)) {
-            userError("RISCVPageMap: ASID lookup failed");
-            current_syscall_error.type = seL4_InvalidCapability;
-            current_syscall_error.invalidCapNumber = 1;
-            return EXCEPTION_SYSCALL_ERROR;
-        }
+        // if (unlikely(find_ret.vspace_root != lvl1pt)) {
+        //     userError("RISCVPageMap: ASID lookup failed");
+        //     current_syscall_error.type = seL4_InvalidCapability;
+        //     current_syscall_error.invalidCapNumber = 1;
+        //     return EXCEPTION_SYSCALL_ERROR;
+        // }
 
-        /* check the vaddr is valid */
-        word_t vtop = vaddr + BIT(pageBitsForSize(frameSize)) - 1;
-        if (unlikely(vtop >= USER_TOP)) {
-            current_syscall_error.type = seL4_InvalidArgument;
-            current_syscall_error.invalidArgumentNumber = 0;
-            return EXCEPTION_SYSCALL_ERROR;
-        }
-        if (unlikely(!checkVPAlignment(frameSize, vaddr))) {
-            current_syscall_error.type = seL4_AlignmentError;
-            return EXCEPTION_SYSCALL_ERROR;
-        }
+        // /* check the vaddr is valid */
+        // word_t vtop = vaddr + BIT(pageBitsForSize(frameSize)) - 1;
+        // if (unlikely(vtop >= USER_TOP)) {
+        //     current_syscall_error.type = seL4_InvalidArgument;
+        //     current_syscall_error.invalidArgumentNumber = 0;
+        //     return EXCEPTION_SYSCALL_ERROR;
+        // }
+        // if (unlikely(!checkVPAlignment(frameSize, vaddr))) {
+        //     current_syscall_error.type = seL4_AlignmentError;
+        //     return EXCEPTION_SYSCALL_ERROR;
+        // }
 
-        /* Check if this page is already mapped */
-        lookupPTSlot_ret_t lu_ret = lookupPTSlot(lvl1pt, vaddr);
-        if (unlikely(lu_ret.ptBitsLeft != pageBitsForSize(frameSize))) {
-            current_lookup_fault = lookup_fault_missing_capability_new(lu_ret.ptBitsLeft);
-            current_syscall_error.type = seL4_FailedLookup;
-            current_syscall_error.failedLookupWasSource = false;
-            return EXCEPTION_SYSCALL_ERROR;
-        }
+        // /* Check if this page is already mapped */
+        // lookupPTSlot_ret_t lu_ret = lookupPTSlot(lvl1pt, vaddr);
+        // if (unlikely(lu_ret.ptBitsLeft != pageBitsForSize(frameSize))) {
+        //     current_lookup_fault = lookup_fault_missing_capability_new(lu_ret.ptBitsLeft);
+        //     current_syscall_error.type = seL4_FailedLookup;
+        //     current_syscall_error.failedLookupWasSource = false;
+        //     return EXCEPTION_SYSCALL_ERROR;
+        // }
 
-        vspace_id_t frame_vspace_id = cap_frame_cap_get_capFMappedVSpaceID(cap);
-        if (unlikely(frame_vspace_id != vspaceIdInvalid)) {
-            /* this frame is already mapped */
-            if (frame_vspace_id != page_table_vspace_id) {
-                userError("RISCVPageMap: Attempting to remap a frame that does not belong to the passed address space");
-                current_syscall_error.type = seL4_InvalidCapability;
-                current_syscall_error.invalidCapNumber = 1;
-                return EXCEPTION_SYSCALL_ERROR;
-            }
-            word_t mapped_vaddr = cap_frame_cap_get_capFMappedAddress(cap);
-            if (unlikely(mapped_vaddr != vaddr)) {
-                userError("RISCVPageMap: attempting to map frame into multiple addresses");
-                current_syscall_error.type = seL4_InvalidArgument;
-                current_syscall_error.invalidArgumentNumber = 0;
-                return EXCEPTION_SYSCALL_ERROR;
-            }
-            /* this check is redundant, as lookupPTSlot does not stop on a page
-             * table PTE */
-            if (unlikely(isPTEPageTable(lu_ret.ptSlot))) {
-                userError("RISCVPageMap: no mapping to remap.");
-                current_syscall_error.type = seL4_DeleteFirst;
-                return EXCEPTION_SYSCALL_ERROR;
-            }
-        } else {
-            /* check this vaddr isn't already mapped */
-            if (unlikely(pte_ptr_get_valid(lu_ret.ptSlot))) {
-                userError("Virtual address (0x%"SEL4_PRIx_word") already mapped", vaddr);
-                current_syscall_error.type = seL4_DeleteFirst;
-                return EXCEPTION_SYSCALL_ERROR;
-            }
-        }
+        // vspace_id_t frame_vspace_id = cap_frame_cap_get_capFMappedVSpaceId(cap);
+        // if (unlikely(frame_vspace_id != vspaceIdInvalid)) {
+        //     /* this frame is already mapped */
+        //     if (frame_vspace_id != page_table_vspace_id) {
+        //         userError("RISCVPageMap: Attempting to remap a frame that does not belong to the passed address space");
+        //         current_syscall_error.type = seL4_InvalidCapability;
+        //         current_syscall_error.invalidCapNumber = 1;
+        //         return EXCEPTION_SYSCALL_ERROR;
+        //     }
+        //     word_t mapped_vaddr = cap_frame_cap_get_capFMappedAddress(cap);
+        //     if (unlikely(mapped_vaddr != vaddr)) {
+        //         userError("RISCVPageMap: attempting to map frame into multiple addresses");
+        //         current_syscall_error.type = seL4_InvalidArgument;
+        //         current_syscall_error.invalidArgumentNumber = 0;
+        //         return EXCEPTION_SYSCALL_ERROR;
+        //     }
+        //     /* this check is redundant, as lookupPTSlot does not stop on a page
+        //      * table PTE */
+        //     if (unlikely(isPTEPageTable(lu_ret.ptSlot))) {
+        //         userError("RISCVPageMap: no mapping to remap.");
+        //         current_syscall_error.type = seL4_DeleteFirst;
+        //         return EXCEPTION_SYSCALL_ERROR;
+        //     }
+        // } else {
+        //     /* check this vaddr isn't already mapped */
+        //     if (unlikely(pte_ptr_get_valid(lu_ret.ptSlot))) {
+        //         userError("Virtual address (0x%"SEL4_PRIx_word") already mapped", vaddr);
+        //         current_syscall_error.type = seL4_DeleteFirst;
+        //         return EXCEPTION_SYSCALL_ERROR;
+        //     }
+        // }
 
-        vm_rights_t vmRights = maskVMRights(capVMRights, rightsFromWord(w_rightsMask));
-        paddr_t frame_paddr = addrFromPPtr((void *) cap_frame_cap_get_capFBasePtr(cap));
-        cap = cap_frame_cap_set_capFMappedVSpaceID(cap, page_table_vspace_id);
-        cap = cap_frame_cap_set_capFMappedAddress(cap,  vaddr);
+        // vm_rights_t vmRights = maskVMRights(capVMRights, rightsFromWord(w_rightsMask));
+        // paddr_t frame_paddr = addrFromPPtr((void *) cap_frame_cap_get_capFBasePtr(cap));
+        // cap = cap_frame_cap_set_capFMappedVSpaceId(cap, page_table_vspace_id);
+        // cap = cap_frame_cap_set_capFMappedAddress(cap,  vaddr);
 
-        bool_t executable = !vm_attributes_get_riscvExecuteNever(attr);
-        pte_t pte = makeUserPTE(frame_paddr, executable, vmRights);
-        setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
-        return performPageInvocationMapPTE(cap, cte, pte, lu_ret.ptSlot);
+        // bool_t executable = !vm_attributes_get_riscvExecuteNever(attr);
+        // pte_t pte = makeUserPTE(frame_paddr, executable, vmRights);
+        // setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
+        // return performPageInvocationMapPTE(cap, cte, pte, lu_ret.ptSlot);
+        userError("TODO");
+        return EXCEPTION_SYSCALL_ERROR;
     }
 
     case RISCVPageUnmap: {
@@ -947,143 +868,6 @@ exception_t decodeRISCVMMUInvocation(word_t label, word_t length, cptr_t cptr,
     case cap_frame_cap:
         return decodeRISCVFrameInvocation(label, length, cte, cap, call, buffer);
 
-    case cap_vspace_id_control_cap: {
-        word_t     i;
-        /* XXX: Why _base? */
-        vspace_id_t      vspace_id_base;
-        word_t           index;
-        word_t           depth;
-        cap_t            untyped;
-        cap_t            root;
-        cte_t           *parentSlot;
-        cte_t           *destSlot;
-        lookupSlot_ret_t lu_ret;
-        void            *frame;
-        exception_t      status;
-
-        if (label != RISCVASIDControlMakePool) {
-            current_syscall_error.type = seL4_IllegalOperation;
-
-            return EXCEPTION_SYSCALL_ERROR;
-        }
-
-        if (length < 2 || current_extra_caps.excaprefs[0] == NULL
-            || current_extra_caps.excaprefs[1] == NULL) {
-            current_syscall_error.type = seL4_TruncatedMessage;
-            return EXCEPTION_SYSCALL_ERROR;
-        }
-
-        index = getSyscallArg(0, buffer);
-        depth = getSyscallArg(1, buffer);
-        parentSlot = current_extra_caps.excaprefs[0];
-        untyped = parentSlot->cap;
-        root = current_extra_caps.excaprefs[1]->cap;
-
-        /* Find first free pool */
-        for (i = 0; i < nVSpaceIDPools && riscvKSVSpaceIDTable[i]; i++);
-
-        if (i == nVSpaceIDPools) {
-            userError("ASIDControlMakePool: No unallocated pools found.");
-            current_syscall_error.type = seL4_DeleteFirst;
-
-            return EXCEPTION_SYSCALL_ERROR;
-        }
-
-        /* XXX: vspace_id_high and vspace_id_low */
-        vspace_id_base = i << vspaceIdLowBits;
-
-        if (cap_get_capType(untyped) != cap_untyped_cap ||
-            cap_untyped_cap_get_capBlockSize(untyped) != seL4_VSpaceIDPoolBits ||
-            cap_untyped_cap_get_capIsDevice(untyped)) {
-            current_syscall_error.type = seL4_InvalidCapability;
-            current_syscall_error.invalidCapNumber = 1;
-
-            return EXCEPTION_SYSCALL_ERROR;
-        }
-
-        status = ensureNoChildren(parentSlot);
-        if (status != EXCEPTION_NONE) {
-            return status;
-        }
-
-        frame = WORD_PTR(cap_untyped_cap_get_capPtr(untyped));
-
-        lu_ret = lookupTargetSlot(root, index, depth);
-        if (lu_ret.status != EXCEPTION_NONE) {
-            return lu_ret.status;
-        }
-        destSlot = lu_ret.slot;
-
-        status = ensureEmptySlot(destSlot);
-        if (status != EXCEPTION_NONE) {
-            return status;
-        }
-
-        setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
-        return performVSpaceIDControlInvocationInvocation(frame, destSlot, parentSlot, vspace_id_base);
-    }
-
-    case cap_vspace_id_pool_cap: {
-        cap_t        vspaceCap;
-        cte_t       *vspaceCapSlot;
-        vspace_id_pool_t *pool;
-        word_t i;
-        vspace_id_t       vspaceId;
-
-        if (label != RISCVASIDPoolAssign) {
-            current_syscall_error.type = seL4_IllegalOperation;
-
-            return EXCEPTION_SYSCALL_ERROR;
-        }
-        if (current_extra_caps.excaprefs[0] == NULL) {
-            current_syscall_error.type = seL4_TruncatedMessage;
-
-            return EXCEPTION_SYSCALL_ERROR;
-        }
-
-        vspaceCapSlot = current_extra_caps.excaprefs[0];
-        vspaceCap = vspaceCapSlot->cap;
-
-        if (unlikely(
-                cap_get_capType(vspaceCap) != cap_page_table_cap ||
-                cap_page_table_cap_get_capPTIsMapped(vspaceCap))) {
-            userError("RISCVASIDPool: Invalid vspace root.");
-            current_syscall_error.type = seL4_InvalidCapability;
-            current_syscall_error.invalidCapNumber = 1;
-
-            return EXCEPTION_SYSCALL_ERROR;
-        }
-
-        pool = riscvKSVSpaceIDTable[cap_vspace_id_pool_cap_get_capVSpaceIDBase(cap) >> vspaceIdLowBits];
-        if (!pool) {
-            current_syscall_error.type = seL4_FailedLookup;
-            current_syscall_error.failedLookupWasSource = false;
-            current_lookup_fault = lookup_fault_invalid_root_new();
-            return EXCEPTION_SYSCALL_ERROR;
-        }
-
-        if (pool != VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap))) {
-            current_syscall_error.type = seL4_InvalidCapability;
-            current_syscall_error.invalidCapNumber = 0;
-            return EXCEPTION_SYSCALL_ERROR;
-        }
-
-        // XXX: Base.
-        /* Find first free ASID */
-        vspaceId = cap_vspace_id_pool_cap_get_capVSpaceIDBase(cap);
-        for (i = 0; i < BIT(vspaceIdLowBits) && (vspaceId + i == 0 || pool->array[i]); i++);
-
-        if (i == BIT(vspaceIdLowBits)) {
-            current_syscall_error.type = seL4_DeleteFirst;
-
-            return EXCEPTION_SYSCALL_ERROR;
-        }
-
-        vspaceId += i;
-
-        setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
-        return performVSpaceIDPoolInvocation(vspaceId, pool, vspaceCapSlot);
-    }
     default:
         fail("Invalid arch cap type");
     }
@@ -1101,16 +885,16 @@ exception_t performPageTableInvocationMap(cap_t cap, cte_t *ctSlot,
 
 exception_t performPageTableInvocationUnmap(cap_t cap, cte_t *ctSlot)
 {
-    if (cap_page_table_cap_get_capPTIsMapped(cap)) {
-        pte_t *pt = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
-        unmapPageTable(
-            cap_page_table_cap_get_capPTMappedVSpaceID(cap),
-            cap_page_table_cap_get_capPTMappedAddress(cap),
-            pt
-        );
-        clearMemory((void *)pt, seL4_PageTableBits);
-    }
-    cap_page_table_cap_ptr_set_capPTIsMapped(&(ctSlot->cap), 0);
+    // if (cap_page_table_cap_get_capPTIsMapped(cap)) {
+    //     pte_t *pt = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
+    //     unmapPageTable(
+    //         cap_page_table_cap_get_capPTMappedVSpaceId(cap),
+    //         cap_page_table_cap_get_capPTMappedAddress(cap),
+    //         pt
+    //     );
+    //     clearMemory((void *)pt, seL4_PageTableBits);
+    // }
+    // cap_page_table_cap_ptr_set_capPTIsMapped(&(ctSlot->cap), 0);
 
     return EXCEPTION_NONE;
 }
@@ -1150,18 +934,18 @@ exception_t performPageInvocationMapPTE(cap_t cap, cte_t *ctSlot,
 
 exception_t performPageInvocationUnmap(cap_t cap, cte_t *ctSlot)
 {
-    if (cap_frame_cap_get_capFMappedVSpaceID(cap) != vspaceIdInvalid) {
-        unmapPage(cap_frame_cap_get_capFSize(cap),
-                  cap_frame_cap_get_capFMappedVSpaceID(cap),
-                  cap_frame_cap_get_capFMappedAddress(cap),
-                  cap_frame_cap_get_capFBasePtr(cap)
-                 );
-    }
+    // if (cap_frame_cap_get_capFMappedVSpaceId(cap) != vspaceIdInvalid) {
+    //     unmapPage(cap_frame_cap_get_capFSize(cap),
+    //               cap_frame_cap_get_capFMappedVSpaceId(cap),
+    //               cap_frame_cap_get_capFMappedAddress(cap),
+    //               cap_frame_cap_get_capFBasePtr(cap)
+    //              );
+    // }
 
-    cap_t slotCap = ctSlot->cap;
-    slotCap = cap_frame_cap_set_capFMappedAddress(slotCap, 0);
-    slotCap = cap_frame_cap_set_capFMappedVSpaceID(slotCap, vspaceIdInvalid);
-    ctSlot->cap = slotCap;
+    // cap_t slotCap = ctSlot->cap;
+    // slotCap = cap_frame_cap_set_capFMappedAddress(slotCap, 0);
+    // slotCap = cap_frame_cap_set_capFMappedVSpaceId(slotCap, vspaceIdInvalid);
+    // ctSlot->cap = slotCap;
 
     return EXCEPTION_NONE;
 }

@@ -32,8 +32,7 @@ BOOT_BSS static volatile _Atomic word_t node_boot_lock;
 
 BOOT_BSS static region_t res_reg[NUM_RESERVED_REGIONS];
 
-BOOT_CODE cap_t create_mapped_it_frame_cap(cap_t pd_cap, pptr_t pptr, vptr_t vptr, vspace_id_t vspaceId, bool_t
-                                           use_large, bool_t executable)
+BOOT_CODE cap_t create_mapped_it_frame_cap(cap_t pd_cap, pptr_t pptr, vptr_t vptr, bool_t use_large, bool_t executable)
 {
     cap_t cap;
     vm_page_size_t frame_size;
@@ -44,16 +43,16 @@ BOOT_CODE cap_t create_mapped_it_frame_cap(cap_t pd_cap, pptr_t pptr, vptr_t vpt
         frame_size = RISCV_4K_Page;
     }
 
+    /* XXX: mapped frame cap... */
+
     cap = cap_frame_cap_new(
-              vspaceId,                            /* capFMappedVSpaceID       */
               pptr,                            /* capFBasePtr          */
               frame_size,                      /* capFSize             */
               wordFromVMRights(VMReadWrite),   /* capFVMRights         */
-              0,                               /* capFIsDevice         */
-              vptr                             /* capFMappedAddress    */
+              0                                /* capFIsDevice         */
           );
 
-    map_it_frame_cap(pd_cap, cap);
+    map_it_frame_cap(pd_cap, cap, vptr);
     return cap;
 }
 
@@ -392,14 +391,6 @@ static BOOT_CODE bool_t try_init_kernel(
         return false;
     }
     ndks_boot.bi_frame->userImageFrames = create_frames_ret.region;
-
-    /* create the initial thread's ASID pool */
-    it_ap_cap = create_it_asid_pool(root_cnode_cap);
-    if (cap_get_capType(it_ap_cap) == cap_null_cap) {
-        printf("ERROR: could not create ASID pool for initial thread\n");
-        return false;
-    }
-    write_it_asid_pool(it_ap_cap, it_pd_cap);
 
 #ifdef CONFIG_KERNEL_MCS
     NODE_STATE(ksCurTime) = getCurrentTime();

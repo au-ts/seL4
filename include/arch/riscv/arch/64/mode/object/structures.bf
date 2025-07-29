@@ -22,47 +22,50 @@ base 64(39,1)
 
 -- frames
 block frame_cap {
-    field       capFMappedVSpaceID      16
     field_high  capFBasePtr         39
-    padding                         9
+    padding                         25
 
     field       capType             5
     field       capFSize            2
     field       capFVMRights        2
     field       capFIsDevice        1
-    padding                         15
-    field_high  capFMappedAddress   39
+    padding                         54
+}
+
+/* Xxx: other info bits?. sizes copied from mdb_node block */
+block mapped_frame_cap {
+    field_high  capFNext            37
+    padding                         27
+    field       capType             5
+    /* these are cheap and easy to store and make some operations easier */
+    field       capFSize            2
+    field       capFVMRights        2
+    field       capFIsDevice        1
+    padding                         17
+    field_high  capFParent          37
+}
+
+/* Xxx: other info bits?. sizes copied from mdb_node block */
+block mapped_page_table_cap {
+    field_high  capPTNext           37
+    padding                         27
+    field       capType             5
+    /* is this actually, not mapped because it's the root table of a vspace */
+    field       capPTIsVTableRoot   1
+    padding                         21
+    field_high  capPTParent         37
 }
 
 -- N-level page table
 block page_table_cap {
-    field       capPTMappedVSpaceID     16
+    /* XXX: for hypervisors - variable size bits (like for frame_cap) */
     field_high  capPTBasePtr        39
-    padding                         9
+    padding                         25
 
     field       capType             5
-    padding                         19
-    field       capPTIsMapped       1
-    field_high  capPTMappedAddress  39
+    padding                         59
 }
 
--- Cap to the table of 2^6 VSpaceID pools
-block vspace_id_control_cap {
-    padding 64
-
-    field   capType     5
-    padding             59
-}
-
--- Cap to a pool of 2^10 VSpaceIDs
-block vspace_id_pool_cap {
-    padding 64
-
-    field       capType         5
-    field       capVSpaceIDBase     16
-    padding                     6
-    field_high  capVSpaceIDPool     37
-}
 
 -- NB: odd numbers are arch caps (see isArchCap())
 tagged_union cap capType {
@@ -84,10 +87,10 @@ tagged_union cap capType {
 #endif
 
     -- 5-bit tag arch caps
-    tag frame_cap           1
-    tag page_table_cap      3
-    tag vspace_id_control_cap    11
-    tag vspace_id_pool_cap       13
+    tag frame_cap               1
+    tag page_table_cap          3
+    tag mapped_frame_cap        5
+    tag mapped_page_table_cap   7
 }
 
 ---- Arch-independent object types

@@ -22,8 +22,6 @@ NODE_STATE_BEGIN(archNodeState)
 NODE_STATE_DECLARE(word_t, ipiReschedulePending);
 NODE_STATE_END(archNodeState);
 
-extern vspace_id_pool_t *riscvKSVSpaceIDTable[BIT(vspaceIdHighBits)];
-
 /* Kernel Page Tables */
 extern pte_t kernel_root_pageTable[BIT(PT_INDEX_BITS)] VISIBLE;
 

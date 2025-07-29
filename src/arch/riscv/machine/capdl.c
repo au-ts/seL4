@@ -18,26 +18,20 @@ word_t get_tcb_sp(tcb_t *tcb)
 
 #ifdef CONFIG_PRINTING
 
-static void obj_asidpool_print_attrs(cap_t asid_cap);
 static void obj_frame_print_attrs(paddr_t paddr);
 static void riscv_obj_pt_print_slots(pte_t *lvl1pt, pte_t *pt, int level);
 static void cap_frame_print_attrs_vptr(word_t vptr, pte_t *lvl1pt);
 static void cap_frame_print_attrs_pt(pte_t *ptSlot);
 
-static void obj_asidpool_print_attrs(cap_t asid_cap)
-{
-    vspace_id_t vspaceId = cap_vspace_id_pool_cap_get_capVSpaceIDBase(asid_cap);
-    printf("(vspaceId/asid_high: 0x%lx)\n", VSPACE_ID_HIGH(vspaceId));
-}
 
 void print_ipc_buffer_slot(tcb_t *tcb)
 {
-    word_t vptr = tcb->tcbIPCBuffer;
-    vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceID(TCB_PTR_CTE_PTR(tcb, tcbVTable)->cap);
-    findVSpaceForVSpaceID_ret_t find_ret = findVSpaceForVSpaceID(vspaceId);
+    // word_t vptr = tcb->tcbIPCBuffer;
+    // vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceId(TCB_PTR_CTE_PTR(tcb, tcbVTable)->cap);
+    // findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
 
     printf("ipc_buffer_slot: ");
-    cap_frame_print_attrs_vptr(vptr, find_ret.vspace_root);
+    cap_frame_print_attrs_vptr(0, 0); // vptr, find_ret.vspace_root);
 }
 
 static void riscv_cap_pt_print_slots(pte_t *upperPtSlot, word_t ptIndex, int level)
@@ -123,40 +117,34 @@ static void cap_frame_print_attrs_vptr(word_t vptr, pte_t *lvl1pt)
 
 void print_cap_arch(cap_t cap)
 {
-    switch (cap_get_capType(cap)) {
-    case cap_page_table_cap: {
-        vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceID(cap);
-        findVSpaceForVSpaceID_ret_t find_ret = findVSpaceForVSpaceID(vspaceId);
-        vptr_t vptr = cap_page_table_cap_get_capPTMappedAddress(cap);
-
-        word_t ptBitsLeft = PT_INDEX_BITS * CONFIG_PT_LEVELS + seL4_PageBits;
-        word_t slot = ((vptr >> ptBitsLeft) & MASK(PT_INDEX_BITS));
-        if (vspaceId != vspaceIdInvalid) {
-            printf("pt_%p_%04lu (vspaceId: %lu)\n",
-                   lookupPTSlot(find_ret.vspace_root, vptr).ptSlot, slot, (long unsigned int)vspaceId);
-        } else {
-            printf("pt_%p_%04lu\n", lookupPTSlot(find_ret.vspace_root, vptr).ptSlot, slot);
-        }
-        break;
-    }
-    case cap_vspace_id_control_cap: {
-        /* only one in the system */
-        printf("asid_control\n");
-        break;
-    }
-    case cap_frame_cap: {
-        vptr_t vptr = cap_frame_cap_get_capFMappedAddress(cap);
-        findVSpaceForVSpaceID_ret_t find_ret = findVSpaceForVSpaceID(cap_frame_cap_get_capFMappedVSpaceID(cap));
-
-        assert(find_ret.status == EXCEPTION_NONE);
-        cap_frame_print_attrs_vptr(vptr, find_ret.vspace_root);
-        break;
-    }
-    case cap_vspace_id_pool_cap: {
-        printf("%p_asid_pool\n", (void *)cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap));
-        break;
-    }
     /* riscv specific caps */
+    switch (cap_get_capType(cap)) {
+    // case cap_page_table_cap: {
+    //     vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceId(cap);
+    //     findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
+    //     vptr_t vptr = cap_page_table_cap_get_capPTMappedAddress(cap);
+
+    //     word_t ptBitsLeft = PT_INDEX_BITS * CONFIG_PT_LEVELS + seL4_PageBits;
+    //     word_t slot = ((vptr >> ptBitsLeft) & MASK(PT_INDEX_BITS));
+    //     if (vspaceId != vspaceIdInvalid) {
+    //         printf("pt_%p_%04lu (vspaceId: %lu)\n",
+    //                lookupPTSlot(find_ret.vspace_root, vptr).ptSlot, slot, (long unsigned int)vspaceId);
+    //     } else {
+    //         printf("pt_%p_%04lu\n", lookupPTSlot(find_ret.vspace_root, vptr).ptSlot, slot);
+    //     }
+    //     break;
+    // }
+    // case cap_frame_cap: {
+    //     vptr_t vptr = cap_frame_cap_get_capFMappedAddress(cap);
+    //     findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(cap_frame_cap_get_capFMappedVSpaceId(cap));
+
+    //     assert(find_ret.status == EXCEPTION_NONE);
+    //     cap_frame_print_attrs_vptr(vptr, find_ret.vspace_root);
+    //     break;
+    // }
+
+    /* TODO mapped frame / page table */
+
     /* nothing */
     default: {
         printf("[unknown cap %lu]\n", (long unsigned int)cap_get_capType(cap));
@@ -174,17 +162,12 @@ void print_object_arch(cap_t cap)
 {
     switch (cap_get_capType(cap)) {
     case cap_frame_cap:
+    case cap_mapped_frame_cap:
     case cap_page_table_cap:
+    case cap_mapped_page_table_cap:
         /* don't need to deal with these objects since they get handled from vtable */
         break;
 
-    case cap_vspace_id_pool_cap: {
-        printf("%p_asid_pool = asid_pool ",
-               (void *)cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap));
-        obj_asidpool_print_attrs(cap);
-        break;
-    }
-    /* riscv specific caps */
     /* nothing */
     default: {
         printf("[unknown object %lu]\n", (long unsigned int)cap_get_capType(cap));

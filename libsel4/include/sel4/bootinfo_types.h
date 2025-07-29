@@ -17,7 +17,9 @@ enum seL4_RootCNodeCapSlots {
     seL4_CapInitThreadCNode     =  2, /* initial thread's root CNode cap */
     seL4_CapInitThreadVSpace    =  3, /* initial thread's VSpace cap */
     seL4_CapIRQControl          =  4, /* global IRQ controller cap */
+    // REMOVE:
     seL4_CapASIDControl         =  5, /* global ASID controller cap */
+    // REMOVE:
     seL4_CapInitThreadASIDPool  =  6, /* initial thread's ASID pool cap */
     seL4_CapIOPortControl       =  7, /* global IO port control cap (null cap if not supported) */
     seL4_CapIOSpace             =  8, /* global IO space cap (null cap if no IOMMU support) */

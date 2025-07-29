@@ -20,27 +20,35 @@ deriveCap_ret_t Arch_deriveCap(cte_t *slot, cap_t cap)
     switch (cap_get_capType(cap)) {
 
     case cap_page_table_cap:
-        if (cap_page_table_cap_get_capPTIsMapped(cap)) {
-            ret.cap = cap;
-            ret.status = EXCEPTION_NONE;
-        } else {
-            userError("Deriving an unmapped PT cap");
-            current_syscall_error.type = seL4_IllegalOperation;
-            ret.cap = cap_null_cap_new();
-            ret.status = EXCEPTION_SYSCALL_ERROR;
-        }
+        // if (cap_page_table_cap_get_capPTIsMapped(cap)) {
+        //     ret.cap = cap;
+        //     ret.status = EXCEPTION_NONE;
+        // } else {
+        //     userError("Deriving an unmapped PT cap");
+        //     current_syscall_error.type = seL4_IllegalOperation;
+        //     ret.cap = cap_null_cap_new();
+        //     ret.status = EXCEPTION_SYSCALL_ERROR;
+        // }
+        userError("derive page table cap??? - I don't understand this case.");
+        ret.cap = cap_null_cap_new();
+        ret.status = EXCEPTION_SYSCALL_ERROR;
         return ret;
 
     case cap_frame_cap:
-        cap = cap_frame_cap_set_capFMappedAddress(cap, 0);
-        ret.cap = cap_frame_cap_set_capFMappedVSpaceID(cap, vspaceIdInvalid);
-        ret.status = EXCEPTION_NONE;
+        // cap = cap_frame_cap_set_capFMappedAddress(cap, 0);
+        // ret.cap = cap_frame_cap_set_capFMappedVSpaceId(cap, vspaceIdInvalid);
+        // ret.status = EXCEPTION_NONE;
+        userError("derive page table cap??? - I don't understand this case.");
+        ret.cap = cap_null_cap_new();
+        ret.status = EXCEPTION_SYSCALL_ERROR;
         return ret;
 
-    case cap_vspace_id_control_cap:
-    case cap_vspace_id_pool_cap:
-        ret.cap = cap;
-        ret.status = EXCEPTION_NONE;
+    case cap_mapped_frame_cap:
+    case cap_mapped_page_table_cap:
+        userError("Deriving a mapped frame/PT cap");
+        current_syscall_error.type = seL4_IllegalOperation;
+        ret.cap = cap_null_cap_new();
+        ret.status = EXCEPTION_SYSCALL_ERROR;
         return ret;
 
     default:
@@ -75,41 +83,31 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
     switch (cap_get_capType(cap)) {
     case cap_frame_cap:
 
-        if (cap_frame_cap_get_capFMappedVSpaceID(cap)) {
-            unmapPage(cap_frame_cap_get_capFSize(cap),
-                      cap_frame_cap_get_capFMappedVSpaceID(cap),
-                      cap_frame_cap_get_capFMappedAddress(cap),
-                      cap_frame_cap_get_capFBasePtr(cap));
-        }
+        // if (cap_frame_cap_get_capFMappedVSpaceId(cap)) {
+        //     unmapPage(cap_frame_cap_get_capFSize(cap),
+        //               cap_frame_cap_get_capFMappedVSpaceId(cap),
+        //               cap_frame_cap_get_capFMappedAddress(cap),
+        //               cap_frame_cap_get_capFBasePtr(cap));
+        // }
         break;
     case cap_page_table_cap:
-        if (final && cap_page_table_cap_get_capPTIsMapped(cap)) {
-            /*
-             * This PageTable is either mapped as a vspace_root or otherwise exists
-             * as an entry in another PageTable. We check if it is a vspace_root and
-             * if it is delete the entry from the ASID pool otherwise we treat it as
-             * a mapped PageTable and unmap it from whatever page table it is mapped
-             * into.
-             */
-            vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceID(cap);
-            findVSpaceForVSpaceID_ret_t find_ret = findVSpaceForVSpaceID(vspaceId);
-            pte_t *pte = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
-            if (find_ret.status == EXCEPTION_NONE && find_ret.vspace_root == pte) {
-                deleteVSpaceID(vspaceId, pte);
-            } else {
-                unmapPageTable(vspaceId, cap_page_table_cap_get_capPTMappedAddress(cap), pte);
-            }
-        }
-        break;
-    case cap_vspace_id_pool_cap:
-        if (final) {
-            deleteVSpaceIDPool(
-                cap_vspace_id_pool_cap_get_capVSpaceIDBase(cap),
-                VSPACE_ID_POOL_PTR(cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap))
-            );
-        }
-        break;
-    case cap_vspace_id_control_cap:
+        // if (final && cap_page_table_cap_get_capPTIsMapped(cap)) {
+        //     /*
+        //      * This PageTable is either mapped as a vspace_root or otherwise exists
+        //      * as an entry in another PageTable. We check if it is a vspace_root and
+        //      * if it is delete the entry from the ASID pool otherwise we treat it as
+        //      * a mapped PageTable and unmap it from whatever page table it is mapped
+        //      * into.
+        //      */
+        //     vspace_id_t vspaceId = cap_page_table_cap_get_capPTMappedVSpaceId(cap);
+        //     findVSpaceForVSpaceId_ret_t find_ret = findVSpaceForVSpaceId(vspaceId);
+        //     pte_t *pte = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
+        //     if (find_ret.status == EXCEPTION_NONE && find_ret.vspace_root == pte) {
+        //         deleteVSpaceId(vspaceId, pte);
+        //     } else {
+        //         unmapPageTable(vspaceId, cap_page_table_cap_get_capPTMappedAddress(cap), pte);
+        //     }
+        // }
         break;
     }
     fc_ret.remainder = cap_null_cap_new();
@@ -137,18 +135,8 @@ bool_t CONST Arch_sameRegionAs(cap_t cap_a, cap_t cap_b)
                    cap_page_table_cap_get_capPTBasePtr(cap_b);
         }
         break;
-    case cap_vspace_id_control_cap:
-        if (cap_get_capType(cap_b) == cap_vspace_id_control_cap) {
-            return true;
-        }
-        break;
 
-    case cap_vspace_id_pool_cap:
-        if (cap_get_capType(cap_b) == cap_vspace_id_pool_cap) {
-            return cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap_a) ==
-                   cap_vspace_id_pool_cap_get_capVSpaceIDPool(cap_b);
-        }
-        break;
+    /* xxxx: MAPPED VERSIONS */
     }
 
     return false;
@@ -210,12 +198,10 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
                                                     (unat RISCVPageBits))" */
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,                    /* capFMappedVSpaceID       */
                    (word_t) regionBase,            /* capFBasePtr          */
                    RISCV_4K_Page,                  /* capFSize             */
                    wordFromVMRights(VMReadWrite),  /* capFVMRights         */
-                   deviceMemory,                   /* capFIsDevice         */
-                   0                               /* capFMappedAddress    */
+                   deviceMemory                    /* capFIsDevice         */
                );
 
     case seL4_RISCV_Mega_Page: {
@@ -233,12 +219,10 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
                                                     (unat RISCVMegaPageBits))" */
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,                    /* capFMappedVSpaceID       */
                    (word_t) regionBase,            /* capFBasePtr          */
-                   RISCV_Mega_Page,                  /* capFSize             */
+                   RISCV_Mega_Page,                /* capFSize             */
                    wordFromVMRights(VMReadWrite),  /* capFVMRights         */
-                   deviceMemory,                   /* capFIsDevice         */
-                   0                               /* capFMappedAddress    */
+                   deviceMemory                    /* capFIsDevice         */
                );
     }
 
@@ -258,25 +242,21 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
                                                     (unat RISCVGigaPageBits))" */
         }
         return cap_frame_cap_new(
-                   vspaceIdInvalid,                    /* capFMappedVSpaceID       */
                    (word_t) regionBase,            /* capFBasePtr          */
-                   RISCV_Giga_Page,                  /* capFSize             */
+                   RISCV_Giga_Page,                /* capFSize             */
                    wordFromVMRights(VMReadWrite),  /* capFVMRights         */
-                   deviceMemory,                   /* capFIsDevice         */
-                   0                               /* capFMappedAddress    */
+                   deviceMemory                    /* capFIsDevice         */
                );
     }
 #endif
 
-    case seL4_RISCV_PageTableObject:
+    case seL4_RISCV_PageTableObject: {
         /** AUXUPD: "(True, ptr_retyps 1
               (Ptr (ptr_val \<acute>regionBase) :: (pte_C[512]) ptr))" */
         return cap_page_table_cap_new(
-                   vspaceIdInvalid,            /* capPTMappedVSpaceID    */
-                   (word_t)regionBase,     /* capPTBasePtr       */
-                   0,                      /* capPTIsMapped      */
-                   0                       /* capPTMappedAddress */
+                   (word_t) regionBase             /* capPTBasePtr         */
                );
+    }
 
     default:
         /*

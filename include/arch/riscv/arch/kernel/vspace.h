@@ -13,8 +13,8 @@
 #include <object/structures.h>
 
 cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_reg);
-void map_it_pt_cap(cap_t vspace_cap, cap_t pt_cap);
-void map_it_frame_cap(cap_t vspace_cap, cap_t frame_cap);
+void map_it_pt_cap(cap_t vspace_cap, cap_t pt_cap, vptr_t pt_vptr);
+void map_it_frame_cap(cap_t vspace_cap, cap_t frame_cap, vptr_t frame_vptr);
 void map_kernel_window(void);
 void map_kernel_frame(paddr_t paddr, pptr_t vaddr, vm_rights_t vm_rights);
 void activate_kernel_vspace(void);
@@ -22,8 +22,6 @@ void write_it_asid_pool(cap_t it_ap_cap, cap_t it_lvl1pt_cap);
 
 
 /* ==================== BOOT CODE FINISHES HERE ==================== */
-#define IT_VSPACE_ID 1
-
 struct lookupPTSlot_ret {
     pte_t *ptSlot;
     word_t ptBitsLeft;
@@ -41,10 +39,8 @@ void copyGlobalMappings(pte_t *newlvl1pt);
 word_t *PURE lookupIPCBuffer(bool_t isReceiver, tcb_t *thread);
 lookupPTSlot_ret_t lookupPTSlot(pte_t *lvl1pt, vptr_t vptr);
 exception_t handleVMFault(tcb_t *thread, vm_fault_type_t vm_faultType);
-void unmapPageTable(vspace_id_t vspaceId, vptr_t vaddr, pte_t *pt);
-void unmapPage(vm_page_size_t page_size, vspace_id_t vspaceId, vptr_t vptr, pptr_t pptr);
-void deleteVSpaceID(vspace_id_t vspaceId, pte_t *vspace);
-void deleteVSpaceIDPool(vspace_id_t vspaceId_base, vspace_id_pool_t *pool);
+void unmapPageTable(vptr_t vaddr, pte_t *pt);
+void unmapPage(vm_page_size_t page_size, vptr_t vptr, pptr_t pptr);
 bool_t CONST isValidVTableRoot(cap_t cap);
 exception_t checkValidIPCBuffer(vptr_t vptr, cap_t cap);
 vm_rights_t CONST maskVMRights(vm_rights_t vm_rights,
