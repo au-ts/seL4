@@ -1,6 +1,7 @@
 #include <config.h>
 
 #include <arch/object/pmu.h>
+#include <mode/machine/registerset.h>
 
 #define ISB asm volatile("isb")
 

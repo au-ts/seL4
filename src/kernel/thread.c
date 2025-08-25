@@ -478,6 +478,10 @@ void switchToThread(tcb_t *thread)
     lazyFPURestore(thread);
 #endif /* CONFIG_HAVE_FPU */
 
+#ifdef CONFIG_THREAD_LOCAL_PMU
+    restorePmuState(thread);
+#endif /* CONFIG_THREAD_LOCAL_PMU */
+
     tcbSchedDequeue(thread);
     NODE_STATE(ksCurThread) = thread;
 }

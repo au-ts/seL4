@@ -299,6 +299,12 @@ config_option(
     DEFAULT OFF
 )
 
+config_option(
+    ThreadLocalPMU  THREAD_LOCAL_PMU
+    "Enable support for thread local PMU state. On context switch, this state is saved and restored. "
+    DEFAULT OFF
+)
+
 config_choice(
     KernelBenchmarks
     KERNEL_BENCHMARK

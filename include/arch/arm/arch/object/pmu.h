@@ -204,3 +204,65 @@ enum pmu_register_el0 {
 exception_t decodePMUControlInvocation(word_t label, unsigned int length, cptr_t cptr,
                                          cte_t *srcSlot, cap_t cap,
                                          bool_t call, word_t *buffer);
+
+#ifdef CONFIG_THREAD_LOCAL_PMU
+/* Store the PMU state into the user context */
+static inline void savePmuState(tcb_t *thread)
+{
+    /* @kwinter: Should we disable the PMU here, or further up in the context
+    switching callchain?? Should we really disable at all? To disable or not to disable,
+    that is the question. */
+
+    MRS(PMCCNTR_EL0,, pmuState->cycle_counter);
+
+    // Get the number of counters available on this platform
+    uint32_t ctrl_reg;
+    MRS(PMCR_EL0, ctrl_reg);
+    uint32_t num_counters = (ctrl_reg >> 11) & 0x1f;
+    user_pmu_state_t *pmuState = &thread->tcbArch.tcbContext.pmuStatel;
+
+    for (int i = 0; i < num_counters; i++) {
+        MSR(PMSELR_EL0, (1 << i));
+        MRS(PMXEVCNTR_EL0, pmuState->event_counters[i]);
+        MRS(PMXEVTYPER_EL0, pmuState->event_counters[i]);
+    }
+    MRS(PMCR_EL0, pmuState->pmcr);
+    MRS(PMCNTENSET_EL0, pmuState->pmcntenset);
+    MRS(PMOVSCLR_EL0, pmuState->pmovsclr);
+    MRS(PMINTENSET_EL1, pmuState->pmitenset);
+}
+
+/* Load the PMU state from the user context into the PMU */
+static inline void loadPmuState(tcb_t *thread)
+{
+    /* @kwinter: Should we allow a write to enable the cycle counter here? Or disable
+    it until we finish the context switching process. Would then have to keep
+    track of even more state. */
+
+    MSR(PMCCNTR_EL0,, pmuState->cycle_counter);
+
+    // Get the number of counters available on this platform
+    uint32_t ctrl_reg;
+    MRS(PMCR_EL0, ctrl_reg);
+    uint32_t num_counters = (ctrl_reg >> 11) & 0x1f;
+    user_pmu_state_t *pmuState = &thread->tcbArch.tcbContext.pmuStatel;
+
+    for (int i = 0; i < num_counters; i++) {
+        MSR(PMSELR_EL0, (1 << i));
+        MRS(PMXEVCNTR_EL0, pmuState->event_counters[i]);
+        MRS(PMXEVTYPER_EL0, pmuState->event_counters[i]);
+    }
+    MRS(PMCR_EL0, pmuState->pmcr);
+    MRS(PMCNTENSET_EL0, pmuState->pmcntenset);
+    MRS(PMOVSCLR_EL0, pmuState->pmovsclr);
+    MRS(PMINTENSET_EL1, pmuState->pmitenset);
+}
+
+/* @kwinter: We are going to indiscriminately do this for now.
+Switch this to a "semi-lazy" method like we have for the fpu. */
+static inline void restorePmuState(tcb_t *thread)
+{
+    savePmuState(thread);
+    loadPmuState(thread);
+}
+#endif /* CONFIG_THREAD_LOCAL_PMU */
