@@ -1,0 +1,6 @@
+/ {
+	memory@0 {
+		device_type = "memory";
+		reg = <0x00 0x000000 0x00 0x1000000>;
+	};
+};
