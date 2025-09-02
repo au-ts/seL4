@@ -108,3 +108,7 @@ kernel_entry_t ksKernelEntry;
 #ifdef CONFIG_KERNEL_LOG_BUFFER
 paddr_t ksUserLogBuffer;
 #endif /* CONFIG_KERNEL_LOG_BUFFER */
+
+#ifdef CONFIG_ARCH_AARCH64
+paddr_t ksKernelElfPaddrBase = 0x0000000060000000;
+#endif

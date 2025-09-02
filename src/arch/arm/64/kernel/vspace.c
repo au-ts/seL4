@@ -241,16 +241,26 @@ BOOT_CODE void map_kernel_window(void)
     word_t idx;
 
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
-    /* verify that the kernel window as at the second entry of the PGD */
-    assert(GET_KPT_INDEX(PPTR_BASE, KLVL_FRM_ARM_PT_LVL(0)) == 1);
+    #define PPTR_BASE_PGD_INDEX 1
+    /* verify that the physical memory window as at the second entry of the PGD */
+    _Static_assert(GET_KPT_INDEX(PPTR_BASE, KLVL_FRM_ARM_PT_LVL(0)) == 1);
 #else
-    /* verify that the kernel window as at the last entry of the PGD */
-    assert(GET_KPT_INDEX(PPTR_BASE, KLVL_FRM_ARM_PT_LVL(0)) == BIT(PT_INDEX_BITS) - 1);
+    /* verify that the physical memory window as at the last entry of the PGD */
+    _Static_assert(GET_KPT_INDEX(PPTR_BASE, KLVL_FRM_ARM_PT_LVL(0)) == BIT(PT_INDEX_BITS) - 1);
 #endif
-    assert(IS_ALIGNED(PPTR_BASE, seL4_LargePageBits));
+    // ?????
+    // _Static_assert(IS_ALIGNED(PPTR_BASE, seL4_LargePageBits));
+    _Static_assert(IS_ALIGNED(PPTR_BASE, seL4_HugePageBits));
+    // XXX: Wat? PPTR_TOP is not KDEV_BASE (upstream?)
+    // verify that the PPTR_TOP is just exactly the last one in the PUD
+    _Static_assert(GET_KPT_INDEX(PPTR_TOP, KLVL_FRM_ARM_PT_LVL(1)) == BIT(PT_INDEX_BITS) - 1);
     /* verify that the kernel device window is 1gb aligned and 1gb in size */
-    assert(GET_KPT_INDEX(PPTR_TOP, KLVL_FRM_ARM_PT_LVL(1)) == BIT(PT_INDEX_BITS) - 1);
-    assert(IS_ALIGNED(PPTR_TOP, seL4_HugePageBits));
+    _Static_assert(IS_ALIGNED(PPTR_TOP, seL4_HugePageBits));
+
+    // KDEV is in the 1Gig page above PPTR_TOP
+    _Static_assert(ROUND_DOWN(KDEV_BASE, GET_KLVL_PGSIZE_BITS(1)) == PPTR_TOP);
+    //
+    _Static_assert(ROUND_DOWN(KDEV_BASE, GET_KLVL_PGSIZE_BITS(1)) == PPTR_TOP);
 
     /* place the PUD into the PGD */
     armKSGlobalKernelPGD[GET_KPT_INDEX(PPTR_BASE, KLVL_FRM_ARM_PT_LVL(0))] = pte_pte_table_new(
@@ -264,7 +274,8 @@ BOOT_CODE void map_kernel_window(void)
                                     );
     }
 
-    /* map the kernel window using large pages */
+    // XXX: But why not large pages???
+    /* map the physical memory window using large pages */
     vaddr = PPTR_BASE;
     for (paddr = PADDR_BASE; paddr < PADDR_TOP; paddr += BIT(seL4_LargePageBits)) {
         armKSGlobalKernelPDs[GET_KPT_INDEX(vaddr, KLVL_FRM_ARM_PT_LVL(1))][GET_KPT_INDEX(vaddr,
@@ -284,15 +295,41 @@ BOOT_CODE void map_kernel_window(void)
         vaddr += BIT(seL4_LargePageBits);
     }
 
+    // this particular PD (entry in the PUD / LVL1) is shared by all three of these
+    _Static_assert(GET_KPT_INDEX(PPTR_TOP, KLVL_FRM_ARM_PT_LVL(1)) == GET_KPT_INDEX(KDEV_BASE, KLVL_FRM_ARM_PT_LVL(1)));
+    _Static_assert(GET_KPT_INDEX(PPTR_TOP, KLVL_FRM_ARM_PT_LVL(1)) == GET_KPT_INDEX(KS_LOG_BASE, KLVL_FRM_ARM_PT_LVL(1)));
+    _Static_assert(GET_KPT_INDEX(PPTR_TOP, KLVL_FRM_ARM_PT_LVL(1)) == GET_KPT_INDEX(KERNEL_ELF_BASE, KLVL_FRM_ARM_PT_LVL(1)));
+
+
     /* put the PD into the PUD for device window */
     armKSGlobalKernelPUD[GET_KPT_INDEX(PPTR_TOP, KLVL_FRM_ARM_PT_LVL(1))] = pte_pte_table_new(
                                                                                 addrFromKPPtr(&armKSGlobalKernelPDs[BIT(PT_INDEX_BITS) - 1][0])
                                                                             );
 
     /* put the PT into the PD for device window */
+    _Static_assert(BIT(PT_INDEX_BITS) - 1 == GET_KPT_INDEX(KDEV_BASE, KLVL_FRM_ARM_PT_LVL(2)));
+
     armKSGlobalKernelPDs[BIT(PT_INDEX_BITS) - 1][BIT(PT_INDEX_BITS) - 1] = pte_pte_table_new(
                                                                                addrFromKPPtr(armKSGlobalKernelPT)
                                                                            );
+
+    /* put the kernel elf into the PD shared by device window, elf, and log buffer */
+    // XX: Is this actually shared?
+    // Do we have any requimrenets due to double mapping of ELF here and in the phys window?
+    armKSGlobalKernelPDs[BIT(PT_INDEX_BITS) - 1][GET_KPT_INDEX(KERNEL_ELF_BASE, KLVL_FRM_ARM_PT_LVL(2))]
+        = pte_pte_page_new(
+#ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
+            0, // XN
+#else
+            1, // UXN
+#endif
+            ksKernelElfPaddrBase,
+            0, // global
+            1, // access flag
+            SMP_TERNARY(SMP_SHARE, 0), // inner-shareable if SMP enabled, otherwise unshared
+            0, // VMKernelOnly
+            NORMAL
+          );
 
     map_kernel_devices();
 }

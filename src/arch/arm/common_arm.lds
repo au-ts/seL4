@@ -14,7 +14,7 @@ ENTRY(_start)
 
 SECTIONS
 {
-    . = KERNEL_ELF_BASE_RAW;
+    . = KERNEL_ELF_BASE;
 
     .boot . :
     {
