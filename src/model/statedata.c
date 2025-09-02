@@ -110,5 +110,5 @@ paddr_t ksUserLogBuffer;
 #endif /* CONFIG_KERNEL_LOG_BUFFER */
 
 #ifdef CONFIG_ARCH_AARCH64
-paddr_t ksKernelElfPaddrBase = 0x0000000060000000;
+paddr_t ksKernelElfPaddrBase;
 #endif

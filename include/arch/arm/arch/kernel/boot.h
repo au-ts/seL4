@@ -17,7 +17,8 @@ void init_kernel(
     paddr_t ui_p_reg_end,
     sword_t pv_offset,
     vptr_t  v_entry,
-    paddr_t dtb_addr_p,
+    sword_t kernel_pv_offset,
+    // paddr_t dtb_addr_p,
     uint64_t dtb_size,
     paddr_t extra_device_addr_p,
     uint64_t extra_device_size

@@ -645,13 +645,16 @@ BOOT_CODE VISIBLE void init_kernel(
     paddr_t ui_p_reg_end,
     sword_t pv_offset,
     vptr_t  v_entry,
-    paddr_t dtb_addr_p,
+    sword_t kernel_pv_offset,
+    // paddr_t dtb_addr_p,
     uint64_t dtb_size,
     paddr_t extra_device_addr_p,
     uint64_t extra_device_size
 )
 {
     bool_t result;
+
+    ksKernelElfPaddrBase = KERNEL_ELF_BASE - kernel_pv_offset;
 
 #ifdef ENABLE_SMP_SUPPORT
     /* we assume there exists a cpu with id 0 and will use it for bootstrapping */
@@ -660,7 +663,7 @@ BOOT_CODE VISIBLE void init_kernel(
                                  ui_p_reg_end,
                                  pv_offset,
                                  v_entry,
-                                 dtb_addr_p, dtb_size,
+                                 0, dtb_size,
                                  extra_device_addr_p, extra_device_size
                                  );
     } else {
@@ -672,7 +675,7 @@ BOOT_CODE VISIBLE void init_kernel(
                              ui_p_reg_end,
                              pv_offset,
                              v_entry,
-                             dtb_addr_p, dtb_size,
+                             0, dtb_size,
                              extra_device_addr_p, extra_device_size
                              );
 
