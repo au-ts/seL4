@@ -27,23 +27,12 @@ HEADER_TEMPLATE = '''/*
 
 #pragma once
 
-#define PHYS_BASE_RAW {{ "0x{:x}".format(physBase) }}
-
 #ifndef __ASSEMBLER__
 
 #include <config.h>
 #include <mode/hardware.h>  /* for KDEV_BASE */
 #include <linker.h>         /* for BOOT_RODATA */
 #include <basic_types.h>    /* for p_region_t, kernel_frame_t (arch/types.h) */
-
-/* Wrap raw physBase location constant to give it a symbolic name in C that's
- * visible to verification. This is necessary as there are no real constants
- * in C except enums, and enums constants must fit in an int.
- */
-static inline CONST word_t physBase(void)
-{
-    return PHYS_BASE_RAW;
-}
 
 /* INTERRUPTS */
 {% for irq in kernel_irqs %}
@@ -186,7 +175,7 @@ def get_interrupts(tree: FdtParser, hw_yaml: HardwareYaml) -> List:
 
 
 def create_c_header_file(config, kernel_irqs: List, kernel_macros: Dict,
-                         kernel_regions: List, physBase: int, physical_memory,
+                         kernel_regions: List, physical_memory,
                          outputStream):
 
     jinja_env = jinja2.Environment(loader=jinja2.BaseLoader, trim_blocks=True,
@@ -200,7 +189,6 @@ def create_c_header_file(config, kernel_irqs: List, kernel_macros: Dict,
             'kernel_irqs': kernel_irqs,
             'kernel_macros': kernel_macros,
             'kernel_regions': kernel_regions,
-            'physBase': physBase,
             'physical_memory': physical_memory})
     data = template.render(template_args)
 
@@ -212,7 +200,7 @@ def run(tree: FdtParser, hw_yaml: HardwareYaml, config: Config, kernel_config_di
     if not args.header_out:
         raise ValueError('You need to specify a header-out to use c header output')
 
-    physical_memory, physBase = hardware.utils.memory.get_physical_memory(tree, config)
+    physical_memory, reserved = hardware.utils.memory.get_physical_memory(tree, config)
     kernel_regions, kernel_macros = get_kernel_devices(tree, hw_yaml, kernel_config_dict)
 
     create_c_header_file(
@@ -220,7 +208,6 @@ def run(tree: FdtParser, hw_yaml: HardwareYaml, config: Config, kernel_config_di
         get_interrupts(tree, hw_yaml),
         kernel_macros,
         kernel_regions,
-        physBase,
         physical_memory,
         args.header_out)
 

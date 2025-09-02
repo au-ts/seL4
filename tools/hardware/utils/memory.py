@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 #
 
-from typing import List, Set, Tuple
+from typing import List, Set
 
 import hardware
 from hardware.config import Config
@@ -83,30 +83,32 @@ def reserve_regions(regions: Set[Region], reserved: Set[Region]) -> Set[Region]:
     return ret
 
 
-def align_memory(regions: Set[Region], config: Config) -> Tuple[List[Region], int]:
+def align_memory(regions: Set[Region], config: Config) -> List[Region]:
     ''' Given a set of regions, sort them and align the first so that the
     ELF loader will be able to load the kernel into it. Will return the
     aligned memory region list, a set of any regions of memory that were
     aligned out and the physBase value that the kernel will use. '''
 
     ret = sorted(regions)
+    extra_reserved = set()
 
     if config.get_kernel_phys_align() != 0:
         new = ret[0].align_base(config.get_kernel_phys_align())
+        resv = Region(ret[0].base, new.base - ret[0].base)
+        extra_reserved.add(resv)
         ret[0] = new
 
-    physBase = ret[0].base
-    return ret, physBase
+    return ret, extra_reserved
 
 
-def get_physical_memory(tree: FdtParser, config: Config) -> Tuple[List[Region], int]:
+def get_physical_memory(tree: FdtParser, config: Config) -> List[Region]:
     ''' returns a list of regions representing physical memory as used by the kernel '''
     regions = merge_memory_regions(get_memory_regions(tree))
     reserved = parse_reserved_regions(tree.get_path('/reserved-memory'))
     regions = reserve_regions(regions, reserved)
-    regions, physBase = align_memory(regions, config)
+    regions, extra_reserved = align_memory(regions, config)
 
-    return regions, physBase
+    return regions, reserved.union(extra_reserved)
 
 
 def get_addrspace_exclude(regions: List[Region], config: Config):

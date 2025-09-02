@@ -56,9 +56,10 @@ def run(tree: FdtParser, hw_yaml: HardwareYaml, config: Config,
     if not args.json_out:
         raise ValueError('you need to provide a json-out to use the JSON output method')
 
-    phys_mem, _ = hardware.utils.memory.get_physical_memory(tree, config)
+    phys_mem, reserved = hardware.utils.memory.get_physical_memory(tree, config)
     kernel_devs = get_kernel_devices(tree, hw_yaml, kernel_config_dict)
-    dev_mem = hardware.utils.memory.get_addrspace_exclude(phys_mem + kernel_devs, config)
+    dev_mem = hardware.utils.memory.get_addrspace_exclude(
+        list(reserved) + phys_mem + kernel_devs, config)
 
     create_json_file(dev_mem, phys_mem, args.json_out)
 
