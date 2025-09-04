@@ -416,6 +416,10 @@ static BOOT_CODE bool_t try_init_kernel(
         };
     }
 
+    // XXX: Hack.
+    avail_p_regs[0].start = ksKernelElfPaddrBase;
+    avail_p_regs[0].end = ksKernelElfPaddrBase + 0x1000000;
+
     /* The region of the initial thread is the user image + ipcbuf and boot info */
     word_t extra_bi_size_bits = calculate_extra_bi_size_bits(extra_bi_size);
     v_region_t it_v_reg = {
@@ -645,8 +649,7 @@ BOOT_CODE VISIBLE void init_kernel(
     paddr_t ui_p_reg_end,
     sword_t pv_offset,
     vptr_t  v_entry,
-    sword_t kernel_pv_offset,
-    // paddr_t dtb_addr_p,
+    paddr_t kernel_elf_paddr_base, // paddr_t dtb_addr_p,
     uint64_t dtb_size,
     paddr_t extra_device_addr_p,
     uint64_t extra_device_size
@@ -654,7 +657,10 @@ BOOT_CODE VISIBLE void init_kernel(
 {
     bool_t result;
 
-    ksKernelElfPaddrBase = KERNEL_ELF_BASE - kernel_pv_offset;
+    ksKernelElfPaddrBase = kernel_elf_paddr_base;
+
+
+    // TODO: getCurrentCPUIndex() for multikernel.
 
 #ifdef ENABLE_SMP_SUPPORT
     /* we assume there exists a cpu with id 0 and will use it for bootstrapping */
@@ -663,7 +669,8 @@ BOOT_CODE VISIBLE void init_kernel(
                                  ui_p_reg_end,
                                  pv_offset,
                                  v_entry,
-                                 0, dtb_size,
+                                 // dtb_addr_p, dtb_size,
+                                 0, 0,
                                  extra_device_addr_p, extra_device_size
                                  );
     } else {
@@ -675,7 +682,8 @@ BOOT_CODE VISIBLE void init_kernel(
                              ui_p_reg_end,
                              pv_offset,
                              v_entry,
-                             0, dtb_size,
+                             // dtb_addr_p, dtb_size,
+                             0, 0,
                              extra_device_addr_p, extra_device_size
                              );
 
