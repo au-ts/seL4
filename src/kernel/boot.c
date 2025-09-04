@@ -906,31 +906,18 @@ BOOT_CODE static bool_t check_available_memory(word_t n_available,
 BOOT_CODE static bool_t check_reserved_memory(word_t n_reserved,
                                               region_t *reserved)
 {
-    printf("reserved virt address space regions: %"SEL4_PRIu_word"\n",
-           n_reserved);
+    bool_t needs_sort = false;
 
-    _Bool needs_sort = false;
     /* Force ordering and exclusivity of reserved regions. */
     for (word_t i = 0; i < n_reserved; i++) {
-        const region_t *r = &reserved[i];
-        printf("  [%"SEL4_PRIx_word"..%"SEL4_PRIx_word")\n", r->start, r->end);
-
-        /* Reserved regions must be sane, the size is allowed to be zero. */
-        if (r->start > r->end) {
-            printf("ERROR: reserved region %"SEL4_PRIu_word" has start > end\n", i);
-            return false;
-        }
-
         /* Regions must be ordered and must not overlap. Regions are [start..end),
            so the == case is fine. Directly adjacent regions are allowed. */
-        if ((i > 0) && (r->start < reserved[i - 1].end)) {
-            printf("WARNING: reserved region %"SEL4_PRIu_word" in wrong order\n", i);
+        if ((i > 0) && (reserved[i].start < reserved[i - 1].end)) {
             needs_sort = true;
         }
     }
 
     if (needs_sort) {
-        printf("Sorted reserved regions...\n");
         word_t pos = 0;
         while (pos < n_reserved) {
             if (pos == 0 || reserved[pos].start >= reserved[pos - 1].end) {
@@ -941,6 +928,21 @@ BOOT_CODE static bool_t check_reserved_memory(word_t n_reserved,
                 reserved[pos - 1] = temp;
                 pos -= 1;
             }
+        }
+    }
+
+    printf("reserved phys memory regions: %"SEL4_PRIu_word"\n", n_reserved);
+
+    /* Print out reserved regions */
+    for (word_t i = 0; i < n_reserved; i++) {
+        const region_t *r = &reserved[i];
+        const p_region_t p_r = pptr_to_paddr_reg(*r);
+        printf("  [%"SEL4_PRIx_word"..%"SEL4_PRIx_word")\n", p_r.start, p_r.end);
+
+        /* Reserved regions must be sane, the size is allowed to be zero. */
+        if (r->start > r->end) {
+            printf("ERROR: reserved region %"SEL4_PRIu_word" has start > end\n", i);
+            return false;
         }
     }
 
