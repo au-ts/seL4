@@ -417,8 +417,11 @@ static BOOT_CODE bool_t try_init_kernel(
     }
 
     // XXX: Hack.
-    avail_p_regs[0].start = ksKernelElfPaddrBase;
-    avail_p_regs[0].end = ksKernelElfPaddrBase + 0x1000000;
+    p_region_t new_p_reg = { .start = ksKernelElfPaddrBase, .end = ksKernelElfPaddrBase + 0x1000000 };
+    printf("HACK: replacing old avail_p_regs[0] %"SEL4_PRIx_word"..%"SEL4_PRIx_word" with new one %"SEL4_PRIx_word"..%"SEL4_PRIx_word"\n", avail_p_regs[0].start, avail_p_regs[0].end, new_p_reg.start, new_p_reg.end);
+    assert(new_p_reg.start >= avail_p_regs[0].start);
+    assert(new_p_reg.end <= avail_p_regs[0].end);
+    avail_p_regs[0] = new_p_reg;
 
     /* The region of the initial thread is the user image + ipcbuf and boot info */
     word_t extra_bi_size_bits = calculate_extra_bi_size_bits(extra_bi_size);
@@ -462,6 +465,20 @@ static BOOT_CODE bool_t try_init_kernel(
 #ifdef CONFIG_ALLOW_SMC_CALLS
     init_smc(root_cnode_cap);
 #endif
+
+    // /* Get the CPU ID of the CPU we are booting on. */
+    mpidr_el1_t mpidr_el1;
+    asm volatile("mrs %0, mpidr_el1" : "=r"(mpidr_el1.words[0]));
+
+    printf("MPIDR_EL1: %llx\n", mpidr_el1.words[0]);
+    printf("MPIDR_EL1:U: %s\n", mpidr_el1_get_U(mpidr_el1) ? "uniprocessor" : "multiprocessor");
+    printf("MPIDR_EL1:MT: %s\n", mpidr_el1_get_MT(mpidr_el1) ? "SMT" : "no SMT");
+    printf("MPIDR_EL1:Aff0: %llx\n", mpidr_el1_get_Aff0(mpidr_el1));
+    printf("MPIDR_EL1:Aff1: %llx\n", mpidr_el1_get_Aff1(mpidr_el1));
+    printf("MPIDR_EL1:Aff2: %llx\n", mpidr_el1_get_Aff2(mpidr_el1));
+    printf("MPIDR_EL1:Aff3: %llx\n", mpidr_el1_get_Aff3(mpidr_el1));
+
+    // boot_cpu_id = boot_cpu_id & 0x00ffffff;
 
     populate_bi_frame(0, CONFIG_MAX_NUM_NODES, ipcbuf_vptr, extra_bi_size);
 
