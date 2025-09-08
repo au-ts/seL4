@@ -223,8 +223,14 @@ config_string(
     UNQUOTE
 )
 
-# Set CONFIG_ENABLE_SMP_SUPPORT as an alias of CONFIG_MAX_NUM_NODES > 1
-if(KernelMaxNumNodes GREATER 1)
+config_option(
+    KernelEnableMultikernelSupport ENABLE_MULTIKERNEL_SUPPORT
+    "Multikernel support"
+    DEFAULT OFF
+)
+
+# Set CONFIG_ENABLE_SMP_SUPPORT as an alias of CONFIG_MAX_NUM_NODES > 1; but also not SMP.
+if(KernelMaxNumNodes GREATER 1 AND NOT KernelEnableMultikernelSupport)
     config_set(KernelEnableSMPSupport ENABLE_SMP_SUPPORT ON)
 else()
     config_set(KernelEnableSMPSupport ENABLE_SMP_SUPPORT OFF)

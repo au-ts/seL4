@@ -466,7 +466,8 @@ static BOOT_CODE bool_t try_init_kernel(
     init_smc(root_cnode_cap);
 #endif
 
-    // /* Get the CPU ID of the CPU we are booting on. */
+#ifdef CONFIG_ENABLE_MULTIKERNEL_SUPPORT
+    /* Get the CPU ID of the CPU we are booting on. */
     mpidr_el1_t mpidr_el1;
     asm volatile("mrs %0, mpidr_el1" : "=r"(mpidr_el1.words[0]));
 
@@ -478,9 +479,14 @@ static BOOT_CODE bool_t try_init_kernel(
     printf("MPIDR_EL1:Aff2: %llx\n", mpidr_el1_get_Aff2(mpidr_el1));
     printf("MPIDR_EL1:Aff3: %llx\n", mpidr_el1_get_Aff3(mpidr_el1));
 
-    // boot_cpu_id = boot_cpu_id & 0x00ffffff;
-
+    // TODO: This is somewhat arbitrary for now...
+    // XX: What is difference between node_id_t and cpu_id_t?
+    node_id_t boot_node_id = mpidr_el1_get_Aff0(mpidr_el1);
+    populate_bi_frame(boot_node_id, CONFIG_MAX_NUM_NODES, ipcbuf_vptr, extra_bi_size);
+#else
     populate_bi_frame(0, CONFIG_MAX_NUM_NODES, ipcbuf_vptr, extra_bi_size);
+#endif
+
 
     /* put DTB in the bootinfo block, if present. */
     seL4_BootInfoHeader header;
