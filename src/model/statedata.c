@@ -110,5 +110,6 @@ paddr_t ksUserLogBuffer;
 #endif /* CONFIG_KERNEL_LOG_BUFFER */
 
 #ifdef CONFIG_ARCH_AARCH64
-paddr_t ksKernelElfPaddrBase;
+/* zero is a valid value; -1 is not */
+paddr_t ksKernelElfPaddrBase = -1;
 #endif
