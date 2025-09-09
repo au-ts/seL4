@@ -605,7 +605,8 @@ static BOOT_CODE bool_t try_init_kernel(
     }
 
 #ifdef CONFIG_KERNEL_MCS
-    init_sched_control(root_cnode_cap, CONFIG_MAX_NUM_NODES);
+    // for multikernel, only want 1 schedcontrol cap
+    init_sched_control(root_cnode_cap, SMP_TERNARY(CONFIG_MAX_NUM_NODES, 1));
 #endif
 
     /* create the initial thread's IPC buffer */
