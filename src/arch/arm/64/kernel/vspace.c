@@ -313,23 +313,33 @@ BOOT_CODE void map_kernel_window(void)
                                                                                addrFromKPPtr(armKSGlobalKernelPT)
                                                                            );
 
+    assert(IS_ALIGNED(ksKernelElfPaddrBase, seL4_LargePageBits));
+    _Static_assert(GET_KPT_INDEX(KERNEL_ELF_BASE, KLVL_FRM_ARM_PT_LVL(1)) == BIT(PT_INDEX_BITS) - 1);
+    assert(GET_KPT_INDEX(KERNEL_ELF_TOP, KLVL_FRM_ARM_PT_LVL(1)) == BIT(PT_INDEX_BITS) - 1);
+    assert(KERNEL_ELF_TOP <= KDEV_BASE);
+
+    paddr = ksKernelElfPaddrBase;
     /* put the kernel elf into the PD shared by device window, elf, and log buffer */
     // XX: Is this actually shared?
     // Do we have any requimrenets due to double mapping of ELF here and in the phys window?
-    armKSGlobalKernelPDs[BIT(PT_INDEX_BITS) - 1][GET_KPT_INDEX(KERNEL_ELF_BASE, KLVL_FRM_ARM_PT_LVL(2))]
-        = pte_pte_page_new(
+    for (vaddr = KERNEL_ELF_BASE; vaddr < KERNEL_ELF_TOP; vaddr += BIT(seL4_LargePageBits)) {
+        armKSGlobalKernelPDs[BIT(PT_INDEX_BITS) - 1][GET_KPT_INDEX(vaddr, KLVL_FRM_ARM_PT_LVL(2))]
+            = pte_pte_page_new(
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
-            0, // XN
+                0, // XN
 #else
-            1, // UXN
+                1, // UXN
 #endif
-            ksKernelElfPaddrBase,
-            0, // global
-            1, // access flag
-            SMP_TERNARY(SMP_SHARE, 0), // inner-shareable if SMP enabled, otherwise unshared
-            0, // VMKernelOnly
-            NORMAL
-          );
+                paddr,
+                0,                        /* global */
+                1,                        /* access flag */
+                SMP_TERNARY(SMP_SHARE, 0),        /* Inner-shareable if SMP enabled, otherwise unshared */
+                0,                        /* VMKernelOnly */
+                NORMAL
+        );
+
+        paddr += BIT(seL4_LargePageBits);
+    }
 
     map_kernel_devices();
 }
