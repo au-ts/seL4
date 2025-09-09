@@ -105,8 +105,7 @@ static const kernel_frame_t BOOT_RODATA *const kernel_device_frames = NULL;
 {% endif %}
 
 /* PHYSICAL MEMORY */
-/* XXXX: HACK: Should stay as const BOOT_RODATA */
-static p_region_t avail_p_regs[] = {
+static const p_region_t BOOT_RODATA avail_p_regs[] = {
     {% for reg in physical_memory %}
     /* {{ reg.owner.path }} */
     {

@@ -39,13 +39,57 @@ BOOT_BSS static volatile _Atomic int node_boot_lock;
 
 BOOT_BSS static region_t reserved[NUM_RESERVED_REGIONS];
 
+BOOT_BSS static p_region_t useable_p_regs[ARRAY_SIZE(avail_p_regs)];
+BOOT_BSS static word_t useable_p_regs_len = 1;
+_Static_assert(ARRAY_SIZE(avail_p_regs) == 1);
+
+BOOT_CODE static bool_t arch_init_coremem(node_id_t node_id)
+{
+
+    /* TODO
+        I'm not sure if this is a good idea. I've left in the boot node ID stuff,
+        but since the kernel loader needs to know the correct paddr to load the
+        elf into, since we can't do relocations, then this sort of behaviour
+        means that the loader has to exactly mimic the boot behaviour for
+        where this decides to load each kernel into memory.
+
+        This is really annoying and difficult.
+        if the kernel relocated itself this would be a bit easier because then
+        it could be loaded anywhere and moved (??? would this work with multikernel
+        as they could interfere....)
+    */
+
+    /* we rely on the fact that the avail_p_regs[0] is aligned by c_header.py */
+    if (!IS_ALIGNED(avail_p_regs[0].start, seL4_LargePageBits)) {
+        return false;
+    }
+
+    /* FIXME: BASIC ALLOCATION FOR NOW */
+    const word_t kernelElfSizeAligned = 0x1000000;
+    // This one is broken because I'd have to adjusst the loader too.,
+    // const word_t kernelElfSizeAligned = ROUND_UP(KERNEL_ELF_TOP - KERNEL_ELF_BASE, seL4_LargePageBits);
+
+    if (kernelElfSizeAligned * CONFIG_MAX_NUM_NODES > avail_p_regs[0].end - avail_p_regs[0].start) {
+        return false;
+    }
+
+    useable_p_regs[0].start = avail_p_regs[0].start + (node_id) * kernelElfSizeAligned;
+    useable_p_regs[0].end = useable_p_regs[0].start + kernelElfSizeAligned;
+    // TODO: Reserved should include every other kernel's memory.
+    // TODO: Rest of kernel memory.
+
+    assert(useable_p_regs[0].start == ksKernelElfPaddrBase);
+    ksKernelElfPaddrBase = useable_p_regs[0].start;
+
+    return true;
+}
+
 BOOT_CODE static bool_t arch_init_freemem(p_region_t ui_p_reg,
                                           p_region_t dtb_p_reg,
                                           p_region_t extra_device_p_reg,
                                           v_region_t it_v_reg,
                                           word_t extra_bi_size_bits)
 {
-    /* reserve the kernel image region */
 
     int index = 0;
 
@@ -104,11 +148,11 @@ BOOT_CODE static bool_t arch_init_freemem(p_region_t ui_p_reg,
         reserve_region(ui_p_reg);
     }
 
+    /* reserve the kernel image region */
     reserved[index] = paddr_to_pptr_reg(get_p_reg_kernel_img());
     index += 1;
 
-    /* avail_p_regs comes from the auto-generated code */
-    return init_freemem(ARRAY_SIZE(avail_p_regs), (p_region_t *)avail_p_regs,
+    return init_freemem(useable_p_regs_len, useable_p_regs,
                         index, reserved,
                         it_v_reg, extra_bi_size_bits);
 }
@@ -370,6 +414,25 @@ static BOOT_CODE bool_t try_init_kernel(
     bi_frame_vptr = ipcbuf_vptr + BIT(PAGE_BITS);
     extra_bi_frame_vptr = bi_frame_vptr + BIT(seL4_BootInfoFrameBits);
 
+#ifdef CONFIG_ENABLE_MULTIKERNEL_SUPPORT
+    /* Get the CPU ID of the CPU we are booting on. */
+    mpidr_el1_t mpidr_el1;
+    asm volatile("mrs %0, mpidr_el1" : "=r"(mpidr_el1.words[0]));
+
+    // TODO: This is somewhat arbitrary for now...
+    // XXX: How is this different to getCurrentCPUIndex()
+    // XXX: What is difference between node_id_t and cpu_id_t?
+    node_id_t boot_node_id = mpidr_el1_get_Aff0(mpidr_el1);
+
+    if (!arch_init_coremem(boot_node_id)) {
+        /* cannot printf here */
+        return false;
+    }
+
+    assert(IS_ALIGNED(ksKernelElfPaddrBase, seL4_LargePageBits));
+
+#endif
+
     /* setup virtual memory for the kernel */
     map_kernel_window();
 
@@ -416,13 +479,6 @@ static BOOT_CODE bool_t try_init_kernel(
         };
     }
 
-    // XXX: Hack.
-    p_region_t new_p_reg = { .start = ksKernelElfPaddrBase, .end = ksKernelElfPaddrBase + 0x1000000 };
-    printf("HACK: replacing old avail_p_regs[0] %"SEL4_PRIx_word"..%"SEL4_PRIx_word" with new one %"SEL4_PRIx_word"..%"SEL4_PRIx_word"\n", avail_p_regs[0].start, avail_p_regs[0].end, new_p_reg.start, new_p_reg.end);
-    assert(new_p_reg.start >= avail_p_regs[0].start);
-    assert(new_p_reg.end <= avail_p_regs[0].end);
-    avail_p_regs[0] = new_p_reg;
-
     /* The region of the initial thread is the user image + ipcbuf and boot info */
     word_t extra_bi_size_bits = calculate_extra_bi_size_bits(extra_bi_size);
     v_region_t it_v_reg = {
@@ -467,10 +523,6 @@ static BOOT_CODE bool_t try_init_kernel(
 #endif
 
 #ifdef CONFIG_ENABLE_MULTIKERNEL_SUPPORT
-    /* Get the CPU ID of the CPU we are booting on. */
-    mpidr_el1_t mpidr_el1;
-    asm volatile("mrs %0, mpidr_el1" : "=r"(mpidr_el1.words[0]));
-
     printf("MPIDR_EL1: %llx\n", mpidr_el1.words[0]);
     printf("MPIDR_EL1:U: %s\n", mpidr_el1_get_U(mpidr_el1) ? "uniprocessor" : "multiprocessor");
     printf("MPIDR_EL1:MT: %s\n", mpidr_el1_get_MT(mpidr_el1) ? "SMT" : "no SMT");
@@ -479,9 +531,6 @@ static BOOT_CODE bool_t try_init_kernel(
     printf("MPIDR_EL1:Aff2: %llx\n", mpidr_el1_get_Aff2(mpidr_el1));
     printf("MPIDR_EL1:Aff3: %llx\n", mpidr_el1_get_Aff3(mpidr_el1));
 
-    // TODO: This is somewhat arbitrary for now...
-    // XX: What is difference between node_id_t and cpu_id_t?
-    node_id_t boot_node_id = mpidr_el1_get_Aff0(mpidr_el1);
     populate_bi_frame(boot_node_id, CONFIG_MAX_NUM_NODES, ipcbuf_vptr, extra_bi_size);
 #else
     populate_bi_frame(0, CONFIG_MAX_NUM_NODES, ipcbuf_vptr, extra_bi_size);
