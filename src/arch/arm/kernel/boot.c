@@ -40,7 +40,7 @@ BOOT_BSS static volatile _Atomic int node_boot_lock;
 BOOT_BSS static region_t reserved[NUM_RESERVED_REGIONS];
 
 BOOT_BSS static p_region_t useable_p_regs[ARRAY_SIZE(avail_p_regs)];
-BOOT_BSS static word_t useable_p_regs_len = 1;
+BOOT_BSS static word_t useable_p_regs_len;
 _Static_assert(ARRAY_SIZE(avail_p_regs) == 1);
 
 BOOT_CODE static bool_t arch_init_coremem(node_id_t node_id)
@@ -75,6 +75,7 @@ BOOT_CODE static bool_t arch_init_coremem(node_id_t node_id)
 
     useable_p_regs[0].start = avail_p_regs[0].start + (node_id) * kernelElfSizeAligned;
     useable_p_regs[0].end = useable_p_regs[0].start + kernelElfSizeAligned;
+    useable_p_regs_len = 1;
     // TODO: Reserved should include every other kernel's memory.
     // TODO: Rest of kernel memory.
 
@@ -414,7 +415,6 @@ static BOOT_CODE bool_t try_init_kernel(
     bi_frame_vptr = ipcbuf_vptr + BIT(PAGE_BITS);
     extra_bi_frame_vptr = bi_frame_vptr + BIT(seL4_BootInfoFrameBits);
 
-#ifdef CONFIG_ENABLE_MULTIKERNEL_SUPPORT
     /* Get the CPU ID of the CPU we are booting on. */
     mpidr_el1_t mpidr_el1;
     asm volatile("mrs %0, mpidr_el1" : "=r"(mpidr_el1.words[0]));
@@ -430,8 +430,6 @@ static BOOT_CODE bool_t try_init_kernel(
     }
 
     assert(IS_ALIGNED(ksKernelElfPaddrBase, seL4_LargePageBits));
-
-#endif
 
     /* setup virtual memory for the kernel */
     map_kernel_window();
