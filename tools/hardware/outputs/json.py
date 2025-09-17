@@ -25,9 +25,15 @@ def make_json_list_of_regions(regions) -> List:
     ]
 
 
-def create_json_file(dev_mem, phys_mem, output_stream):
+def create_json_file(dev_mem, kernel_devs, phys_mem, output_stream):
     json_obj = {
         'devices': make_json_list_of_regions(dev_mem),
+        'kernel_devs': [
+            { 'start': r.base,
+              'end':   r.base + r.size,
+              'userAvailable': r.user_ok,
+            } for r in kernel_devs if r.size > 0
+        ],
         'memory':  make_json_list_of_regions(phys_mem)
     }
 
@@ -61,7 +67,7 @@ def run(tree: FdtParser, hw_yaml: HardwareYaml, config: Config,
     dev_mem = hardware.utils.memory.get_addrspace_exclude(
         list(reserved) + phys_mem + kernel_devs, config)
 
-    create_json_file(dev_mem, phys_mem, args.json_out)
+    create_json_file(dev_mem, kernel_devs, phys_mem, args.json_out)
 
 
 def add_args(parser):

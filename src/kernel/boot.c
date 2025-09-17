@@ -873,6 +873,13 @@ BOOT_CODE static bool_t check_available_memory(word_t n_available,
         return false;
     }
 
+    // XXX: TEMP
+    printf("board physical memory regions: %"SEL4_PRIu_word"\n", ARRAY_SIZE(avail_p_regs));
+    for (word_t i = 0; i < ARRAY_SIZE(avail_p_regs); i++) {
+        const p_region_t *r = &avail_p_regs[i];
+        printf("  [%"SEL4_PRIx_word"..%"SEL4_PRIx_word")\n", r->start, r->end);
+    }
+
     printf("available phys memory regions: %"SEL4_PRIu_word"\n", n_available);
     /* Force ordering and exclusivity of available regions. */
     for (word_t i = 0; i < n_available; i++) {
