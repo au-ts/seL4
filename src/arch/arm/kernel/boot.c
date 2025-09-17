@@ -41,7 +41,6 @@ BOOT_BSS static region_t reserved[NUM_RESERVED_REGIONS];
 
 BOOT_BSS static p_region_t useable_p_regs[ARRAY_SIZE(avail_p_regs)];
 BOOT_BSS static word_t useable_p_regs_len;
-_Static_assert(ARRAY_SIZE(avail_p_regs) == 1);
 
 BOOT_CODE static bool_t arch_init_coremem(node_id_t node_id)
 {
