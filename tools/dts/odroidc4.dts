@@ -2832,7 +2832,7 @@
 		cpu@1 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a55";
-			reg = <0x00 0x01>;
+			reg = <0x00 0x100>;
 			enable-method = "psci";
 			next-level-cache = <0x39>;
 			#cooling-cells = <0x02>;
@@ -2846,7 +2846,7 @@
 		cpu@2 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a55";
-			reg = <0x00 0x02>;
+			reg = <0x00 0x200>;
 			enable-method = "psci";
 			next-level-cache = <0x39>;
 			#cooling-cells = <0x02>;
@@ -2860,7 +2860,7 @@
 		cpu@3 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a55";
-			reg = <0x00 0x03>;
+			reg = <0x00 0x300>;
 			enable-method = "psci";
 			next-level-cache = <0x39>;
 			#cooling-cells = <0x02>;
