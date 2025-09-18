@@ -774,9 +774,6 @@ BOOT_CODE VISIBLE void init_kernel(
         // UNREACHABLE();
     }
 
-    printf("booted\n");
-    while (1);
-
 #ifdef CONFIG_KERNEL_MCS
     NODE_STATE(ksCurTime) = getCurrentTime();
     NODE_STATE(ksConsumed) = 0;

@@ -142,9 +142,9 @@ BEGIN_FUNC(_start)
      */
     stp     x29, x30, [sp, #-16]!
     bl      init_kernel
-    ldp     x29, x30, [sp], #16
+    /* ldp     x29, x30, [sp], #16 */
 
-    ret
+    /* ret */
 
     /* Restore the initial thread. Note that the function restore_user_context()
      * could technically also be called at the end of init_kernel() directly,
