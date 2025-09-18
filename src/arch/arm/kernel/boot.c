@@ -78,7 +78,10 @@ BOOT_CODE static bool_t arch_init_coremem(node_id_t node_id)
     // TODO: Reserved should include every other kernel's memory.
     // TODO: Rest of kernel memory.
 
-    assert(useable_p_regs[0].start == ksKernelElfPaddrBase);
+    if (useable_p_regs[0].start != ksKernelElfPaddrBase) {
+        return false;
+    }
+
     ksKernelElfPaddrBase = useable_p_regs[0].start;
 
     return true;
@@ -418,17 +421,23 @@ static BOOT_CODE bool_t try_init_kernel(
     mpidr_el1_t mpidr_el1;
     asm volatile("mrs %0, mpidr_el1" : "=r"(mpidr_el1.words[0]));
 
-    // TODO: This is somewhat arbitrary for now...
-    // XXX: How is this different to getCurrentCPUIndex()
-    // XXX: What is difference between node_id_t and cpu_id_t?
-    node_id_t boot_node_id = mpidr_el1_get_Aff0(mpidr_el1);
+    // // TODO: This is somewhat arbitrary for now...
+    // // XXX: How is this different to getCurrentCPUIndex()
+    // // XXX: What is difference between node_id_t and cpu_id_t?
+    // node_id_t boot_node_id = mpidr_el1_get_Aff0(mpidr_el1);
+
+    // is this guaranteed to still be what the loader set?
+    node_id_t boot_node_id;
+    asm volatile("mrs %0, tpidr_el1" : "=r"(boot_node_id));
 
     if (!arch_init_coremem(boot_node_id)) {
         /* cannot printf here */
         return false;
     }
 
-    assert(IS_ALIGNED(ksKernelElfPaddrBase, seL4_LargePageBits));
+    if (!IS_ALIGNED(ksKernelElfPaddrBase, seL4_LargePageBits)) {
+        return false;
+    }
 
     /* setup virtual memory for the kernel */
     map_kernel_window();
@@ -760,9 +769,13 @@ BOOT_CODE VISIBLE void init_kernel(
 #endif /* ENABLE_SMP_SUPPORT */
 
     if (!result) {
-        fail("ERROR: kernel init failed");
-        UNREACHABLE();
+        return;
+        // fail("ERROR: kernel init failed");
+        // UNREACHABLE();
     }
+
+    printf("booted\n");
+    while (1);
 
 #ifdef CONFIG_KERNEL_MCS
     NODE_STATE(ksCurTime) = getCurrentTime();

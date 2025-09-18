@@ -122,7 +122,9 @@ BEGIN_FUNC(_start)
     stp     x2, x3, [sp, #-16]!
     stp     x14, x15, [sp, #-16]!
     stp     x16, x17, [sp, #-16]!
+    stp     x29, x30, [sp, #-16]!
     bl arm_errata
+    ldp     x29, x30, [sp], #16
     ldp     x6, x7, [sp], #16
     ldp     x4, x5, [sp], #16
     ldp     x2, x3, [sp], #16
@@ -138,7 +140,11 @@ BEGIN_FUNC(_start)
      *  x6: extra device memory region (0 if there is none)
      *  x7: extra device size (0 if there is none)
      */
+    stp     x29, x30, [sp, #-16]!
     bl      init_kernel
+    ldp     x29, x30, [sp], #16
+
+    ret
 
     /* Restore the initial thread. Note that the function restore_user_context()
      * could technically also be called at the end of init_kernel() directly,
