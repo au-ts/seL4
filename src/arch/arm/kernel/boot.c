@@ -5,6 +5,8 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
+#include "sel4/kernel_bootinfo.h"
+#include "util.h"
 #include <config.h>
 #include <assert.h>
 #include <kernel/boot.h>
@@ -23,6 +25,7 @@
 #include <arch/machine/timer.h>
 #include <arch/machine/fpu.h>
 #include <arch/machine/tlb.h>
+#include "bootinfo.h"
 
 #ifdef CONFIG_ARM_SMMU
 #include <drivers/smmu/smmuv2.h>
@@ -60,6 +63,7 @@ BOOT_CODE static bool_t arch_init_coremem(node_id_t node_id)
 
     /* we rely on the fact that the avail_p_regs[0] is aligned by c_header.py */
     if (!IS_ALIGNED(avail_p_regs[0].start, seL4_LargePageBits)) {
+        printf("not aligned");
         return false;
     }
 
@@ -69,6 +73,7 @@ BOOT_CODE static bool_t arch_init_coremem(node_id_t node_id)
     // const word_t kernelElfSizeAligned = ROUND_UP(KERNEL_ELF_TOP - KERNEL_ELF_BASE, seL4_LargePageBits);
 
     if (kernelElfSizeAligned * CONFIG_MAX_NUM_NODES > avail_p_regs[0].end - avail_p_regs[0].start) {
+        printf("not big enough");
         return false;
     }
 
@@ -78,9 +83,12 @@ BOOT_CODE static bool_t arch_init_coremem(node_id_t node_id)
     // TODO: Reserved should include every other kernel's memory.
     // TODO: Rest of kernel memory.
 
+#if 0
     if (useable_p_regs[0].start != ksKernelElfPaddrBase) {
+        printf("not matching\n");
         return false;
     }
+#endif
 
     ksKernelElfPaddrBase = useable_p_regs[0].start;
 
@@ -376,17 +384,84 @@ BOOT_CODE static void release_secondary_cpus(void)
 
 /* Main kernel initialisation function. */
 
-static BOOT_CODE bool_t try_init_kernel(
-    paddr_t ui_p_reg_start,
-    paddr_t ui_p_reg_end,
-    sword_t pv_offset,
-    vptr_t  v_entry,
-    paddr_t dtb_phys_addr,
-    word_t  dtb_size,
-    paddr_t extra_device_addr_start,
-    word_t extra_device_size
-)
+static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
 {
+    printf("kernel boot info addr: 0x%lx\n", kernel_boot_info_p);
+
+    seL4_KernelBootInfo *kernel_boot_info_phys = (void *)kernel_boot_info_p;
+    if (kernel_boot_info_phys->magic != SEL4_KERNEL_BOOT_INFO_MAGIC) {
+        printf("boot info magic wrong\n");
+        return false;
+    }
+    if (kernel_boot_info_phys->version != SEL4_KERNEL_BOOT_INFO_VERSION_0) {
+        printf("boot info magic wrong\n");
+        return false;
+    }
+
+    vptr_t v_entry = kernel_boot_info_phys->root_task_entry;
+    sword_t pv_offset = kernel_boot_info_phys->root_task_pv_offset;
+
+    printf("root task v_entry: 0x%lx\n", v_entry);
+    printf("root task pv_offset: 0x%lx 0x%lx\n", pv_offset, -pv_offset);
+
+    printf("memory descriptor offset: 0x%lx\n", kernel_boot_info_phys->offset_of_memory_descriptors);
+    printf("memory descriptor number: 0x%lx\n", kernel_boot_info_phys->number_of_memory_descriptors);
+
+    if (kernel_boot_info_phys->number_of_memory_descriptors == 0) {
+        printf("only 0 memory descriptors???\n");
+        return false;
+    } else if (kernel_boot_info_phys->offset_of_memory_descriptors < sizeof(seL4_KernelBootInfo)) {
+        printf("offset cannot be < sizeof bootinfo\n");
+        return false;
+    }
+
+    seL4_KernelBootMemoryDescriptor *kernel_boot_mem_desc = (void *)(kernel_boot_info_p + kernel_boot_info_phys->offset_of_memory_descriptors);
+    printf("kernel boot mem desc addr: %p\n", kernel_boot_mem_desc);
+
+    // TODO: ???
+    word_t dtb_size = 0;
+    paddr_t dtb_phys_addr = 0;
+    paddr_t extra_device_addr_start;
+    word_t extra_device_size;
+    paddr_t ui_p_reg_start;
+    paddr_t ui_p_reg_end;
+
+    for (int i = 0; i < kernel_boot_info_phys->number_of_memory_descriptors; i++) {
+        seL4_KernelBootMemoryDescriptor *desc = &kernel_boot_mem_desc[i];
+        printf("desc[%d].base = %lx\n", i, desc->base);
+        printf("desc[%d].end = %lx\n", i, desc->end);
+        printf("desc[%d].kind = %d (", i, desc->kind);
+        switch (desc->kind) {
+            case SEL4_KERNEL_BOOT_MEMORY_DESCRIPTOR_KIND_INVALID:
+                printf("invalid)\n");
+                break;
+            case SEL4_KERNEL_BOOT_MEMORY_DESCRIPTOR_KIND_KERNEL:
+                printf("kernel)\n");
+                break;
+            case SEL4_KERNEL_BOOT_MEMORY_DESCRIPTOR_KIND_RAM:
+                printf("ram)\n");
+                break;
+            case SEL4_KERNEL_BOOT_MEMORY_DESCRIPTOR_KIND_ROOT_TASK:
+                printf("root task)\n");
+                ui_p_reg_start = desc->base;
+                ui_p_reg_end = desc->end;
+                break;
+            case SEL4_KERNEL_BOOT_MEMORY_DESCRIPTOR_KIND_RESERVED:
+                printf("reserved)\n");
+                break;
+            // HACK.
+            case 5:
+                printf("extra device)\n");
+                extra_device_addr_start = desc->base;
+                extra_device_size = desc->end - desc->base;
+                break;
+            default:
+                printf("unknown!\n");
+                break;
+        }
+    }
+
+    // =======================================================
     cap_t root_cnode_cap;
     cap_t it_ap_cap;
     cap_t it_pd_cap;
@@ -543,7 +618,6 @@ static BOOT_CODE bool_t try_init_kernel(
 #else
     populate_bi_frame(0, CONFIG_MAX_NUM_NODES, ipcbuf_vptr, extra_bi_size);
 #endif
-
 
     /* put DTB in the bootinfo block, if present. */
     seL4_BootInfoHeader header;
@@ -725,20 +799,9 @@ static BOOT_CODE bool_t try_init_kernel(
     return true;
 }
 
-BOOT_CODE VISIBLE void init_kernel(
-    paddr_t ui_p_reg_start,
-    paddr_t ui_p_reg_end,
-    sword_t pv_offset,
-    vptr_t  v_entry,
-    paddr_t kernel_elf_paddr_base, // paddr_t dtb_addr_p,
-    uint64_t dtb_size,
-    paddr_t extra_device_addr_p,
-    uint64_t extra_device_size
-)
+BOOT_CODE VISIBLE void init_kernel(paddr_t kernel_boot_info_p)
 {
     bool_t result;
-
-    ksKernelElfPaddrBase = kernel_elf_paddr_base;
 
     printf("hi\n");
 
@@ -747,27 +810,13 @@ BOOT_CODE VISIBLE void init_kernel(
 #ifdef ENABLE_SMP_SUPPORT
     /* we assume there exists a cpu with id 0 and will use it for bootstrapping */
     if (getCurrentCPUIndex() == 0) {
-        result = try_init_kernel(ui_p_reg_start,
-                                 ui_p_reg_end,
-                                 pv_offset,
-                                 v_entry,
-                                 // dtb_addr_p, dtb_size,
-                                 0, 0,
-                                 extra_device_addr_p, extra_device_size
-                                 );
+        result = try_init_kernel(kernel_boot_info_p);
     } else {
         result = try_init_kernel_secondary_core();
     }
 
 #else
-    result = try_init_kernel(ui_p_reg_start,
-                             ui_p_reg_end,
-                             pv_offset,
-                             v_entry,
-                             // dtb_addr_p, dtb_size,
-                             0, 0,
-                             extra_device_addr_p, extra_device_size
-                             );
+    result = try_init_kernel(kernel_boot_info_p);
 
 #endif /* ENABLE_SMP_SUPPORT */
 
