@@ -9,6 +9,7 @@
 #ifdef CONFIG_PRINTING
 
 void uart_drv_putchar(unsigned char c);
+void uart_drv_early_putchar(unsigned char c);
 
 static inline void uart_console_putchar(
     unsigned char c)
@@ -18,6 +19,16 @@ static inline void uart_console_putchar(
         uart_drv_putchar('\r');
     }
     uart_drv_putchar(c);
+}
+
+static inline void uart_console_early_putchar(
+    unsigned char c)
+{
+    /* UART console requires printing a '\r' (CR) before any '\n' (LF) */
+    if (c == '\n') {
+        uart_drv_early_putchar('\r');
+    }
+    uart_drv_early_putchar(c);
 }
 
 #endif /* CONFIG_PRINTING */

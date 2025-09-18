@@ -442,6 +442,8 @@ static BOOT_CODE bool_t try_init_kernel(
     /* setup virtual memory for the kernel */
     map_kernel_window();
 
+    early_boot = 0;
+
     /* initialise the CPU */
     if (!init_cpu()) {
         printf("ERROR: CPU init failed\n");
@@ -738,6 +740,7 @@ BOOT_CODE VISIBLE void init_kernel(
 
     ksKernelElfPaddrBase = kernel_elf_paddr_base;
 
+    printf("hi\n");
 
     // TODO: getCurrentCPUIndex() for multikernel.
 

@@ -17,6 +17,7 @@
 #define PL011_UARTFR_RXFE         BIT(4)
 
 #define UART_REG(x) ((volatile uint32_t *)(UART_PPTR + (x)))
+#define UART_EARLY_REG(x) ((volatile uint32_t *)(0x9000000 + (x)))
 
 #ifdef CONFIG_PRINTING
 void uart_drv_putchar(unsigned char c)
@@ -24,6 +25,13 @@ void uart_drv_putchar(unsigned char c)
     while ((*UART_REG(UARTFR) & PL011_UARTFR_TXFF) != 0);
 
     *UART_REG(UARTDR) = c;
+}
+
+void uart_drv_early_putchar(unsigned char c)
+{
+    while ((*UART_EARLY_REG(UARTFR) & PL011_UARTFR_TXFF) != 0);
+
+    *UART_EARLY_REG(UARTDR) = c;
 }
 #endif /* CONFIG_PRINTING */
 
