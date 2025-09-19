@@ -399,66 +399,70 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
     }
 
     vptr_t v_entry = kernel_boot_info_phys->root_task_entry;
-    sword_t pv_offset = kernel_boot_info_phys->root_task_pv_offset;
 
     printf("root task v_entry: 0x%lx\n", v_entry);
-    printf("root task pv_offset: 0x%lx 0x%lx\n", pv_offset, -pv_offset);
+    // printf("root task pv_offset: 0x%lx 0x%lx\n", pv_offset, -pv_offset);
 
-    printf("memory descriptor offset: 0x%lx\n", kernel_boot_info_phys->offset_of_memory_descriptors);
-    printf("memory descriptor number: 0x%lx\n", kernel_boot_info_phys->number_of_memory_descriptors);
+    printf("num_kernel_regions: 0x%x\n", kernel_boot_info_phys->num_kernel_regions);
+    printf("num_ram_regions: 0x%x\n", kernel_boot_info_phys->num_ram_regions);
+    printf("num_root_task_regions: 0x%x\n", kernel_boot_info_phys->num_root_task_regions);
+    printf("num_reserved_regions: 0x%x\n", kernel_boot_info_phys->num_reserved_regions);
 
-    if (kernel_boot_info_phys->number_of_memory_descriptors == 0) {
-        printf("only 0 memory descriptors???\n");
-        return false;
-    } else if (kernel_boot_info_phys->offset_of_memory_descriptors < sizeof(seL4_KernelBootInfo)) {
-        printf("offset cannot be < sizeof bootinfo\n");
+    bool_t failed_checks = false;
+#if 0
+    if (kernel_boot_info_phys->num_kernel_regions != 1) {
+        printf("only 1 kernel regions allowed\n");
+        failed_checks = true;
+    }
+    if (kernel_boot_info_phys->num_ram_regions == 0) {
+        printf("need at least one ram region\n");
+        failed_checks = true;
+    }
+#endif
+    if (kernel_boot_info_phys->num_root_task_regions == 0) {
+        printf("need at least one root task region\n");
+        failed_checks = true;
+    }
+
+    if (failed_checks) {
+        printf("failed validation\n");
         return false;
     }
 
-    seL4_KernelBootMemoryDescriptor *kernel_boot_mem_desc = (void *)(kernel_boot_info_p + kernel_boot_info_phys->offset_of_memory_descriptors);
-    printf("kernel boot mem desc addr: %p\n", kernel_boot_mem_desc);
+    seL4_KernelBoot_KernelRegion *kernel_regions = (void *)(kernel_boot_info_p + sizeof(seL4_KernelBootInfo));
+    seL4_KernelBoot_RamRegion *ram_regions = (void *)((word_t)kernel_regions + (kernel_boot_info_phys->num_kernel_regions * sizeof(seL4_KernelBoot_KernelRegion)));
+    seL4_KernelBoot_RootTaskRegion *root_task_regions = (void *)((word_t)ram_regions + (kernel_boot_info_phys->num_ram_regions * sizeof(seL4_KernelBoot_RamRegion)));
+    seL4_KernelBoot_ReservedRegion *reserved_regions = (void *)((word_t)root_task_regions + (kernel_boot_info_phys->num_root_task_regions * sizeof(seL4_KernelBoot_RootTaskRegion)));
+    paddr_t end_of_kernel_boot_info = ((word_t)reserved_regions + (kernel_boot_info_phys->num_reserved_regions * sizeof(seL4_KernelBoot_ReservedRegion)));
 
-    // TODO: ???
+    printf("kernel_regions addr: %p\n", kernel_regions);
+    printf("ram_regions addr: %p\n", ram_regions);
+    printf("root_task_regions addr: %p\n", root_task_regions);
+    printf("reserved_regions addr: %p\n", reserved_regions);
+    printf("end of kernel boot info addr: %p\n", (void *)end_of_kernel_boot_info);
+
+    // // TODO: ???
     word_t dtb_size = 0;
     paddr_t dtb_phys_addr = 0;
+    sword_t pv_offset;
     paddr_t extra_device_addr_start;
     word_t extra_device_size;
     paddr_t ui_p_reg_start;
     paddr_t ui_p_reg_end;
 
-    for (int i = 0; i < kernel_boot_info_phys->number_of_memory_descriptors; i++) {
-        seL4_KernelBootMemoryDescriptor *desc = &kernel_boot_mem_desc[i];
-        printf("desc[%d].base = %lx\n", i, desc->base);
-        printf("desc[%d].end = %lx\n", i, desc->end);
-        printf("desc[%d].kind = %d (", i, desc->kind);
-        switch (desc->kind) {
-            case SEL4_KERNEL_BOOT_MEMORY_DESCRIPTOR_KIND_INVALID:
-                printf("invalid)\n");
-                break;
-            case SEL4_KERNEL_BOOT_MEMORY_DESCRIPTOR_KIND_KERNEL:
-                printf("kernel)\n");
-                break;
-            case SEL4_KERNEL_BOOT_MEMORY_DESCRIPTOR_KIND_RAM:
-                printf("ram)\n");
-                break;
-            case SEL4_KERNEL_BOOT_MEMORY_DESCRIPTOR_KIND_ROOT_TASK:
-                printf("root task)\n");
-                ui_p_reg_start = desc->base;
-                ui_p_reg_end = desc->end;
-                break;
-            case SEL4_KERNEL_BOOT_MEMORY_DESCRIPTOR_KIND_RESERVED:
-                printf("reserved)\n");
-                break;
-            // HACK.
-            case 5:
-                printf("extra device)\n");
-                extra_device_addr_start = desc->base;
-                extra_device_size = desc->end - desc->base;
-                break;
-            default:
-                printf("unknown!\n");
-                break;
-        }
+    // HACK: This assumes 1 region.
+    for (int i = 0; i < kernel_boot_info_phys->num_root_task_regions; i++) {
+        ui_p_reg_start = root_task_regions[i].paddr_base;
+        ui_p_reg_end = root_task_regions[i].paddr_end;
+        // HACK: remove pv_offset code
+        pv_offset = root_task_regions[i].paddr_base - root_task_regions[i].vaddr_base;
+    }
+
+    // HACK: This assumes 1 region.
+    for (int i = 0; i < kernel_boot_info_phys->num_reserved_regions; i++) {
+        extra_device_addr_start = reserved_regions[i].base;
+        // HACK: remove size
+        extra_device_size = reserved_regions[i].end - reserved_regions[i].base;
     }
 
     // =======================================================
