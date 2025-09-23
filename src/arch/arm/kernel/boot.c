@@ -169,13 +169,18 @@ BOOT_CODE static bool_t arch_init_freemem(p_region_t ui_p_reg,
 }
 
 
-BOOT_CODE static void init_irqs(cap_t root_cnode_cap)
+BOOT_CODE static void init_irqs(cap_t root_cnode_cap, node_id_t boot_node_id)
 {
     unsigned i;
 
-    for (i = 0; i <= maxIRQ ; i++) {
-        setIRQState(IRQInactive, CORE_IRQ_TO_IRQT(0, i));
+    // TODO: Multikernel support.
+    //  see Kent's commit: https://github.com/kent-mcleod/seL4/commit/3ccb3d4aab5e8de66c918cb5d853860526f2440d
+    if (boot_node_id == 0) {
+        for (i = 0; i <= maxIRQ ; i++) {
+            setIRQState(IRQInactive, CORE_IRQ_TO_IRQT(0, i));
+        }
     }
+
     setIRQState(IRQTimer, CORE_IRQ_TO_IRQT(0, KERNEL_TIMER_IRQ));
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
     setIRQState(IRQReserved, CORE_IRQ_TO_IRQT(0, INTERRUPT_VGIC_MAINTENANCE));
@@ -599,7 +604,7 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
     create_domain_cap(root_cnode_cap);
 
     /* initialise the IRQ states and provide the IRQ control cap */
-    init_irqs(root_cnode_cap);
+    init_irqs(root_cnode_cap, boot_node_id);
 
 #ifdef CONFIG_ARM_SMMU
     /* initialise the SMMU and provide the SMMU control caps*/
