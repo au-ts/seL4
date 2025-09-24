@@ -42,58 +42,8 @@ BOOT_BSS static volatile _Atomic int node_boot_lock;
 
 BOOT_BSS static region_t reserved[NUM_RESERVED_REGIONS];
 
-BOOT_BSS static p_region_t useable_p_regs[ARRAY_SIZE(avail_p_regs)];
-BOOT_BSS static word_t useable_p_regs_len;
-
-BOOT_CODE static bool_t arch_init_coremem(node_id_t node_id)
-{
-
-    /* TODO
-        I'm not sure if this is a good idea. I've left in the boot node ID stuff,
-        but since the kernel loader needs to know the correct paddr to load the
-        elf into, since we can't do relocations, then this sort of behaviour
-        means that the loader has to exactly mimic the boot behaviour for
-        where this decides to load each kernel into memory.
-
-        This is really annoying and difficult.
-        if the kernel relocated itself this would be a bit easier because then
-        it could be loaded anywhere and moved (??? would this work with multikernel
-        as they could interfere....)
-    */
-
-    /* we rely on the fact that the avail_p_regs[0] is aligned by c_header.py */
-    if (!IS_ALIGNED(avail_p_regs[0].start, seL4_LargePageBits)) {
-        printf("not aligned");
-        return false;
-    }
-
-    /* FIXME: BASIC ALLOCATION FOR NOW */
-    const word_t kernelElfSizeAligned = 0x1000000;
-    // This one is broken because I'd have to adjusst the loader too.,
-    // const word_t kernelElfSizeAligned = ROUND_UP(KERNEL_ELF_TOP - KERNEL_ELF_BASE, seL4_LargePageBits);
-
-    if (kernelElfSizeAligned * CONFIG_MAX_NUM_NODES > avail_p_regs[0].end - avail_p_regs[0].start) {
-        printf("not big enough");
-        return false;
-    }
-
-    useable_p_regs[0].start = avail_p_regs[0].start + (node_id) * kernelElfSizeAligned;
-    useable_p_regs[0].end = useable_p_regs[0].start + kernelElfSizeAligned;
-    useable_p_regs_len = 1;
-    // TODO: Reserved should include every other kernel's memory.
-    // TODO: Rest of kernel memory.
-
-#if 0
-    if (useable_p_regs[0].start != ksKernelElfPaddrBase) {
-        printf("not matching\n");
-        return false;
-    }
-#endif
-
-    ksKernelElfPaddrBase = useable_p_regs[0].start;
-
-    return true;
-}
+BOOT_BSS static p_region_t avail_p_regs[MAX_NUM_FREEMEM_REG];
+BOOT_BSS static word_t avail_p_regs_count;
 
 BOOT_CODE static bool_t arch_init_freemem(p_region_t ui_p_reg,
                                           p_region_t dtb_p_reg,
@@ -163,7 +113,7 @@ BOOT_CODE static bool_t arch_init_freemem(p_region_t ui_p_reg,
     reserved[index] = paddr_to_pptr_reg(get_p_reg_kernel_img());
     index += 1;
 
-    return init_freemem(useable_p_regs_len, useable_p_regs,
+    return init_freemem(avail_p_regs_count, avail_p_regs,
                         index, reserved,
                         it_v_reg, extra_bi_size_bits);
 }
@@ -414,7 +364,6 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
     printf("num_reserved_regions: 0x%x\n", kernel_boot_info_phys->num_reserved_regions);
 
     bool_t failed_checks = false;
-#if 0
     if (kernel_boot_info_phys->num_kernel_regions != 1) {
         printf("only 1 kernel regions allowed\n");
         failed_checks = true;
@@ -423,7 +372,6 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
         printf("need at least one ram region\n");
         failed_checks = true;
     }
-#endif
     if (kernel_boot_info_phys->num_root_task_regions == 0) {
         printf("need at least one root task region\n");
         failed_checks = true;
@@ -477,19 +425,28 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
     paddr_t ui_p_reg_end;
 
     // HACK: This assumes 1 region.
-    for (int i = 0; i < kernel_boot_info_phys->num_root_task_regions; i++) {
-        ui_p_reg_start = root_task_regions[i].paddr_base;
-        ui_p_reg_end = root_task_regions[i].paddr_end;
-        // HACK: remove pv_offset code
-        pv_offset = root_task_regions[i].paddr_base - root_task_regions[i].vaddr_base;
-    }
+    assert(kernel_boot_info_phys->num_root_task_regions == 1);
+    ui_p_reg_start = root_task_regions[0].paddr_base;
+    ui_p_reg_end = root_task_regions[0].paddr_end;
+    // HACK: remove pv_offset code
+    pv_offset = root_task_regions[0].paddr_base - root_task_regions[0].vaddr_base;
 
     // HACK: This assumes 1 region.
-    for (int i = 0; i < kernel_boot_info_phys->num_reserved_regions; i++) {
-        extra_device_addr_start = reserved_regions[i].base;
-        // HACK: remove size
-        extra_device_size = reserved_regions[i].end - reserved_regions[i].base;
-    }
+    assert(kernel_boot_info_phys->num_reserved_regions == 1);
+    extra_device_addr_start = reserved_regions[0].base;
+    // HACK: remove size
+    extra_device_size = reserved_regions[0].end - reserved_regions[0].base;
+
+    // HACK: This assumes 1 region.
+    assert(kernel_boot_info_phys->num_ram_regions == 1);
+    avail_p_regs[0].start = ram_regions[0].base;
+    avail_p_regs[0].end   = ram_regions[0].end;
+    avail_p_regs_count = 1;
+
+    // HACK: This assumes 1 region.
+    assert(kernel_boot_info_phys->num_kernel_regions == 1);
+    ksKernelElfPaddrBase = kernel_regions[0].base;
+    /// XXX: End?
 
     // =======================================================
     cap_t root_cnode_cap;
@@ -535,12 +492,8 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
     node_id_t boot_node_id;
     asm volatile("mrs %0, tpidr_el1" : "=r"(boot_node_id));
 
-    if (!arch_init_coremem(boot_node_id)) {
-        /* cannot printf here */
-        return false;
-    }
-
     if (!IS_ALIGNED(ksKernelElfPaddrBase, seL4_LargePageBits)) {
+        printf("kernel elf paddr base is not aligned\n");
         return false;
     }
 

@@ -104,17 +104,6 @@ static const kernel_frame_t BOOT_RODATA *const kernel_device_frames = NULL;
 #define NUM_KERNEL_DEVICE_FRAMES 0
 {% endif %}
 
-/* PHYSICAL MEMORY */
-static const p_region_t BOOT_RODATA avail_p_regs[] = {
-    {% for reg in physical_memory %}
-    /* {{ reg.owner.path }} */
-    {
-        .start = {{ "0x{:x}".format(reg.base) }},
-        .end   = {{ "0x{:x}".format(reg.base + reg.size) }}
-    },
-    {% endfor %}
-};
-
 #endif /* !__ASSEMBLER__ */
 
 '''
@@ -175,8 +164,7 @@ def get_interrupts(tree: FdtParser, hw_yaml: HardwareYaml) -> List:
 
 
 def create_c_header_file(config, kernel_irqs: List, kernel_macros: Dict,
-                         kernel_regions: List, physical_memory,
-                         outputStream):
+                         kernel_regions: List, outputStream):
 
     jinja_env = jinja2.Environment(loader=jinja2.BaseLoader, trim_blocks=True,
                                    lstrip_blocks=True)
@@ -188,8 +176,7 @@ def create_c_header_file(config, kernel_irqs: List, kernel_macros: Dict,
             'config': config,
             'kernel_irqs': kernel_irqs,
             'kernel_macros': kernel_macros,
-            'kernel_regions': kernel_regions,
-            'physical_memory': physical_memory})
+            'kernel_regions': kernel_regions})
     data = template.render(template_args)
 
     with outputStream:
@@ -200,7 +187,6 @@ def run(tree: FdtParser, hw_yaml: HardwareYaml, config: Config, kernel_config_di
     if not args.header_out:
         raise ValueError('You need to specify a header-out to use c header output')
 
-    physical_memory, reserved = hardware.utils.memory.get_physical_memory(tree, config)
     kernel_regions, kernel_macros = get_kernel_devices(tree, hw_yaml, kernel_config_dict)
 
     create_c_header_file(
@@ -208,7 +194,6 @@ def run(tree: FdtParser, hw_yaml: HardwareYaml, config: Config, kernel_config_di
         get_interrupts(tree, hw_yaml),
         kernel_macros,
         kernel_regions,
-        physical_memory,
         args.header_out)
 
 
