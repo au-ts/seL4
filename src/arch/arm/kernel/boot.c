@@ -446,6 +446,27 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
     printf("reserved_regions addr: %p\n", reserved_regions);
     printf("end of kernel boot info addr: %p\n", (void *)end_of_kernel_boot_info);
 
+    // === Debugging: dump all ====
+
+    for (int i = 0; i < kernel_boot_info_phys->num_kernel_regions; i++) {
+        printf("kernel_regions[%d].base = 0x%llx\n", i, kernel_regions[i].base);
+        printf("kernel_regions[%d].end = 0x%llx\n", i, kernel_regions[i].end);
+    }
+    for (int i = 0; i < kernel_boot_info_phys->num_ram_regions; i++) {
+        printf("ram_regions[%d].base = 0x%llx\n", i, ram_regions[i].base);
+        printf("ram_regions[%d].end = 0x%llx\n", i, ram_regions[i].end);
+    }
+    for (int i = 0; i < kernel_boot_info_phys->num_root_task_regions; i++) {
+        printf("root_task_regions[%d].paddr_base = 0x%llx\n", i, root_task_regions[i].paddr_base);
+        printf("root_task_regions[%d].paddr_end = 0x%llx\n", i, root_task_regions[i].paddr_end);
+        printf("root_task_regions[%d].vaddr_base = 0x%llx\n", i, root_task_regions[i].vaddr_base);
+    }
+    for (int i = 0; i < kernel_boot_info_phys->num_reserved_regions; i++) {
+        printf("reserved_regions[%d].base = 0x%llx\n", i, reserved_regions[i].base);
+        printf("reserved_regions[%d].end = 0x%llx\n", i, reserved_regions[i].end);
+    }
+    // === end dump all
+
     // // TODO: ???
     word_t dtb_size = 0;
     paddr_t dtb_phys_addr = 0;
