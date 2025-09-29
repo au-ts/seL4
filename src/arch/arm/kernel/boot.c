@@ -358,10 +358,10 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
     printf("root task v_entry: 0x%lx\n", v_entry);
     // printf("root task pv_offset: 0x%lx 0x%lx\n", pv_offset, -pv_offset);
 
-    printf("num_kernel_regions: 0x%x\n", kernel_boot_info_phys->num_kernel_regions);
-    printf("num_ram_regions: 0x%x\n", kernel_boot_info_phys->num_ram_regions);
-    printf("num_root_task_regions: 0x%x\n", kernel_boot_info_phys->num_root_task_regions);
-    printf("num_reserved_regions: 0x%x\n", kernel_boot_info_phys->num_reserved_regions);
+    printf("num_kernel_regions: %d\n", kernel_boot_info_phys->num_kernel_regions);
+    printf("num_ram_regions: %d\n", kernel_boot_info_phys->num_ram_regions);
+    printf("num_root_task_regions: %d\n", kernel_boot_info_phys->num_root_task_regions);
+    printf("num_reserved_regions: %d\n", kernel_boot_info_phys->num_reserved_regions);
 
     bool_t failed_checks = false;
     if (kernel_boot_info_phys->num_kernel_regions != 1) {
