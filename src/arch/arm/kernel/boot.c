@@ -41,25 +41,16 @@ BOOT_BSS static volatile _Atomic int node_boot_lock;
 #endif /* ENABLE_SMP_SUPPORT */
 
 BOOT_BSS static region_t reserved[NUM_RESERVED_REGIONS];
-
 BOOT_BSS static p_region_t avail_p_regs[MAX_NUM_FREEMEM_REG];
-BOOT_BSS static word_t avail_p_regs_count;
 
 BOOT_CODE static bool_t arch_init_freemem(p_region_t ui_p_reg,
-                                          p_region_t dtb_p_reg,
-                                          p_region_t extra_device_p_reg,
+                                          word_t avail_p_regs_count,
+                                          int reserved_index_start,
                                           v_region_t it_v_reg,
                                           word_t extra_bi_size_bits)
 {
 
-    int index = 0;
-
-    if (extra_device_p_reg.start) {
-        /* the dtb region could be empty */
-        reserved[index].start = (pptr_t) paddr_to_pptr(extra_device_p_reg.start);
-        reserved[index].end = (pptr_t) paddr_to_pptr(extra_device_p_reg.end);
-        index++;
-    }
+    int index = reserved_index_start;
 
     /* Reserve the user image region and the mode-reserved regions. For now,
      * only one mode-reserved region is supported, because this is all that is
@@ -343,38 +334,45 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
 {
     printf("kernel boot info addr: 0x%lx\n", kernel_boot_info_p);
 
-    seL4_KernelBootInfo *kernel_boot_info_phys = (void *)kernel_boot_info_p;
-    if (kernel_boot_info_phys->magic != SEL4_KERNEL_BOOT_INFO_MAGIC) {
+    seL4_KernelBootInfo *kernel_boot_info = (void *)kernel_boot_info_p;
+    if (kernel_boot_info->magic != SEL4_KERNEL_BOOT_INFO_MAGIC) {
         printf("boot info magic wrong\n");
         return false;
     }
-    if (kernel_boot_info_phys->version != SEL4_KERNEL_BOOT_INFO_VERSION_0) {
+    if (kernel_boot_info->version != SEL4_KERNEL_BOOT_INFO_VERSION_0) {
         printf("boot info magic wrong\n");
         return false;
     }
 
-    vptr_t v_entry = kernel_boot_info_phys->root_task_entry;
+    vptr_t v_entry = kernel_boot_info->root_task_entry;
 
     printf("root task v_entry: 0x%lx\n", v_entry);
     // printf("root task pv_offset: 0x%lx 0x%lx\n", pv_offset, -pv_offset);
 
-    printf("num_kernel_regions: %d\n", kernel_boot_info_phys->num_kernel_regions);
-    printf("num_ram_regions: %d\n", kernel_boot_info_phys->num_ram_regions);
-    printf("num_root_task_regions: %d\n", kernel_boot_info_phys->num_root_task_regions);
-    printf("num_reserved_regions: %d\n", kernel_boot_info_phys->num_reserved_regions);
+    printf("num_kernel_regions: %d\n", kernel_boot_info->num_kernel_regions);
+    printf("num_ram_regions: %d\n", kernel_boot_info->num_ram_regions);
+    printf("num_root_task_regions: %d\n", kernel_boot_info->num_root_task_regions);
+    printf("num_reserved_regions: %d\n", kernel_boot_info->num_reserved_regions);
 
     bool_t failed_checks = false;
-    if (kernel_boot_info_phys->num_kernel_regions != 1) {
+    if (kernel_boot_info->num_kernel_regions != 1) {
         printf("only 1 kernel regions allowed\n");
         failed_checks = true;
     }
-    if (kernel_boot_info_phys->num_ram_regions == 0) {
+    if (kernel_boot_info->num_ram_regions == 0) {
         printf("need at least one ram region\n");
         failed_checks = true;
     }
-    if (kernel_boot_info_phys->num_root_task_regions == 0) {
+    if (kernel_boot_info->num_ram_regions >= ARRAY_SIZE(avail_p_regs)) {
+        printf("too many ram regions: %d exceeds %d\n", kernel_boot_info->num_ram_regions, MAX_NUM_FREEMEM_REG);
+        failed_checks = true;
+    }
+    if (kernel_boot_info->num_root_task_regions == 0) {
         printf("need at least one root task region\n");
         failed_checks = true;
+    }
+    if (kernel_boot_info->num_reserved_regions >= ARRAY_SIZE(reserved)) {
+        printf("too many reserved regions: %d exceeds %d\n", kernel_boot_info->num_reserved_regions, MAX_NUM_USER_RESERVED_REGIONS);
     }
 
     if (failed_checks) {
@@ -383,10 +381,10 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
     }
 
     seL4_KernelBoot_KernelRegion *kernel_regions = (void *)(kernel_boot_info_p + sizeof(seL4_KernelBootInfo));
-    seL4_KernelBoot_RamRegion *ram_regions = (void *)((word_t)kernel_regions + (kernel_boot_info_phys->num_kernel_regions * sizeof(seL4_KernelBoot_KernelRegion)));
-    seL4_KernelBoot_RootTaskRegion *root_task_regions = (void *)((word_t)ram_regions + (kernel_boot_info_phys->num_ram_regions * sizeof(seL4_KernelBoot_RamRegion)));
-    seL4_KernelBoot_ReservedRegion *reserved_regions = (void *)((word_t)root_task_regions + (kernel_boot_info_phys->num_root_task_regions * sizeof(seL4_KernelBoot_RootTaskRegion)));
-    paddr_t end_of_kernel_boot_info = ((word_t)reserved_regions + (kernel_boot_info_phys->num_reserved_regions * sizeof(seL4_KernelBoot_ReservedRegion)));
+    seL4_KernelBoot_RamRegion *ram_regions = (void *)((word_t)kernel_regions + (kernel_boot_info->num_kernel_regions * sizeof(seL4_KernelBoot_KernelRegion)));
+    seL4_KernelBoot_RootTaskRegion *root_task_regions = (void *)((word_t)ram_regions + (kernel_boot_info->num_ram_regions * sizeof(seL4_KernelBoot_RamRegion)));
+    seL4_KernelBoot_ReservedRegion *reserved_regions = (void *)((word_t)root_task_regions + (kernel_boot_info->num_root_task_regions * sizeof(seL4_KernelBoot_RootTaskRegion)));
+    paddr_t end_of_kernel_boot_info = ((word_t)reserved_regions + (kernel_boot_info->num_reserved_regions * sizeof(seL4_KernelBoot_ReservedRegion)));
 
     printf("kernel_regions addr: %p\n", kernel_regions);
     printf("ram_regions addr: %p\n", ram_regions);
@@ -396,20 +394,20 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
 
     // === Debugging: dump all ====
 
-    for (int i = 0; i < kernel_boot_info_phys->num_kernel_regions; i++) {
+    for (int i = 0; i < kernel_boot_info->num_kernel_regions; i++) {
         printf("kernel_regions[%d].base = 0x%llx\n", i, kernel_regions[i].base);
         printf("kernel_regions[%d].end = 0x%llx\n", i, kernel_regions[i].end);
     }
-    for (int i = 0; i < kernel_boot_info_phys->num_ram_regions; i++) {
+    for (int i = 0; i < kernel_boot_info->num_ram_regions; i++) {
         printf("ram_regions[%d].base = 0x%llx\n", i, ram_regions[i].base);
         printf("ram_regions[%d].end = 0x%llx\n", i, ram_regions[i].end);
     }
-    for (int i = 0; i < kernel_boot_info_phys->num_root_task_regions; i++) {
+    for (int i = 0; i < kernel_boot_info->num_root_task_regions; i++) {
         printf("root_task_regions[%d].paddr_base = 0x%llx\n", i, root_task_regions[i].paddr_base);
         printf("root_task_regions[%d].paddr_end = 0x%llx\n", i, root_task_regions[i].paddr_end);
         printf("root_task_regions[%d].vaddr_base = 0x%llx\n", i, root_task_regions[i].vaddr_base);
     }
-    for (int i = 0; i < kernel_boot_info_phys->num_reserved_regions; i++) {
+    for (int i = 0; i < kernel_boot_info->num_reserved_regions; i++) {
         printf("reserved_regions[%d].base = 0x%llx\n", i, reserved_regions[i].base);
         printf("reserved_regions[%d].end = 0x%llx\n", i, reserved_regions[i].end);
     }
@@ -425,28 +423,16 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
     paddr_t ui_p_reg_end;
 
     // HACK: This assumes 1 region.
-    assert(kernel_boot_info_phys->num_root_task_regions == 1);
+    assert(kernel_boot_info->num_kernel_regions == 1);
+    ksKernelElfPaddrBase = kernel_regions[0].base;
+    /// XXX: End?
+
+    // HACK: This assumes 1 region.
+    assert(kernel_boot_info->num_root_task_regions == 1);
     ui_p_reg_start = root_task_regions[0].paddr_base;
     ui_p_reg_end = root_task_regions[0].paddr_end;
     // HACK: remove pv_offset code
     pv_offset = root_task_regions[0].paddr_base - root_task_regions[0].vaddr_base;
-
-    // HACK: This assumes 1 region.
-    assert(kernel_boot_info_phys->num_reserved_regions == 1);
-    extra_device_addr_start = reserved_regions[0].base;
-    // HACK: remove size
-    extra_device_size = reserved_regions[0].end - reserved_regions[0].base;
-
-    // HACK: This assumes 1 region.
-    assert(kernel_boot_info_phys->num_ram_regions == 1);
-    avail_p_regs[0].start = ram_regions[0].base;
-    avail_p_regs[0].end   = ram_regions[0].end;
-    avail_p_regs_count = 1;
-
-    // HACK: This assumes 1 region.
-    assert(kernel_boot_info_phys->num_kernel_regions == 1);
-    ksKernelElfPaddrBase = kernel_regions[0].base;
-    /// XXX: End?
 
     // =======================================================
     cap_t root_cnode_cap;
@@ -455,9 +441,6 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
     cap_t ipcbuf_cap;
     p_region_t ui_p_reg = (p_region_t) {
         ui_p_reg_start, ui_p_reg_end
-    };
-    p_region_t extra_device_p_reg = (p_region_t) {
-        extra_device_addr_start, extra_device_addr_start + extra_device_size
     };
     region_t ui_reg = paddr_to_pptr_reg(ui_p_reg);
     word_t extra_bi_size = 0;
@@ -511,6 +494,13 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
     /* debug output via serial port is only available from here */
     printf("Bootstrapping kernel\n");
 
+    /* Convert to virtual addresses */
+    kernel_boot_info = ptrFromPAddr((paddr_t)kernel_boot_info);
+    kernel_regions = ptrFromPAddr((paddr_t)kernel_regions);
+    ram_regions = ptrFromPAddr((paddr_t)ram_regions);
+    root_task_regions = ptrFromPAddr((paddr_t)root_task_regions);
+    reserved_regions = ptrFromPAddr((paddr_t)reserved_regions);
+
     /* initialise the platform */
     init_plat();
 
@@ -562,7 +552,30 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
         return false;
     }
 
-    if (!arch_init_freemem(ui_p_reg, dtb_p_reg, extra_device_p_reg, it_v_reg, extra_bi_size_bits)) {
+    /* safe because size checked before */
+    word_t avail_p_regs_count = kernel_boot_info->num_ram_regions;
+    for (int i = 0; i < avail_p_regs_count; i++) {
+        avail_p_regs[i].start = ram_regions[i].base;
+        avail_p_regs[i].end = ram_regions[i].end;
+    }
+
+    // HACK: extra device was a hack
+    extra_device_addr_start = reserved_regions[0].base;
+    extra_device_size = reserved_regions[0].end - reserved_regions[0].base;
+    p_region_t extra_device_p_reg = (p_region_t) {
+        extra_device_addr_start, extra_device_addr_start + extra_device_size
+    };
+
+    /* safe because size checked before */
+    word_t reserved_count = kernel_boot_info->num_reserved_regions;
+    for (int i = 0; i < reserved_count; i++) {
+        reserved[i].start = (pptr_t)paddr_to_pptr(reserved_regions[i].base);
+        reserved[i].end = (pptr_t)paddr_to_pptr(reserved_regions[i].end);
+        printf("reserved[%d] = {%lx, %lx}\n", i, reserved[i].start, reserved[i].end);
+    }
+
+    // XX: Why does this function exist.
+    if (!arch_init_freemem(ui_p_reg, avail_p_regs_count, reserved_count, it_v_reg, extra_bi_size_bits)) {
         printf("ERROR: free memory management initialization failed\n");
         return false;
     }
@@ -735,7 +748,7 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
     init_core_state(initial);
 
     first_untyped_slot = ndks_boot.slot_pos_cur;
-    if (extra_device_addr_start) {
+    if (extra_device_size) {
         create_untypeds_for_region(root_cnode_cap, true, paddr_to_pptr_reg(extra_device_p_reg), first_untyped_slot);
     }
 

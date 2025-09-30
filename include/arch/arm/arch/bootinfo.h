@@ -15,16 +15,18 @@
  * do for now. Increase this value if the boot fails.
  */
 #define MAX_NUM_FREEMEM_REG 16
+#define MAX_NUM_USER_RESERVED_REGIONS 16
 
-// XXX: arbitary too?
 /* The regions reserved by the boot code are:
  * +1 for kernel
  * +1 for device tree binary
  * +1 for user image.
  * +1 loader specified extra memory
  * +1 for each the MODE_RESERVED region, there might be none
+ *
+ * +16 arbitary for the other arguments passed.
  */
-#define NUM_RESERVED_REGIONS (4 + MODE_RESERVED + 5)
+#define NUM_RESERVED_REGIONS (4 + MODE_RESERVED + MAX_NUM_USER_RESERVED_REGIONS)
 
 
 /* The maximum number of reserved regions is:
