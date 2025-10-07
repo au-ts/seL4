@@ -120,12 +120,12 @@ BOOT_CODE static void init_irqs(cap_t root_cnode_cap, node_id_t boot_node_id)
         for (i = 0; i <= maxIRQ ; i++) {
             setIRQState(IRQInactive, CORE_IRQ_TO_IRQT(0, i));
             if (!IRQ_IS_PPI(CORE_IRQ_TO_IRQT(0, i))) {
-                setIRQTarget(CORE_IRQ_TO_IRQT(0, i), 0);
+                plat_setIRQTarget(CORE_IRQ_TO_IRQT(0, i), 0);
             }
         }
     }
 
-    setIRQTarget(CORE_IRQ_TO_IRQT(0, 42), 1);
+    plat_setIRQTarget(CORE_IRQ_TO_IRQT(0, 42), 1);
 
     setIRQState(IRQTimer, CORE_IRQ_TO_IRQT(0, KERNEL_TIMER_IRQ));
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT

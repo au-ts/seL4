@@ -273,7 +273,7 @@ void map_kernel_devices(void);
 void initTimer(void);
 void initLocalIRQController(void);
 void initIRQController(void);
-void setIRQTrigger(irq_t irq, bool_t trigger);
+void plat_setIRQTrigger(irq_t irq, bool_t trigger);
 
 #ifdef ENABLE_SMP_SUPPORT
 #define irq_remote_call_ipi     (INTERRUPT_IPI_0)

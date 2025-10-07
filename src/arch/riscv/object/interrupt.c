@@ -25,7 +25,7 @@ exception_t Arch_checkIRQ(word_t irq)
 static exception_t Arch_invokeIRQControl(irq_t irq, cte_t *handlerSlot, cte_t *controlSlot, bool_t trigger)
 {
 #ifdef HAVE_SET_TRIGGER
-    setIRQTrigger(irq, trigger);
+    plat_setIRQTrigger(irq, trigger);
 #endif
     return invokeIRQControl(irq, handlerSlot, controlSlot);
 }

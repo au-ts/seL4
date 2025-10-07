@@ -302,7 +302,7 @@ BOOT_CODE static void cpu_iface_init(void)
     isb();
 }
 
-void setIRQTrigger(irq_t irq, bool_t trigger)
+void plat_setIRQTrigger(irq_t irq, bool_t trigger)
 {
 
     /* GICv3 has read-only GICR_ICFG0 for SGI with
@@ -403,7 +403,7 @@ void ipi_send_target(irq_t irq, word_t cpuTargetList)
     isb();
 }
 
-void setIRQTarget(irq_t irq, seL4_Word target)
+void plat_setIRQTarget(irq_t irq, seL4_Word target)
 {
     if (IRQ_IS_PPI(irq)) {
         fail("PPI can't have designated target core\n");

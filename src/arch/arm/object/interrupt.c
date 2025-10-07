@@ -12,9 +12,9 @@
 
 static exception_t Arch_invokeIRQControl(irq_t irq, cte_t *handlerSlot, cte_t *controlSlot, bool_t trigger)
 {
-    if (config_set(HAVE_SET_TRIGGER)) {
-        setIRQTrigger(irq, trigger);
-    }
+#ifdef HAVE_SET_TRIGGER
+    plat_setIRQTrigger(irq, trigger);
+#endif
     return invokeIRQControl(irq, handlerSlot, controlSlot);
 }
 
@@ -95,15 +95,6 @@ exception_t Arch_decodeIRQControlInvocation(word_t invLabel, word_t length,
             current_syscall_error.type = seL4_TruncatedMessage;
             return EXCEPTION_SYSCALL_ERROR;
         }
-
-        /* wrap_config_set to prevent verification automation from simplifying
-           away the condition when NUM_SGIS = 0 */
-        if (wrap_config_set(NUM_SGIS) == 0) {
-            current_syscall_error.type = seL4_IllegalOperation;
-            userError("IRQControl: IssueSGISignal not available on this platform.");
-            return EXCEPTION_SYSCALL_ERROR;
-        }
-
         word_t irq = getSyscallArg(0, buffer);
         word_t target = getSyscallArg(1, buffer);
         word_t index = getSyscallArg(2, buffer);
@@ -111,9 +102,7 @@ exception_t Arch_decodeIRQControlInvocation(word_t invLabel, word_t length,
 
         cap_t cnodeCap = current_extra_caps.excaprefs[0]->cap;
 
-        /* wrap_config_set to prevent verification automation from simplifying
-           away the condition when NUM_SGIS = 0 */
-        if (irq >= wrap_config_set(NUM_SGIS)) {
+        if (irq >= NUM_SGIS) {
             current_syscall_error.type = seL4_RangeError;
             current_syscall_error.rangeErrorMin = 0;
             current_syscall_error.rangeErrorMax = NUM_SGIS - 1;
@@ -195,7 +184,7 @@ exception_t Arch_decodeIRQControlInvocation(word_t invLabel, word_t length,
          * target core to which the shared interrupt will be physically delivered.
          */
         if (!IRQ_IS_PPI(irq)) {
-            setIRQTarget(irq, target);
+            plat_setIRQTarget(irq, target);
         }
         return Arch_invokeIRQControl(irq, destSlot, srcSlot, trigger);
 #endif /* ENABLE_SMP_SUPPORT */

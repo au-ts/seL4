@@ -110,7 +110,7 @@ BOOT_CODE static void cpu_iface_init(void)
     gic_cpuiface->icontrol = 1;
 }
 
-void setIRQTrigger(irq_t irq, bool_t trigger)
+void plat_setIRQTrigger(irq_t irq, bool_t trigger)
 {
     /* in the gic_config, there is a 2 bit field for each irq,
      * setting the most significant bit of this field makes the irq edge-triggered,
@@ -180,17 +180,18 @@ void ipi_send_target(irq_t irq, word_t cpuTargetList)
 /*
  * Set CPU target for the interrupt if it's not a PPI
  */
-void setIRQTarget(irq_t irq, seL4_Word target)
+void plat_setIRQTarget(irq_t irq, seL4_Word target)
 {
     uint8_t targetList = 1 << target;
-    uint8_t *targets = (void *)(gic_dist->targets);
+    volatile uint8_t *targets = (volatile void *)(gic_dist->targets);
     word_t hwIRQ = IRQT_TO_IRQ(irq);
 
     /* Return early if PPI */
     if (IRQ_IS_PPI(irq)) {
-        fail("PPI can't have designated target core\n");
+        fail("PPI/SGI can't have designated target core\n");
         return;
     }
+
     targets[hwIRQ] = targetList;
 }
 
