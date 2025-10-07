@@ -17,10 +17,33 @@ void map_kernel_devices(void);
 
 void initL2Cache(void);
 
+struct plat_getIRQTarget_ret {
+    exception_t status;
+    uint8_t target;
+};
+typedef struct plat_getIRQTarget_ret plat_getIRQTarget_ret_t;
+
 void initIRQController(void);
 void cpu_initLocalIRQController(void);
 void plat_setIRQTrigger(irq_t irq, bool_t trigger);
 void plat_setIRQTarget(irq_t irq, seL4_Word target);
+
+
+/**
+ *  The idea behind getIRQTarget is that we can read this to see if the target
+ *  is us. In an ideal word, the user is smart enough to not mismanage the IRQs.
+ *  The kernel only cares about PPI/SGI IRQs, and these don't touch the GICD
+ *  interface. For masking interrupts, we'll only do those operations if
+ *  the target is set correctly. If someone wants to exploit a TOCTOU issue
+ *  where the target is changed between us checking it and reading it later,
+ *  then sure, they can deal with maybe getting there IRQs overwritten.
+ *  From the seL4 side, only one kernel has permissions to set the target core.
+ *
+ *  The GIC spec (at least the v3 version) specifies that reads/writes are
+ *  atomic, so it's fine from that perspective.
+ */
+
+plat_getIRQTarget_ret_t plat_getIRQTarget(irq_t irq);
 bool_t plat_SGITargetValid(word_t target);
 void plat_sendSGI(word_t irq, word_t target);
 

@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
+#include "api/failures.h"
+#include "arch/machine.h"
 #include <config.h>
 #include <arch/machine/gic_v2.h>
 
@@ -112,6 +114,9 @@ BOOT_CODE static void cpu_iface_init(void)
 
 void plat_setIRQTrigger(irq_t irq, bool_t trigger)
 {
+
+    // TODO: check safe on this core.
+
     /* in the gic_config, there is a 2 bit field for each irq,
      * setting the most significant bit of this field makes the irq edge-triggered,
      * while 0 indicates that it is level-triggered */
@@ -146,6 +151,7 @@ bool_t plat_SGITargetValid(word_t target)
 
 void plat_sendSGI(word_t irq, word_t target)
 {
+    // This is safe to access anywhere.
     gic_dist->sgi_control = (BIT(target) << (GICD_SGIR_CPUTARGETLIST_SHIFT)) | (irq << GICD_SGIR_SGIINTID_SHIFT);
 }
 
@@ -185,6 +191,10 @@ void ipi_send_target(irq_t irq, word_t cpuTargetList)
  */
 void plat_setIRQTarget(irq_t irq, word_t target)
 {
+
+    // TODO: Should this be guarded by current target?
+    //       then I guess any CPU could modify this?
+
     /* Table 4-17 Meaning of CPU targets field bit values */
     uint8_t targetList = BIT(target);
 
@@ -199,6 +209,41 @@ void plat_setIRQTarget(irq_t irq, word_t target)
     }
 
     targets[hwIRQ] = targetList;
+}
+
+plat_getIRQTarget_ret_t plat_getIRQTarget(irq_t irq)
+{
+    plat_getIRQTarget_ret_t ret;
+
+    /* From GICv2 §4.3.12 "These registers are byte-accessible." */
+    volatile uint8_t *targets = (volatile void *)(gic_dist->targets);
+
+    word_t hwIRQ = IRQT_TO_IRQ(irq);
+
+    /* Unlike set, in this case the target will return the current core */
+
+    uint8_t targetList = targets[hwIRQ];
+    if (popcountl(targetList) != 1) {
+        /* TODO: return error from this function */
+        /* alternatively: take the target argument and check against? IDK */
+        // fail("targetlist not valid");
+        ret.status = EXCEPTION_SYSCALL_ERROR;
+        return ret;
+    }
+
+    // XXX: there are better ways to do this.
+    ret.target = (
+        (targetList & BIT(7)) ? 7 :
+        (targetList & BIT(6)) ? 6 :
+        (targetList & BIT(5)) ? 5 :
+        (targetList & BIT(4)) ? 4 :
+        (targetList & BIT(3)) ? 3 :
+        (targetList & BIT(2)) ? 2 :
+        (targetList & BIT(1)) ? 1 :
+         0
+    );
+    ret.status = EXCEPTION_NONE;
+    return ret;
 }
 
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
