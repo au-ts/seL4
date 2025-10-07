@@ -179,14 +179,20 @@ void ipi_send_target(irq_t irq, word_t cpuTargetList)
 
 /*
  * Set CPU target for the interrupt if it's not a PPI
+ * Corresponds to GICD_ITARGETSRn in the GICv2 spec.
+ * NB: These are GIC targets, which don't necessarily correspond to CPU
+ *     logical core IDs.
  */
-void plat_setIRQTarget(irq_t irq, seL4_Word target)
+void plat_setIRQTarget(irq_t irq, word_t target)
 {
-    uint8_t targetList = 1 << target;
+    /* Table 4-17 Meaning of CPU targets field bit values */
+    uint8_t targetList = BIT(target);
+
+    /* From GICv2 §4.3.12 "These registers are byte-accessible." */
     volatile uint8_t *targets = (volatile void *)(gic_dist->targets);
+
     word_t hwIRQ = IRQT_TO_IRQ(irq);
 
-    /* Return early if PPI */
     if (IRQ_IS_PPI(irq)) {
         fail("PPI/SGI can't have designated target core\n");
         return;
