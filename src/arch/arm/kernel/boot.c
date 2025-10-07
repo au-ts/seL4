@@ -615,7 +615,7 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
     printf("MPIDR_EL1:Aff2: %llx\n", mpidr_el1_get_Aff2(mpidr_el1));
     printf("MPIDR_EL1:Aff3: %llx\n", mpidr_el1_get_Aff3(mpidr_el1));
 
-    populate_bi_frame(boot_node_id, CONFIG_MAX_NUM_NODES, ipcbuf_vptr, extra_bi_size);
+    populate_bi_frame(boot_node_id, CONFIG_MULTIKERNEL_NUM_CPUS, ipcbuf_vptr, extra_bi_size);
 #else
     populate_bi_frame(0, CONFIG_MAX_NUM_NODES, ipcbuf_vptr, extra_bi_size);
 #endif

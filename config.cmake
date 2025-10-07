@@ -223,18 +223,25 @@ config_string(
     UNQUOTE
 )
 
+if(KernelMaxNumNodes GREATER 1)
+    config_set(KernelEnableSMPSupport ENABLE_SMP_SUPPORT ON)
+else()
+    config_set(KernelEnableSMPSupport ENABLE_SMP_SUPPORT OFF)
+endif()
+
 config_option(
     KernelEnableMultikernelSupport ENABLE_MULTIKERNEL_SUPPORT
     "Multikernel support"
     DEFAULT OFF
 )
 
-# Set CONFIG_ENABLE_SMP_SUPPORT as an alias of CONFIG_MAX_NUM_NODES > 1; but also not SMP.
-if(KernelMaxNumNodes GREATER 1 AND NOT KernelEnableMultikernelSupport)
-    config_set(KernelEnableSMPSupport ENABLE_SMP_SUPPORT ON)
-else()
-    config_set(KernelEnableSMPSupport ENABLE_SMP_SUPPORT OFF)
-endif()
+# XXX: HACK.
+config_string(
+    KernelMultikernelNumCPUs MULTIKERNEL_NUM_CPUS
+    "Multikernel number of CPUs"
+    DEFAULT 1
+    UNQUOTE
+)
 
 config_string(
     KernelStackBits
