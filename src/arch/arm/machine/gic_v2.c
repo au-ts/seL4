@@ -175,6 +175,7 @@ void ipi_send_target(irq_t irq, word_t cpuTargetList)
     gic_dist->sgi_control = (cpuTargetList << (GICD_SGIR_CPUTARGETLIST_SHIFT)) | (IRQT_TO_IRQ(
                                                                                       irq) << GICD_SGIR_SGIINTID_SHIFT);
 }
+#endif /* ENABLE_SMP_SUPPORT */
 
 /*
  * Set CPU target for the interrupt if it's not a PPI
@@ -192,7 +193,6 @@ void setIRQTarget(irq_t irq, seL4_Word target)
     }
     targets[hwIRQ] = targetList;
 }
-#endif /* ENABLE_SMP_SUPPORT */
 
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
 
