@@ -425,6 +425,7 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
 
     // HACK: This assumes 1 region.
     assert(kernel_boot_info->num_kernel_regions == 1);
+    // TODO: This is not true due to alignment.
     ksKernelElfPaddrBase = kernel_regions[0].base;
     /// XXX: End?
 
@@ -484,7 +485,9 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
     /* setup virtual memory for the kernel */
     map_kernel_window();
 
+#ifdef CONFIG_PRINTING
     early_boot = 0;
+#endif
 
     /* initialise the CPU */
     if (!init_cpu()) {
