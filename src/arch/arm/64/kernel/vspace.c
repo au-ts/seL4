@@ -2044,7 +2044,7 @@ exception_t benchmark_arch_map_logBuffer(word_t frame_cptr)
                              NORMAL_WT);
 
     cleanByVA_PoU((vptr_t)armKSGlobalLogPTE, addrFromKPPtr(armKSGlobalLogPTE));
-    invalidateTranslationSingle(KS_LOG_PPTR);
+    invalidateTranslationSingle(KS_LOG_BASE);
     return EXCEPTION_NONE;
 }
 #endif /* CONFIG_KERNEL_LOG_BUFFER */
