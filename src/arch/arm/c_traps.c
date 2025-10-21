@@ -63,7 +63,9 @@ static inline void NORETURN c_handle_vm_fault(vm_fault_type_t type)
     ksKernelEntry.path = Entry_VMFault;
     ksKernelEntry.word = getRegister(NODE_STATE(ksCurThread), NextIP);
     ksKernelEntry.is_fastpath = false;
-#else
+#endif
+
+#ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
     NODE_STATE(benchmark_kernel_entry_was_fastpath) = false;
 #endif
 
@@ -116,7 +118,9 @@ void NORETURN slowpath(syscall_t syscall)
 #ifdef TRACK_KERNEL_ENTRIES
         ksKernelEntry.is_fastpath = 0;
 #endif /* TRACK KERNEL ENTRIES */
+#ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
         NODE_STATE(benchmark_kernel_entry_was_fastpath) = false;
+#endif
         handleSyscall(syscall);
     }
 
@@ -133,7 +137,9 @@ void VISIBLE c_handle_syscall(word_t cptr, word_t msgInfo, syscall_t syscall)
     benchmark_debug_syscall_start(cptr, msgInfo, syscall);
     ksKernelEntry.is_fastpath = 0;
 #endif /* DEBUG */
+#ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
     NODE_STATE(benchmark_kernel_entry_was_fastpath) = false;
+#endif
 
     slowpath(syscall);
     UNREACHABLE();
@@ -150,7 +156,9 @@ void VISIBLE c_handle_fastpath_call(word_t cptr, word_t msgInfo)
     benchmark_debug_syscall_start(cptr, msgInfo, SysCall);
     ksKernelEntry.is_fastpath = 1;
 #endif /* DEBUG */
+#ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
     NODE_STATE(benchmark_kernel_entry_was_fastpath) = true;
+#endif
 
     fastpath_call(cptr, msgInfo);
     UNREACHABLE();
@@ -168,7 +176,9 @@ void VISIBLE c_handle_fastpath_signal(word_t cptr, word_t msgInfo)
     benchmark_debug_syscall_start(cptr, msgInfo, SysCall);
     ksKernelEntry.is_fastpath = 1;
 #endif /* DEBUG */
+#ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
     NODE_STATE(benchmark_kernel_entry_was_fastpath) = true;
+#endif
     fastpath_signal(cptr, msgInfo);
     UNREACHABLE();
 }
@@ -189,7 +199,9 @@ void VISIBLE c_handle_fastpath_reply_recv(word_t cptr, word_t msgInfo)
     benchmark_debug_syscall_start(cptr, msgInfo, SysReplyRecv);
     ksKernelEntry.is_fastpath = 1;
 #endif /* DEBUG */
+#ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
     NODE_STATE(benchmark_kernel_entry_was_fastpath) = true;
+#endif
 
 #ifdef CONFIG_KERNEL_MCS
     fastpath_reply_recv(cptr, msgInfo, reply);
