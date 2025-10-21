@@ -64,6 +64,7 @@ void benchmark_track_utilisation_dump(void)
     buffer[BENCHMARK_TOTAL_NUMBER_SCHEDULES] = NODE_STATE(benchmark_kernel_number_schedules);
     buffer[BENCHMARK_TOTAL_KERNEL_UTILISATION] = NODE_STATE(benchmark_kernel_time);
     buffer[BENCHMARK_TOTAL_NUMBER_KERNEL_ENTRIES] = NODE_STATE(benchmark_kernel_number_entries);
+    buffer[BENCHMARK_TOTAL_NUMBER_KERNEL_ENTRIES_FASTPATH] = NODE_STATE(benchmark_kernel_number_entries_fastpath);
 
 }
 

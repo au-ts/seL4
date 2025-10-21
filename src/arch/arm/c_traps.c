@@ -63,6 +63,8 @@ static inline void NORETURN c_handle_vm_fault(vm_fault_type_t type)
     ksKernelEntry.path = Entry_VMFault;
     ksKernelEntry.word = getRegister(NODE_STATE(ksCurThread), NextIP);
     ksKernelEntry.is_fastpath = false;
+#else
+    NODE_STATE(benchmark_kernel_entry_was_fastpath) = false;
 #endif
 
 #ifdef CONFIG_EXCEPTION_FASTPATH
@@ -114,6 +116,7 @@ void NORETURN slowpath(syscall_t syscall)
 #ifdef TRACK_KERNEL_ENTRIES
         ksKernelEntry.is_fastpath = 0;
 #endif /* TRACK KERNEL ENTRIES */
+        NODE_STATE(benchmark_kernel_entry_was_fastpath) = false;
         handleSyscall(syscall);
     }
 
@@ -130,6 +133,7 @@ void VISIBLE c_handle_syscall(word_t cptr, word_t msgInfo, syscall_t syscall)
     benchmark_debug_syscall_start(cptr, msgInfo, syscall);
     ksKernelEntry.is_fastpath = 0;
 #endif /* DEBUG */
+    NODE_STATE(benchmark_kernel_entry_was_fastpath) = false;
 
     slowpath(syscall);
     UNREACHABLE();
@@ -146,6 +150,7 @@ void VISIBLE c_handle_fastpath_call(word_t cptr, word_t msgInfo)
     benchmark_debug_syscall_start(cptr, msgInfo, SysCall);
     ksKernelEntry.is_fastpath = 1;
 #endif /* DEBUG */
+    NODE_STATE(benchmark_kernel_entry_was_fastpath) = true;
 
     fastpath_call(cptr, msgInfo);
     UNREACHABLE();
@@ -163,6 +168,7 @@ void VISIBLE c_handle_fastpath_signal(word_t cptr, word_t msgInfo)
     benchmark_debug_syscall_start(cptr, msgInfo, SysCall);
     ksKernelEntry.is_fastpath = 1;
 #endif /* DEBUG */
+    NODE_STATE(benchmark_kernel_entry_was_fastpath) = true;
     fastpath_signal(cptr, msgInfo);
     UNREACHABLE();
 }
@@ -183,6 +189,7 @@ void VISIBLE c_handle_fastpath_reply_recv(word_t cptr, word_t msgInfo)
     benchmark_debug_syscall_start(cptr, msgInfo, SysReplyRecv);
     ksKernelEntry.is_fastpath = 1;
 #endif /* DEBUG */
+    NODE_STATE(benchmark_kernel_entry_was_fastpath) = true;
 
 #ifdef CONFIG_KERNEL_MCS
     fastpath_reply_recv(cptr, msgInfo, reply);

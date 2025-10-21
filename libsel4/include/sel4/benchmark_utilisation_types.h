@@ -40,6 +40,7 @@ enum benchmark_track_util_ipc_index {
     BENCHMARK_TOTAL_KERNEL_UTILISATION,
     /* Total number of times the kernel is entered on the current core */
     BENCHMARK_TOTAL_NUMBER_KERNEL_ENTRIES,
+    BENCHMARK_TOTAL_NUMBER_KERNEL_ENTRIES_FASTPATH,
 };
 
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */

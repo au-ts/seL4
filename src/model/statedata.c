@@ -63,11 +63,13 @@ UP_STATE_DEFINE(tcb_t *, ksDebugTCBs);
 #endif /* CONFIG_DEBUG_BUILD */
 #ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
 UP_STATE_DEFINE(bool_t, benchmark_log_utilisation_enabled);
+UP_STATE_DEFINE(bool_t, benchmark_kernel_entry_was_fastpath);
 UP_STATE_DEFINE(timestamp_t, benchmark_start_time);
 UP_STATE_DEFINE(timestamp_t, benchmark_end_time);
 UP_STATE_DEFINE(timestamp_t, benchmark_kernel_time);
-UP_STATE_DEFINE(timestamp_t, benchmark_kernel_number_entries);
-UP_STATE_DEFINE(timestamp_t, benchmark_kernel_number_schedules);
+UP_STATE_DEFINE(word_t, benchmark_kernel_number_entries);
+UP_STATE_DEFINE(word_t, benchmark_kernel_number_entries_fastpath);
+UP_STATE_DEFINE(word_t, benchmark_kernel_number_schedules);
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */
 
 /* Units of work we have completed since the last time we checked for
