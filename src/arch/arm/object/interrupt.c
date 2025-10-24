@@ -72,11 +72,13 @@ exception_t Arch_decodeIRQControlInvocation(word_t invLabel, word_t length,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
+#if 0
         // This is just debugging. It's fine to set up an IRQ handler on any core at any time.
         // Whilst at the moment the setTrigger will however modify global state, and maybe
         // should be moved into a separate call?
         plat_getIRQTarget_ret_t target_ret = plat_getIRQTarget(irq);
         printf("getting trigger for irq %u with target set as %u (valid if 0: %lu)\n", (int)IRQT_TO_IRQ(irq), target_ret.target, target_ret.status);
+#endif
 
         lookupSlot_ret_t lu_ret = lookupTargetSlot(cnodeCap, index, depth);
         if (lu_ret.status != EXCEPTION_NONE) {
