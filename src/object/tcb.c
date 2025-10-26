@@ -1747,7 +1747,7 @@ exception_t decodeUnbindNotification(cap_t cap)
 #ifdef CONFIG_THREAD_LOCAL_PMU
 exception_t decodeBindVPMU(cap_t cap)
 {
-    pmu_state_t *pmuPtr;
+    vpmu_t *pmuPtr;
     tcb_t *tcb;
     cap_t vpmu;
 
@@ -1759,7 +1759,7 @@ exception_t decodeBindVPMU(cap_t cap)
 
     tcb = TCB_PTR(cap_thread_cap_get_capTCBPtr(cap));
 
-    if (tcb->tcbArch.pmuState != NULL) {
+    if (tcb->tcbArch.vpmu != NULL) {
         userError("TCB BindVPMU: TCB already has a bound VPMU.");
         current_syscall_error.type = seL4_IllegalOperation;
         return EXCEPTION_SYSCALL_ERROR;
@@ -1776,12 +1776,12 @@ exception_t decodeBindVPMU(cap_t cap)
     }
 
     /* Save the current PMU state to the core global state, and load the VPMU state.*/
-    savePmuState(&ARCH_NODE_STATE(cpu_pmu_state));
-    loadPmuState(pmuPtr);
+    savePmuState(&ARCH_NODE_STATE(cpu_pmu_state).reg_state);
+    loadPmuState(&pmuPtr->reg_state);
 
     /* Set the pointer in the arch TCB to the pmuPtr from the VPMU cap
     we have been passed in. */
-    tcb->tcbArch.pmuState = pmuPtr;
+    tcb->tcbArch.vpmu = pmuPtr;
 
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
     return EXCEPTION_NONE;
@@ -1793,13 +1793,13 @@ exception_t decodeUnbindVPMU(cap_t cap)
 
     tcb = TCB_PTR(cap_thread_cap_get_capTCBPtr(cap));
 
-    if (tcb->tcbArch.pmuState == NULL) {
+    if (tcb->tcbArch.vpmu == NULL) {
         userError("TCB UnbindVPMU: TCB does not have any bound VPMU.");
         current_syscall_error.type = seL4_IllegalOperation;
         return EXCEPTION_SYSCALL_ERROR;
     }
 
-    tcb->tcbArch.pmuState = NULL;
+    tcb->tcbArch.vpmu = NULL;
 
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
     return EXCEPTION_NONE;

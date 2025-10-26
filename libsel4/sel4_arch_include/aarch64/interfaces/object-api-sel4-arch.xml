@@ -591,5 +591,21 @@
                 </description>
             </error>
         </method>
+
+        <method id="VPMUSetVIRQ" name="VPMUSetVIRQ" manual_name="VPMUSetVIRQ" manual_label="vpmucontrol_setvirq">
+            <brief>
+                Set a VIRQ handler.
+            </brief>
+            <description>
+                Bind a notification object to this VIRQ to deliver PMU interrupts to.
+            </description>
+            <return><errorenumdesc/></return>
+            <param dir="in" name="virq_notif" type="seL4_Word" description="This is the CPtr to the notification that you wish to bind to this VPMU."/>
+            <error name="seL4_IllegalOperation">
+                <description>
+                    The <texttt text="_service"/> or notificationn is a CPtr to a capability of the wrong type.
+                </description>
+            </error>
+        </method>
     </interface>
 </api>

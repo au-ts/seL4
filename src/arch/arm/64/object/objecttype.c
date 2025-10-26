@@ -520,6 +520,7 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
 #endif
 #ifdef CONFIG_THREAD_LOCAL_PMU
     case seL4_ARM_VPMUObject:
+        printf("WE SUCCESSFULLY CREATED A VPMU OBJECT!!\n");
         return cap_vpmu_cap_new((word_t)regionBase);
 #endif
     default:
@@ -531,7 +532,7 @@ exception_t Arch_decodeInvocation(word_t label, word_t length, cptr_t cptr,
                                   cte_t *slot, cap_t cap,
                                   bool_t call, word_t *buffer)
 {
-
+    printf("Decoding aarch64 invocaiton!\n");
     /* The C parser cannot handle a switch statement with only a default
      * case. So we need to do some gymnastics to remove the switch if
      * there are no other cases */

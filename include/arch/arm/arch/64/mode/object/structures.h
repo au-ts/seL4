@@ -14,11 +14,13 @@
 #include <arch/types.h>
 #include <arch/object/structures_gen.h>
 #include <arch/machine/hardware.h>
-#include <arch/machine/registerset.h>
+#ifdef CONFIG_THREAD_LOCAL_PMU
+#include <arch/object/vpmu.h>
+#endif /* CONFIG_THREAD_LOCAL_PMU */
 
 typedef struct arch_tcb {
 #ifdef CONFIG_THREAD_LOCAL_PMU
-    pmu_state_t *pmuState;
+    vpmu_t *vpmu;
 #endif /* CONFIG_THREAD_LOCAL_PMU */
     user_context_t tcbContext;
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
@@ -63,7 +65,7 @@ typedef pte_t vspace_root_t;
 #define VCPU_REF(p)       ((word_t)(p))
 
 /* Generate a pmu_state_t pointer form a vpmu block reference */
-#define VPMU_PTR(r)        ((pmu_state_t *)(r))
+#define VPMU_PTR(r)        ((vpmu_t *)(r))
 
 struct asid_pool {
     asid_map_t array[BIT(asidLowBits)];

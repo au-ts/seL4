@@ -179,7 +179,7 @@ typedef enum {
 #define seL4_HugePageBits 30
 #define seL4_SlotBits 5
 #if defined(CONFIG_THREAD_LOCAL_PMU)
-#define seL4_VPMUBits 9
+#define seL4_VPMUBits 12
 #endif
 #if defined(CONFIG_HARDWARE_DEBUG_API) || defined(CONFIG_ARM_HYP_ENABLE_VCPU_CP14_SAVE_AND_RESTORE)
 #ifdef CONFIG_THREAD_LOCAL_PMU

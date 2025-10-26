@@ -643,7 +643,8 @@ exception_t decodeInvocation(word_t invLabel, word_t length,
 
     switch (cap_get_capType(cap)) {
     case cap_null_cap:
-        userError("Attempted to invoke a null cap #%lu.", capIndex);
+        word_t newType = getSyscallArg(0, buffer);
+        userError("Attempted to invoke a null cap #%lu. --- This is the label: %lu and the newtype: %lu", capIndex, invLabel, newType);
         current_syscall_error.type = seL4_InvalidCapability;
         current_syscall_error.invalidCapNumber = 0;
         return EXCEPTION_SYSCALL_ERROR;
