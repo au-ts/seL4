@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
+#include "kernel/gen_config.h"
 #include <config.h>
 #include <types.h>
 #include <arch/machine/gic_v3.h>
@@ -55,7 +56,11 @@ volatile struct gic_rdist_sgi_ppi_map *gic_rdist_sgi_ppi_map[CONFIG_MAX_NUM_NODE
 #define MPIDR_MT(x)   (x & BIT(24))
 #define MPIDR_AFF_MASK(x) (x & 0xff00ffffff)
 
+#ifdef CONFIG_ENABLE_SMP_SUPPORT
 static word_t mpidr_map[CONFIG_MAX_NUM_NODES];
+#else
+word_t mpidr_map[CONFIG_MULTIKERNEL_NUM_CPUS];
+#endif
 
 static inline word_t get_mpidr(word_t core_id)
 {
@@ -282,6 +287,7 @@ void plat_setIRQTrigger(irq_t irq, bool_t trigger)
     int bit = ((hw_irq & 0xf) * 2);
     uint32_t icfgr = 0;
     if (HW_IRQ_IS_PPI(hw_irq)) {
+        /// XXX: I think whether or not ICFGR does anything for SGI/PPIs is implemented defined
         icfgr = gic_rdist_sgi_ppi_map[core]->icfgr1;
     } else {
         icfgr = gic_dist->icfgrn[word];
@@ -315,7 +321,8 @@ BOOT_CODE void cpu_initLocalIRQController(void)
     word_t mpidr = 0;
     SYSTEM_READ_WORD(MPIDR, mpidr);
 
-    mpidr_map[CURRENT_CPU_INDEX()] = mpidr;
+    // already init by boot code
+    // mpidr_map[CURRENT_CPU_INDEX()] = mpidr;
     active_irq[CURRENT_CPU_INDEX()] = IRQ_NONE;
 
     gicr_init();
@@ -366,6 +373,8 @@ void ipi_send_target(irq_t irq, word_t cpuTargetList)
     isb();
 }
 
+#endif /* ENABLE_SMP_SUPPORT */
+
 void plat_setIRQTarget(irq_t irq, seL4_Word target)
 {
     if (IRQ_IS_PPI(irq)) {
@@ -373,14 +382,20 @@ void plat_setIRQTarget(irq_t irq, seL4_Word target)
         return;
     }
 
+    assert(target < ARRAY_SIZE(mpidr_map));
+
     word_t hw_irq = IRQT_TO_IRQ(irq);
     gic_dist->iroutern[hw_irq - SPI_START] = MPIDR_AFF_MASK(mpidr_map[target]);
 }
-
-#endif /* ENABLE_SMP_SUPPORT */
 
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
 
 word_t gic_vcpu_num_list_regs;
 
 #endif /* End of CONFIG_ARM_HYPERVISOR_SUPPORT */
+
+bool_t plat_isIRQControllerPrimary(void)
+{
+    // TODO
+    return true;
+}

@@ -43,6 +43,10 @@ BOOT_BSS static volatile _Atomic int node_boot_lock;
 BOOT_BSS static region_t reserved[NUM_RESERVED_REGIONS];
 BOOT_BSS static p_region_t avail_p_regs[MAX_NUM_FREEMEM_REG];
 
+#ifdef CONFIG_ARM_GIC_V3_SUPPORT
+extern word_t mpidr_map[CONFIG_MULTIKERNEL_NUM_CPUS];
+#endif
+
 BOOT_CODE static bool_t arch_init_freemem(p_region_t ui_p_reg,
                                           word_t avail_p_regs_count,
                                           int reserved_index_start,
@@ -364,7 +368,7 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
         printf("need at least one ram region\n");
         failed_checks = true;
     }
-    if (kernel_boot_info->num_ram_regions >= ARRAY_SIZE(avail_p_regs)) {
+    if (kernel_boot_info->num_ram_regions > ARRAY_SIZE(avail_p_regs)) {
         printf("too many ram regions: %d exceeds %d\n", kernel_boot_info->num_ram_regions, MAX_NUM_FREEMEM_REG);
         failed_checks = true;
     }
@@ -372,9 +376,16 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
         printf("need at least one root task region\n");
         failed_checks = true;
     }
-    if (kernel_boot_info->num_reserved_regions >= ARRAY_SIZE(reserved)) {
+    if (kernel_boot_info->num_reserved_regions > ARRAY_SIZE(reserved)) {
         printf("too many reserved regions: %d exceeds %d\n", kernel_boot_info->num_reserved_regions, MAX_NUM_USER_RESERVED_REGIONS);
+        failed_checks = true;
     }
+#ifdef CONFIG_ARM_GIC_V3_SUPPORT
+    if (kernel_boot_info->num_mpidrs > ARRAY_SIZE(mpidr_map)) {
+        printf("too many MPIDR values: %d exceeds %lu\n", kernel_boot_info->num_mpidrs, ARRAY_SIZE(mpidr_map));
+        failed_checks = true;
+    }
+#endif
 
     if (failed_checks) {
         printf("failed validation\n");
@@ -385,12 +396,14 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
     seL4_KernelBoot_RamRegion *ram_regions = (void *)((word_t)kernel_regions + (kernel_boot_info->num_kernel_regions * sizeof(seL4_KernelBoot_KernelRegion)));
     seL4_KernelBoot_RootTaskRegion *root_task_regions = (void *)((word_t)ram_regions + (kernel_boot_info->num_ram_regions * sizeof(seL4_KernelBoot_RamRegion)));
     seL4_KernelBoot_ReservedRegion *reserved_regions = (void *)((word_t)root_task_regions + (kernel_boot_info->num_root_task_regions * sizeof(seL4_KernelBoot_RootTaskRegion)));
-    paddr_t end_of_kernel_boot_info = ((word_t)reserved_regions + (kernel_boot_info->num_reserved_regions * sizeof(seL4_KernelBoot_ReservedRegion)));
+    uint64_t *mpidr_values = (void *)((word_t)reserved_regions + (kernel_boot_info->num_reserved_regions * sizeof(seL4_KernelBoot_ReservedRegion)));
+    paddr_t end_of_kernel_boot_info = ((word_t)mpidr_values + (kernel_boot_info->num_mpidrs * sizeof(uint64_t)));
 
     printf("kernel_regions addr: %p\n", kernel_regions);
     printf("ram_regions addr: %p\n", ram_regions);
     printf("root_task_regions addr: %p\n", root_task_regions);
     printf("reserved_regions addr: %p\n", reserved_regions);
+    printf("mpidr_values addr: %p\n", mpidr_values);
     printf("end of kernel boot info addr: %p\n", (void *)end_of_kernel_boot_info);
 
     // === Debugging: dump all ====
@@ -412,7 +425,19 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
         printf("reserved_regions[%d].base = 0x%llx\n", i, reserved_regions[i].base);
         printf("reserved_regions[%d].end = 0x%llx\n", i, reserved_regions[i].end);
     }
+    for (int i = 0; i < kernel_boot_info->num_mpidrs; i++) {
+        printf("mpidr_values[%d] = 0x%llx\n", i, mpidr_values[i]);
+    }
     // === end dump all
+
+
+#ifdef CONFIG_ARM_GIC_V3_SUPPORT
+    // relying on len(mpidr_map) == len(mpidrs)
+    for (int i = 0; i < ARRAY_SIZE(mpidr_map); i++) {
+        mpidr_map[i] = mpidr_values[i];
+    }
+
+#endif
 
     // // TODO: ???
     word_t dtb_size = 0;

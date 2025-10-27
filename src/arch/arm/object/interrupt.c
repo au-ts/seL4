@@ -208,14 +208,6 @@ exception_t Arch_decodeIRQControlInvocation(word_t invLabel, word_t length,
             return status;
         }
 
-
-        /* XXX: For now, we only support GICv2.
-                It will probably work on GICv3 but I need to check the
-                semantics
-         */
-        assert(!config_set(CONFIG_ARM_GIC_V3_SUPPORT));
-
-
         irq_t irq = CORE_IRQ_TO_IRQT(target, irq_w);
         if (IRQ_IS_PPI(irq) /* or SGI, implicitly */) {
             current_syscall_error.type = seL4_RangeError;
@@ -227,24 +219,18 @@ exception_t Arch_decodeIRQControlInvocation(word_t invLabel, word_t length,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        /* gic_infer_cpu_id or whatever */
-        plat_getIRQTarget_ret_t self_target_ret = plat_getIRQTarget(0);
-        assert(self_target_ret.status == EXCEPTION_NONE);
-        uint8_t self_target = self_target_ret.status;
-
-
-        plat_getIRQTarget_ret_t irq_target_ret = plat_getIRQTarget(irq);
-        if (irq_target_ret.status != EXCEPTION_NONE || irq_target_ret.target != self_target) {
-            userError("IRQControl: SetIrqTargetCore: target of the irq is not us, cannot change");
+        if (!plat_isIRQControllerPrimary()) {
+            userError("IRQControl: SetIrqTargetCore: we are not the interrupt controller primary, cannot change\n");
             // TODO.
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-
-
 /*
-
+        GICv2:
         Interrupt targets range from "CPU interface 0" to "CPU interface 7".
+        -> TODO: seL4 assumes that these are the same?
+
+        GICv3: use the seL4 logical core number
 
 */
         // IDK, validate this? can we?

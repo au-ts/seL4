@@ -66,7 +66,8 @@ typedef struct seL4_KernelBootInfo {
         seL4 try to write or read from these addreses.
         Used in multikernel to mark other kernels' memory as reserved. */
     seL4_Uint8 num_reserved_regions;
-    seL4_Uint8 _padding[4];
+    seL4_Uint8 num_mpidrs;
+    seL4_Uint8 _padding[3];
 } SEL4_PACKED seL4_KernelBootInfo;
 
 
