@@ -27,7 +27,19 @@ typedef struct pmu_state {
 typedef struct vpmu {
     pmu_state_t reg_state;
     cte_t virq_handler;
+    // This field is to allow a virtualised irq ack
+    uint8_t active_irq;
+    #ifdef CONFIG_PROFILER_ENABLE
+    uint64_t pc;
+    uint64_t fp;
+    #endif /* CONFIG_PROFILER_ENABLE */
 } vpmu_t;
+
+// If a VPMU is bound to the current running thread, and a valid
+// vIRQ handler is set, we will deliver this IRQ to the endpoint of the vPMU
+// and return 1. If no valid vIRQ is set, then we will return 0, and
+// we will attempt to deliver the IRQ to an interrupt handler (if it exists).
+uint8_t arm_vpmu_handle_irq(void);
 
 exception_t decodeARMVPMUInvocation(word_t label, unsigned int length, cptr_t cptr,
                                          cte_t *srcSlot, cap_t cap,

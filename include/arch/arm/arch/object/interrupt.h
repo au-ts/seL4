@@ -11,12 +11,20 @@
 #include <object/structures.h>
 #include <machine/interrupt.h>
 #include <plat/machine.h>
+#include <arch/object/vpmu.h>
 
 exception_t Arch_decodeIRQControlInvocation(word_t invLabel, word_t length,
                                             cte_t *srcSlot, word_t *buffer);
 
 exception_t decodeSGISignalInvocation(word_t invLabel, word_t length,
                                       cap_t cap, word_t *buffer);
+
+#ifdef CONFIG_THREAD_LOCAL_PMU
+static inline uint8_t maybeHandlePMUVirq(void)
+{
+   return arm_vpmu_handle_irq();
+}
+#endif /* CONFIG_THREAD_LOCAL_PMU */
 
 /* Handle a platform-reserved IRQ. */
 static inline void handleReservedIRQ(irq_t irq)

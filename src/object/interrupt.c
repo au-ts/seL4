@@ -220,12 +220,13 @@ void handleInterrupt(irq_t irq)
         /* Merging the variable declaration and initialization into one line
          * requires an update in the proofs first. Might be a c89 legacy.
          */
-        #if defined(CONFIG_PROFILER_ENABLE) && defined(KERNEL_PMU_IRQ)
-        if (IRQT_TO_IRQ(irq) == KERNEL_PMU_IRQ && NODE_STATE(ksCurThread)->tcbFlags == seL4_TCBFlag_profile &&
-            isSchedulable(NODE_STATE(ksCurThread))) {
-            // Pass to overflow handler.
-            arm_handlePMUEvent();
-            break;
+        #if defined(CONFIG_THREAD_LOCAL_PMU) && defined(KERNEL_PMU_IRQ)
+        if (IRQT_TO_IRQ(irq) == KERNEL_PMU_IRQ) {
+            // Pass to VPMU vIRQ handler, if one is not set then we will
+            // continue to attempt to deliver as a normal interrupt.
+            if (maybeHandlePMUVirq()) {
+                break;
+            }
         }
         #endif
         cap_t cap;

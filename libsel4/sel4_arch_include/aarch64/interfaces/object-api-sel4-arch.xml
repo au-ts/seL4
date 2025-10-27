@@ -607,5 +607,39 @@
                 </description>
             </error>
         </method>
+
+        <method id="VPMUAckVIRQ" name="VPMUAckVIRQ" manual_name="VPMUAckVIRQ" manual_label="
+            vpmucontrol_ackvirq">
+            <brief>
+                Ack a VIRQ.
+            </brief>
+            <description>
+                Acknowledge a virq. Until a VIRQ has been acknowledged, no further VIRQs
+                will be delivered to this VPMU.
+            </description>
+            <return><errorenumdesc/></return>
+             <error name="seL4_IllegalOperation">
+                <description>
+                    The <texttt text="_service"/> is a CPtr to a capability of the wrong type.
+                </description>
+            </error>
+        </method>
+ 
+        <method id="VPMUGetProfilingInfo" name="VPMUGetProfilingInfo" manual_name="VPMUGetProfilingInfo"
+            manual_label="vpmucontrol_getprofilinginfo">
+            <condition><config var="CONFIG_PROFILER_ENABLE"/></condition>
+            <brief>
+                Get FP and PC.
+            </brief>
+            <description>
+                Get the program counter and frame pointer at the time of the
+                last interrupt delivered to this vPMU.
+            </description>
+            <return><errorenumdesc/></return>
+            <param dir="out" name="fp" type="seL4_Word"
+                description="The frame pointer at the time of the last interrupt."/>
+            <param dir="out" name="pc" type="seL4_Word"
+                description="The program counter at the time of the last interrupt." />
+            </method>
     </interface>
 </api>

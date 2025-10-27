@@ -270,6 +270,22 @@ static exception_t decodeVPMUControl_SetVIRQ(word_t length, cap_t cap, word_t *b
     return EXCEPTION_NONE;
 }
 
+static exception_t decodeVPMUControl_AckVIRQ(word_t length, cap_t cap, word_t *buffer, vpmu_t *vpmu)
+{
+    vpmu->active_irq = 0;
+    return EXCEPTION_NONE;
+}
+
+
+#ifdef CONFIG_PROFILER_ENABLE
+static exception_t decodeVPMUControl_GetProfilingInfo(word_t length, cap_t cap, word_t *buffer, vpmu_t *vpmu)
+{
+    setRegister(NODE_STATE(ksCurThread), msgRegisters[0], vpmu->fp);
+    setRegister(NODE_STATE(ksCurThread), msgRegisters[1], vpmu->pc);
+    return EXCEPTION_NONE;
+}
+#endif /* CONFIG_PROFILER_ENABLE */
+
 exception_t decodeARMVPMUInvocation(word_t label, unsigned int length, cptr_t cptr,
                                          cte_t *srcSlot, cap_t cap,
                                          bool_t call, word_t *buffer)
@@ -297,6 +313,12 @@ exception_t decodeARMVPMUInvocation(word_t label, unsigned int length, cptr_t cp
             return decodeVPMUControl_NumCounters(length, cap, buffer);
         case VPMUSetVIRQ:
             return decodeVPMUControl_SetVIRQ(length, cap, buffer, vpmu);
+        case VPMUAckVIRQ:
+            return decodeVPMUControl_AckVIRQ(length, cap, buffer, vpmu);
+        #ifdef CONFIG_PROFILER_ENABLE
+        case VPMUGetProfilingInfo:
+            return decodeVPMUControl_GetProfilingInfo(length, cap, buffer, vpmu);
+        #endif /* CONFIG_PROFILER_ENABLE */
         default:
             userError("PMUControl invocation: Illegal operation attempted.");
             current_syscall_error.type = seL4_IllegalOperation;
@@ -305,4 +327,42 @@ exception_t decodeARMVPMUInvocation(word_t label, unsigned int length, cptr_t cp
 
     return EXCEPTION_NONE;
 }
+
+uint8_t arm_vpmu_handle_irq(void)
+{
+    vpmu_t *curr_vpmu = NODE_STATE(ksCurThread)->tcbArch.vpmu;
+    // First check that there is a valid vPMU bound to this thread
+    if (NODE_STATE(ksCurThread)->tcbArch.vpmu == NULL) {
+        return 0;
+    }
+
+    // Make sure that a valid interrupt handler has been set
+    if (cap_get_capType(curr_vpmu->virq_handler.cap) != cap_notification_cap) {
+        return 0;
+    }
+
+    // If the active_irq field is still true, then we will mark this interrupt
+    // as delivered, but drop it here.
+    if (curr_vpmu->active_irq == 1) {
+        return 1;
+    }
+
+    curr_vpmu->active_irq = 1;
+
+    #ifdef CONFIG_PROFILER_ENABLE
+    // Record the FP and SP
+    NODE_STATE(ksCurThread)->tcbArch.vpmu->pc = getRegister(NODE_STATE(ksCurThread), FaultIP);
+    // Read the x29 register for the address of the current frame pointer
+    NODE_STATE(ksCurThread)->tcbArch.vpmu->fp = getRegister(NODE_STATE(ksCurThread), X29);
+    #endif /* CONFIG_PROFILER_ENABLE */
+
+    // We will now deliver to the vIRQ endpoint
+    if (cap_notification_cap_get_capNtfnCanSend(curr_vpmu->virq_handler.cap)) {
+        sendSignal(NTFN_PTR(cap_notification_cap_get_capNtfnPtr(curr_vpmu->virq_handler.cap)),
+                       cap_notification_cap_get_capNtfnBadge(curr_vpmu->virq_handler.cap));
+    }
+
+    return 1;
+}
+
 #endif /* CONFIG_THREAD_LOCAL_PMU */
