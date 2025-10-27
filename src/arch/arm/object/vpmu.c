@@ -274,7 +274,6 @@ exception_t decodeARMVPMUInvocation(word_t label, unsigned int length, cptr_t cp
                                          cte_t *srcSlot, cap_t cap,
                                          bool_t call, word_t *buffer)
 {
-    printf("deconding vpmu invocation!\n");
     vpmu_t *vpmu = VPMU_PTR(cap_vpmu_cap_get_capPMUPtr(cap));
 
     switch(label) {
