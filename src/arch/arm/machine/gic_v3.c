@@ -150,16 +150,13 @@ static void gicv3_enable_sre(void)
 
 BOOT_CODE static void dist_init(void)
 {
-    /* TODO: This doesn't seem to work right */
-#if 0
     /* Check that the distributor is enabled */
     uint32_t ctlr = gic_dist->ctlr;
-    const uint32_t ctlr_mask = GICD_CTLR_ARE_NS | GICD_CTLR_ENABLE_G1NS | GICD_CTLR_ENABLE_G0;
+    const uint32_t ctlr_mask = GICD_CTLR_ARE_NS | GICD_CTLR_ENABLE_G1NS;
     if ((ctlr & ctlr_mask) != ctlr_mask) {
         printf("GICv3: GICD_CTLR 0x%x: GICD_CTLR not initialised\n", ctlr);
         halt();
     }
-#endif
 }
 
 BOOT_CODE static void gicr_locate_interface(void)
