@@ -118,11 +118,33 @@ BOOT_CODE static void init_irqs(cap_t root_cnode_cap, node_id_t boot_node_id)
 {
     unsigned i;
 
-    // TODO: Multikernel support.
-    //  see Kent's commit: https://github.com/kent-mcleod/seL4/commit/3ccb3d4aab5e8de66c918cb5d853860526f2440d
+    // // TODO: Multikernel support.
+    // //  see Kent's commit: https://github.com/kent-mcleod/seL4/commit/3ccb3d4aab5e8de66c918cb5d853860526f2440d
+    // if (boot_node_id == 0) {
+    //     for (i = NUM_PPI; i <= maxIRQ ; i++) {
+    //         // This function disables IRQs even if they were already active.
+    //         setIRQState(IRQInactive, CORE_IRQ_TO_IRQT(0, i));
+    //     }
+    // }
+
+    // // /* Inactive all the private interrupts */
+    // // for (i = 0; i < NUM_PPI; i++) {
+    // //     setIRQState(IRQInactive, CORE_IRQ_TO_IRQT(0, i));
+    // // }
+
+    // for (unsigned int i = 0; i < NUM_PPI; i++) {
+    //     maskInterrupt(true, CORE_IRQ_TO_IRQT(0, i));
+    // }
+
+    /* Core local, so private */
+    for (i = 0; i <= NUM_PPI; i++) {
+        setIRQState(IRQInactive, CORE_IRQ_TO_IRQT(0, i));
+    }
+
+    // TODO: isPRimaryController or whatever
     if (boot_node_id == 0) {
-        for (i = 0; i <= maxIRQ ; i++) {
-            // This function disables IRQs even if they were already active.
+        printf("we are the primary GIC thing, so deinitting all of these\n");
+        for (i = SPI_START; i <= maxIRQ; i++) {
             setIRQState(IRQInactive, CORE_IRQ_TO_IRQT(0, i));
         }
     }
