@@ -17,6 +17,7 @@
 #endif
 
 #define SEL4_PACKED             __attribute__((packed))
+#define SEL4_ALIGNAS(ty)        __attribute__((aligned(_Alignof(ty))))
 #define SEL4_DEPRECATED(x)      __attribute__((deprecated(x)))
 #define SEL4_DEPRECATE_MACRO(x) _Pragma("deprecated") x
 
@@ -44,7 +45,7 @@
 
 /* _Static_assert() is a c11 feature. Since the kernel is currently compiled
  * with c99, we have to emulate it. */
-#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
+#if 1 || (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L))
 #define SEL4_COMPILE_ASSERT(name, expr)   _Static_assert(expr, #name);
 #else
 #define SEL4_COMPILE_ASSERT(name, expr) \

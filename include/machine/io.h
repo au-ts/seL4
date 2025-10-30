@@ -44,6 +44,8 @@ static inline void kernel_putchar(
     kernel_putDebugChar(c);
 }
 
+extern int early_boot;
+
 /* Writes a character to the active output channel. This is used by all code
  * related to printf(). Contrary to the common signature of putchar(), there is
  * no return value here.

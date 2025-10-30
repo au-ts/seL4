@@ -98,8 +98,7 @@ def align_memory(regions: Set[Region], config: Config) -> List[Region]:
         extra_reserved.add(resv)
         ret[0] = new
 
-    physBase = ret[0].base
-    return ret, extra_reserved, physBase
+    return ret, extra_reserved
 
 
 def get_physical_memory(tree: FdtParser, config: Config) -> List[Region]:
@@ -107,9 +106,9 @@ def get_physical_memory(tree: FdtParser, config: Config) -> List[Region]:
     regions = merge_memory_regions(get_memory_regions(tree))
     reserved = parse_reserved_regions(tree.get_path('/reserved-memory'))
     regions = reserve_regions(regions, reserved)
-    regions, extra_reserved, physBase = align_memory(regions, config)
+    regions, extra_reserved = align_memory(regions, config)
 
-    return regions, reserved.union(extra_reserved), physBase
+    return regions, reserved.union(extra_reserved)
 
 
 def get_addrspace_exclude(regions: List[Region], config: Config):

@@ -37,6 +37,7 @@ static inline void c_exit_hook(void)
         NODE_STATE(ksCurThread)->benchmark.number_kernel_entries++;
         NODE_STATE(ksCurThread)->benchmark.kernel_utilisation += exit - ksEnter;
         NODE_STATE(benchmark_kernel_number_entries)++;
+        NODE_STATE(benchmark_kernel_number_entries_fastpath) += NODE_STATE(benchmark_kernel_entry_was_fastpath) ? 1 : 0;
         NODE_STATE(benchmark_kernel_time) += exit - ksEnter;
     }
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */

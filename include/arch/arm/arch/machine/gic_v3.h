@@ -34,7 +34,7 @@
 
 /* Register bits */
 #define GICD_CTLR_RWP                BIT(31)
-#define GICD_CTLR_ARE_NS             BIT(5)
+#define GICD_CTLR_ARE_NS             BIT(4)
 #define GICD_CTLR_ENABLE_G1NS        BIT(1)
 #define GICD_CTLR_ENABLE_G0          BIT(0)
 

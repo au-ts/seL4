@@ -19,10 +19,10 @@ void initL2Cache(void);
 
 void initIRQController(void);
 void cpu_initLocalIRQController(void);
-void setIRQTrigger(irq_t irq, bool_t trigger);
-#ifdef ENABLE_SMP_SUPPORT
-void setIRQTarget(irq_t irq, seL4_Word target);
-#endif
+void plat_setIRQTrigger(irq_t irq, bool_t trigger);
+void plat_setIRQTarget(irq_t irq, seL4_Word target);
+bool_t plat_isIRQControllerPrimary(void);
+
 bool_t plat_SGITargetValid(word_t target);
 void plat_sendSGI(word_t irq, word_t target);
 

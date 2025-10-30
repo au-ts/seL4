@@ -118,7 +118,7 @@
  *          2^48 +-------------------+
  *               | Kernel Page PDPT  | --+
  *   2^48 - 2^39 +-------------------+ PPTR_BASE
- *               |    TLB Bitmaps    |   |
+ *               |    TLB Bitmaps    |   |               // TLB bitmaps only exist on x86???
  *               +-------------------+   |
  *               |                   |   |
  *               |     Unmapped      |   |
@@ -170,6 +170,10 @@
  * window */
 #define PADDR_BASE UL_CONST(0x0)
 
+/* TODO: What does PPTR mean? Why do some use "PPTR" and some not?
+    and why is there PPTR_BASE and PPTR_TOP for the physical memory mapping
+*/
+
 /* The base address in virtual memory to use for the 1:1 physical memory
  * mapping */
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
@@ -185,30 +189,26 @@
 #define PPTR_TOP UL_CONST(0xffffffffc0000000)
 #endif
 
-/* The physical memory address to use for mapping the kernel ELF */
-#define KERNEL_ELF_PADDR_BASE physBase()
-/* For use by the linker (only integer constants allowed) */
-#define KERNEL_ELF_PADDR_BASE_RAW PHYS_BASE_RAW
-
-/* The base address in virtual memory to use for the kernel ELF mapping */
-#define KERNEL_ELF_BASE (PPTR_BASE_OFFSET + KERNEL_ELF_PADDR_BASE)
-/* For use by the linker (only integer constants allowed) */
-#define KERNEL_ELF_BASE_RAW (PPTR_BASE_OFFSET + KERNEL_ELF_PADDR_BASE_RAW)
-
-/* This is a page table mapping at the end of the virtual address space
- * to map objects with 4KiB pages rather than 4MiB large pages. */
+/* The kernel elf base vaddr is placed at an arbitrary high address above PPTR_TOP.
+   and is mapped with 2MiB pages
+ */
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
-#define KERNEL_PT_BASE UL_CONST(0x000000ffffe00000)
+#define KERNEL_ELF_BASE UL_CONST(0x000000ffff000000)
 #else
-#define KERNEL_PT_BASE UL_CONST(0xffffffffffe00000)
+#define KERNEL_ELF_BASE UL_CONST(0xffffffffff000000)
 #endif
 
+/* This is a page table mapping at the end of the virtual address space
+ * to map objects with 4KiB pages rather than 2MiB large pages. */
+#define KERNEL_PT_BASE  (KERNEL_ELF_BASE + UL_CONST(7 * 0x200000))
+
 /* The base address in virtual memory to use for the kernel device
- * mapping region. These are mapped in the kernel page table. */
-#define KDEV_BASE KERNEL_PT_BASE
+ * mapping region; this i */
+#define KDEV_BASE       (KERNEL_PT_BASE)
 
 /* The log buffer is placed before the device region */
-#define KS_LOG_PPTR (KDEV_BASE - UL_CONST(0x200000))
+#define KS_LOG_BASE     (KERNEL_ELF_BASE + UL_CONST(6 * 0x200000))
+
 
 #ifndef __ASSEMBLER__
 /* All PPTR addresses must be canonical to be able to be stored in caps or objects.

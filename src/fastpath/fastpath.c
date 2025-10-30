@@ -173,6 +173,9 @@ void NORETURN fastpath_call(word_t cptr, word_t msgInfo)
 #ifdef CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES
     ksKernelEntry.is_fastpath = true;
 #endif
+#ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
+    NODE_STATE(benchmark_kernel_entry_was_fastpath) = true;
+#endif
 
     /* Dequeue the destination. */
     endpoint_ptr_set_epQueue_head_np(ep_ptr, TCB_REF(dest->tcbEPNext));
@@ -437,6 +440,9 @@ void NORETURN fastpath_reply_recv(word_t cptr, word_t msgInfo)
 #ifdef CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES
     ksKernelEntry.is_fastpath = true;
 #endif
+#ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
+    NODE_STATE(benchmark_kernel_entry_was_fastpath) = true;
+#endif
 
     /* Set thread state to BlockedOnReceive */
     thread_state_ptr_mset_blockingObject_tsType(
@@ -604,6 +610,9 @@ void NORETURN fastpath_signal(word_t cptr, word_t msgInfo)
 #ifdef CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES
         ksKernelEntry.is_fastpath = true;
 #endif
+#ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
+        NODE_STATE(benchmark_kernel_entry_was_fastpath) = true;
+#endif
         ntfn_set_active(ntfnPtr, badge | notification_ptr_get_ntfnMsgIdentifier(ntfnPtr));
         restore_user_context();
         UNREACHABLE();
@@ -613,6 +622,9 @@ void NORETURN fastpath_signal(word_t cptr, word_t msgInfo)
         if (!dest || thread_state_ptr_get_tsType(&dest->tcbState) != ThreadState_BlockedOnReceive) {
 #ifdef CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES
             ksKernelEntry.is_fastpath = true;
+#endif
+#ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
+            NODE_STATE(benchmark_kernel_entry_was_fastpath) = true;
 #endif
             ntfn_set_active(ntfnPtr, badge);
             restore_user_context();
@@ -673,6 +685,9 @@ void NORETURN fastpath_signal(word_t cptr, word_t msgInfo)
     /*  Point of no return */
 #ifdef CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES
     ksKernelEntry.is_fastpath = true;
+#endif
+#ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
+    NODE_STATE(benchmark_kernel_entry_was_fastpath) = true;
 #endif
 
     if (idle) {
@@ -838,6 +853,9 @@ void NORETURN fastpath_vm_fault(vm_fault_type_t type)
 
 #ifdef CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES
     ksKernelEntry.is_fastpath = true;
+#endif
+#ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
+    NODE_STATE(benchmark_kernel_entry_was_fastpath) = true;
 #endif
 
     /* Dequeue the destination. */

@@ -18,6 +18,7 @@
 #define UART_RX_EMPTY       BIT(20)
 
 #define UART_REG(x) ((volatile uint32_t *)(UART_PPTR + (x)))
+#define UART_EARLY_REG(x) ((volatile uint32_t *)(0xff803000 + (x)))
 
 #ifdef CONFIG_PRINTING
 void uart_drv_putchar(unsigned char c)
@@ -26,6 +27,14 @@ void uart_drv_putchar(unsigned char c)
 
     /* Add character to the buffer. */
     *UART_REG(UART_WFIFO) = c;
+}
+
+void uart_drv_early_putchar(unsigned char c)
+{
+    while ((*UART_EARLY_REG(UART_STATUS) & UART_TX_FULL));
+
+    /* Add character to the buffer. */
+    *UART_EARLY_REG(UART_WFIFO) = c;
 }
 #endif /* CONFIG_PRINTING */
 

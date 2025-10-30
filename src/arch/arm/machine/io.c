@@ -8,10 +8,16 @@
 #include <machine/io.h>
 #include <drivers/uart.h>
 
+int early_boot = 1;
+
 #ifdef CONFIG_PRINTING
 void kernel_putDebugChar(unsigned char c)
 {
-    uart_console_putchar(c);
+    if (early_boot) {
+        uart_console_early_putchar(c);
+    } else {
+        uart_console_putchar(c);
+    }
 }
 #endif /* CONFIG_PRINTING */
 

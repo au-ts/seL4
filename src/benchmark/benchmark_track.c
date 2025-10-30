@@ -18,7 +18,7 @@ void benchmark_track_exit(void)
 {
     timestamp_t duration = 0;
     timestamp_t ksExit = timestamp();
-    benchmark_track_kernel_entry_t *ksLog = (benchmark_track_kernel_entry_t *) KS_LOG_PPTR;
+    benchmark_track_kernel_entry_t *ksLog = (benchmark_track_kernel_entry_t *) KS_LOG_BASE;
 
     if (likely(ksUserLogBuffer != 0)) {
         /* If Log buffer is filled, do nothing */

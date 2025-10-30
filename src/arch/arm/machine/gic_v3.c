@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
+#include "kernel/gen_config.h"
 #include <config.h>
 #include <types.h>
 #include <arch/machine/gic_v3.h>
@@ -55,7 +56,11 @@ volatile struct gic_rdist_sgi_ppi_map *gic_rdist_sgi_ppi_map[CONFIG_MAX_NUM_NODE
 #define MPIDR_MT(x)   (x & BIT(24))
 #define MPIDR_AFF_MASK(x) (x & 0xff00ffffff)
 
+#ifdef CONFIG_ENABLE_SMP_SUPPORT
 static word_t mpidr_map[CONFIG_MAX_NUM_NODES];
+#else
+word_t mpidr_map[CONFIG_MULTIKERNEL_NUM_CPUS];
+#endif
 
 static inline word_t get_mpidr(word_t core_id)
 {
@@ -64,8 +69,9 @@ static inline word_t get_mpidr(word_t core_id)
 
 static inline word_t get_current_mpidr(void)
 {
-    word_t core_id = CURRENT_CPU_INDEX();
-    return get_mpidr(core_id);
+    word_t mpidr_el1;
+    asm volatile("mrs %0, mpidr_el1" : "=r"(mpidr_el1));
+    return mpidr_el1;
 }
 
 static inline uint64_t mpidr_to_gic_affinity(void)
@@ -125,11 +131,6 @@ static uint32_t gicv3_do_wait_for_rwp(volatile uint32_t *ctlr_addr)
     return ret;
 }
 
-static void gicv3_dist_wait_for_rwp(void)
-{
-    gicv3_do_wait_for_rwp(&gic_dist->ctlr);
-}
-
 static void gicv3_redist_wait_for_rwp(void)
 {
     gicv3_do_wait_for_rwp(&gic_rdist_map[CURRENT_CPU_INDEX()]->ctlr);
@@ -150,45 +151,12 @@ static void gicv3_enable_sre(void)
 
 BOOT_CODE static void dist_init(void)
 {
-    word_t i;
-    uint32_t type;
-    unsigned int nr_lines;
-    uint64_t affinity;
-    uint32_t priority;
-
-    /* Disable GIC Distributor */
-    gic_dist->ctlr = 0;
-    gicv3_dist_wait_for_rwp();
-
-    type = gic_dist->typer;
-
-    nr_lines = GIC_REG_WIDTH * ((type & GICD_TYPE_LINESNR) + 1);
-
-    /* Assume level-triggered */
-    for (i = SPI_START; i < nr_lines; i += 16) {
-        gic_dist->icfgrn[(i / 16)] = 0;
-    }
-
-    /* Default priority for global interrupts */
-    priority = (GIC_PRI_IRQ << 24 | GIC_PRI_IRQ << 16 | GIC_PRI_IRQ << 8 |
-                GIC_PRI_IRQ);
-    for (i = SPI_START; i < nr_lines; i += 4) {
-        gic_dist->ipriorityrn[(i / 4)] = priority;
-    }
-    /* Disable and clear all global interrupts */
-    for (i = SPI_START; i < nr_lines; i += 32) {
-        gic_dist->icenablern[(i / 32)] = IRQ_SET_ALL;
-        gic_dist->icpendrn[(i / 32)] = IRQ_SET_ALL;
-    }
-
-    /* Turn on the distributor */
-    gic_dist->ctlr = GICD_CTLR_ARE_NS | GICD_CTLR_ENABLE_G1NS | GICD_CTLR_ENABLE_G0;
-    gicv3_dist_wait_for_rwp();
-
-    /* Route all global IRQs to this CPU */
-    affinity = mpidr_to_gic_affinity();
-    for (i = SPI_START; i < nr_lines; i++) {
-        gic_dist->iroutern[i - SPI_START] = affinity;
+    /* Check that the distributor is enabled */
+    uint32_t ctlr = gic_dist->ctlr;
+    const uint32_t ctlr_mask = GICD_CTLR_ARE_NS | GICD_CTLR_ENABLE_G1NS;
+    if ((ctlr & ctlr_mask) != ctlr_mask) {
+        printf("GICv3: GICD_CTLR 0x%x: GICD_CTLR not initialised\n", ctlr);
+        halt();
     }
 }
 
@@ -221,6 +189,9 @@ BOOT_CODE static void gicr_locate_interface(void)
             }
             gic_rdist_map[core_id] = (void *)gicr;
             gic_rdist_sgi_ppi_map[core_id] = (void *)(gicr + RDIST_BANK_SZ);
+
+            printf("found gicr at: %lx\n", gicr);
+            printf("found gicr sgi/ppi map at: %lx\n", gicr + RDIST_BANK_SZ);
 
             /*
              * GICR_WAKER should be Read-all-zeros in Non-secure world
@@ -264,6 +235,8 @@ BOOT_CODE static void gicr_init(void)
         gic_rdist_sgi_ppi_map[CURRENT_CPU_INDEX()]->ipriorityrn[i / 4] = priority;
     }
 
+    // TODO :what's the point of this when the mask/setirqstate resets these
+    //       anyway.
     /*
      * Disable all PPI interrupts, ensure all SGI interrupts are
      * enabled.
@@ -302,7 +275,7 @@ BOOT_CODE static void cpu_iface_init(void)
     isb();
 }
 
-void setIRQTrigger(irq_t irq, bool_t trigger)
+void plat_setIRQTrigger(irq_t irq, bool_t trigger)
 {
 
     /* GICv3 has read-only GICR_ICFG0 for SGI with
@@ -317,6 +290,7 @@ void setIRQTrigger(irq_t irq, bool_t trigger)
     int bit = ((hw_irq & 0xf) * 2);
     uint32_t icfgr = 0;
     if (HW_IRQ_IS_PPI(hw_irq)) {
+        /// XXX: I think whether or not ICFGR does anything for SGI/PPIs is implemented defined
         icfgr = gic_rdist_sgi_ppi_map[core]->icfgr1;
     } else {
         icfgr = gic_dist->icfgrn[word];
@@ -350,7 +324,8 @@ BOOT_CODE void cpu_initLocalIRQController(void)
     word_t mpidr = 0;
     SYSTEM_READ_WORD(MPIDR, mpidr);
 
-    mpidr_map[CURRENT_CPU_INDEX()] = mpidr;
+    // already init by boot code
+    // mpidr_map[CURRENT_CPU_INDEX()] = mpidr;
     active_irq[CURRENT_CPU_INDEX()] = IRQ_NONE;
 
     gicr_init();
@@ -359,14 +334,20 @@ BOOT_CODE void cpu_initLocalIRQController(void)
 
 bool_t plat_SGITargetValid(word_t target)
 {
+    // XXXX: WRONG?
     return target < GIC_SGI_NUM_TARGETS;
 }
 
 void plat_sendSGI(word_t irq, word_t target)
 {
+    // TODO: does this target need to be looked up in the mpidr map?
+
     uint64_t sgi1r_base = sgir_word_from_args(irq, target);
+    // printf("kernel %lx; GICv3 sending SGI irq %lx to target: %lx with sgi1r %llx\n", ksKernelElfPaddrBase, irq, target, sgi1r_base);
     SYSTEM_WRITE_64(ICC_SGI1R_EL1, sgi1r_base);
     isb();
+    // spec seems to imply this wants a ds?
+    // dsb();
 }
 
 #ifdef ENABLE_SMP_SUPPORT
@@ -401,21 +382,29 @@ void ipi_send_target(irq_t irq, word_t cpuTargetList)
     isb();
 }
 
-void setIRQTarget(irq_t irq, seL4_Word target)
+#endif /* ENABLE_SMP_SUPPORT */
+
+void plat_setIRQTarget(irq_t irq, seL4_Word target)
 {
     if (IRQ_IS_PPI(irq)) {
         fail("PPI can't have designated target core\n");
         return;
     }
 
+    assert(target < ARRAY_SIZE(mpidr_map));
+
     word_t hw_irq = IRQT_TO_IRQ(irq);
     gic_dist->iroutern[hw_irq - SPI_START] = MPIDR_AFF_MASK(mpidr_map[target]);
 }
-
-#endif /* ENABLE_SMP_SUPPORT */
 
 #ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
 
 word_t gic_vcpu_num_list_regs;
 
 #endif /* End of CONFIG_ARM_HYPERVISOR_SUPPORT */
+
+bool_t plat_isIRQControllerPrimary(void)
+{
+    // TODO
+    return true;
+}

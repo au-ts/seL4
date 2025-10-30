@@ -139,14 +139,14 @@ static inline irq_t getActiveIRQ(void)
 /**
  * Sets the irq trigger.
  *
- * setIRQTrigger can change the trigger between edge and level at the PLIC for
+ * plat_setIRQTrigger can change the trigger between edge and level at the PLIC for
  * external interrupts. It is implementation specific as whether the PLIC has
  * support for this operation.
  *
  * @param[in]  irq             The irq
  * @param[in]  edge_triggered  edge triggered otherwise level triggered
  */
-void setIRQTrigger(irq_t irq, bool_t edge_triggered)
+void plat_setIRQTrigger(irq_t irq, bool_t edge_triggered)
 {
     plic_irq_set_trigger(irq, edge_triggered);
 }

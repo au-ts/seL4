@@ -836,6 +836,19 @@
                 </description>
             </error>
         </method>
+        <method id="ARMIRQSetIrqTargetCore" name="SetIrqTargetCore" manual_name="SetIrqTargetCore"
+           manual_label="irq_controlsetirqtargetcore">
+            <condition><config var="CONFIG_ENABLE_MULTIKERNEL_SUPPORT"/></condition>
+            <brief>
+                Set the target CPU of in the ARM GIC for a interrupt to route.
+            </brief>
+            <description>
+                Something.
+            </description>
+            <param dir="in" name="irq" type="seL4_Word" description="The IRQ number. Cannot be less than 32 (SGI or PPIs)."/>
+            <param dir="in" name="target" type="seL4_Word" description="The GIC CPU interface ID that will be targeted"/>
+            <!-- TODO: Error. -->
+        </method>
     </interface>
     <interface name="seL4_ARM_SIDControl" manual_name="SID Control" cap_description="A SIDControl capability. This gives you the authority to make this call.">
        <method id="ARMSIDIssueSIDManager" name="GetSID" manual_name="Get SID" manual_label="sid_controlgetsid">

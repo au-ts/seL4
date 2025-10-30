@@ -50,6 +50,7 @@ exception_t handle_SysBenchmarkResetLog(void)
     NODE_STATE(benchmark_start_time) = ksEnter;
     NODE_STATE(benchmark_kernel_time) = 0;
     NODE_STATE(benchmark_kernel_number_entries) = 0;
+    NODE_STATE(benchmark_kernel_number_entries_fastpath) = 0;
     NODE_STATE(benchmark_kernel_number_schedules) = 1;
     benchmark_arch_utilisation_reset();
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */
@@ -123,6 +124,7 @@ exception_t handle_SysBenchmarkDumpAllThreadsUtilisation(void)
            (word_t)(NODE_STATE(benchmark_end_time) - NODE_STATE(benchmark_start_time)));
     printf("  \"BENCHMARK_TOTAL_KERNEL_UTILISATION\":%lu,\n", (word_t) NODE_STATE(benchmark_kernel_time));
     printf("  \"BENCHMARK_TOTAL_NUMBER_KERNEL_ENTRIES\":%lu,\n", (word_t) NODE_STATE(benchmark_kernel_number_entries));
+    printf("  \"BENCHMARK_TOTAL_NUMBER_KERNEL_ENTRIES_FASTPATH\":%lu,\n", (word_t) NODE_STATE(benchmark_kernel_number_entries_fastpath));
     printf("  \"BENCHMARK_TOTAL_NUMBER_SCHEDULES\":%lu,\n", (word_t) NODE_STATE(benchmark_kernel_number_schedules));
     printf("  \"BENCHMARK_TCB_\": [\n");
     for (tcb_t *curr = NODE_STATE(ksDebugTCBs); curr != NULL; curr = TCB_PTR_DEBUG_PTR(curr)->tcbDebugNext) {
