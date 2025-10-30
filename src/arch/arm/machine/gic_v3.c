@@ -69,8 +69,9 @@ static inline word_t get_mpidr(word_t core_id)
 
 static inline word_t get_current_mpidr(void)
 {
-    word_t core_id = CURRENT_CPU_INDEX();
-    return get_mpidr(core_id);
+    word_t mpidr_el1;
+    asm volatile("mrs %0, mpidr_el1" : "=r"(mpidr_el1));
+    return mpidr_el1;
 }
 
 static inline uint64_t mpidr_to_gic_affinity(void)
@@ -189,6 +190,9 @@ BOOT_CODE static void gicr_locate_interface(void)
             gic_rdist_map[core_id] = (void *)gicr;
             gic_rdist_sgi_ppi_map[core_id] = (void *)(gicr + RDIST_BANK_SZ);
 
+            printf("found gicr at: %lx\n", gicr);
+            printf("found gicr sgi/ppi map at: %lx\n", gicr + RDIST_BANK_SZ);
+
             /*
              * GICR_WAKER should be Read-all-zeros in Non-secure world
              * and we expect redistributors to be already awoken by an earlier loader.
@@ -231,6 +235,8 @@ BOOT_CODE static void gicr_init(void)
         gic_rdist_sgi_ppi_map[CURRENT_CPU_INDEX()]->ipriorityrn[i / 4] = priority;
     }
 
+    // TODO :what's the point of this when the mask/setirqstate resets these
+    //       anyway.
     /*
      * Disable all PPI interrupts, ensure all SGI interrupts are
      * enabled.
@@ -328,14 +334,20 @@ BOOT_CODE void cpu_initLocalIRQController(void)
 
 bool_t plat_SGITargetValid(word_t target)
 {
+    // XXXX: WRONG?
     return target < GIC_SGI_NUM_TARGETS;
 }
 
 void plat_sendSGI(word_t irq, word_t target)
 {
+    // TODO: does this target need to be looked up in the mpidr map?
+
     uint64_t sgi1r_base = sgir_word_from_args(irq, target);
+    // printf("kernel %lx; GICv3 sending SGI irq %lx to target: %lx with sgi1r %llx\n", ksKernelElfPaddrBase, irq, target, sgi1r_base);
     SYSTEM_WRITE_64(ICC_SGI1R_EL1, sgi1r_base);
     isb();
+    // spec seems to imply this wants a ds?
+    // dsb();
 }
 
 #ifdef ENABLE_SMP_SUPPORT
