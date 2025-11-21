@@ -10,7 +10,6 @@
 
 #ifdef CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES
 
-timestamp_t ksEnter;
 seL4_Word ksLogIndex;
 seL4_Word ksLogIndexFinalized;
 
@@ -23,9 +22,9 @@ void benchmark_track_exit(void)
     if (likely(ksUserLogBuffer != 0)) {
         /* If Log buffer is filled, do nothing */
         if (likely(ksLogIndex < MAX_LOG_SIZE)) {
-            duration = ksExit - ksEnter;
+            duration = ksExit - ARCH_NODE_STATE(ksEnter);
             ksLog[ksLogIndex].entry = ksKernelEntry;
-            ksLog[ksLogIndex].start_time = ksEnter;
+            ksLog[ksLogIndex].start_time = ARCH_NODE_STATE(ksEnter);
             ksLog[ksLogIndex].duration = duration;
             ksLogIndex++;
         }

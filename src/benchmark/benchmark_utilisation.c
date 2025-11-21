@@ -9,8 +9,6 @@
 
 #ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
 
-timestamp_t ksEnter;
-
 void benchmark_track_utilisation_dump(void)
 {
     uint64_t *buffer = ((uint64_t *) & (((seL4_IPCBuffer *)lookupIPCBuffer(true, NODE_STATE(ksCurThread)))->msg[0]));

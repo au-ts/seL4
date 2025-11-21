@@ -18,7 +18,7 @@ static inline void c_entry_hook(void)
 {
     arch_c_entry_hook();
 #if defined(CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES) || defined(CONFIG_BENCHMARK_TRACK_UTILISATION)
-    ksEnter = timestamp();
+    ARCH_NODE_STATE(ksEnter) = timestamp();
 #endif
 }
 
@@ -35,9 +35,9 @@ static inline void c_exit_hook(void)
     if (likely(NODE_STATE(benchmark_log_utilisation_enabled))) {
         timestamp_t exit = timestamp();
         NODE_STATE(ksCurThread)->benchmark.number_kernel_entries++;
-        NODE_STATE(ksCurThread)->benchmark.kernel_utilisation += exit - ksEnter;
+        NODE_STATE(ksCurThread)->benchmark.kernel_utilisation += exit - ARCH_NODE_STATE(ksEnter);
         NODE_STATE(benchmark_kernel_number_entries)++;
-        NODE_STATE(benchmark_kernel_time) += exit - ksEnter;
+        NODE_STATE(benchmark_kernel_time) += exit - ARCH_NODE_STATE(ksEnter);
     }
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */
 

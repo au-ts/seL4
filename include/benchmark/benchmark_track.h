@@ -27,7 +27,6 @@ extern kernel_entry_t ksKernelEntry;
 #define MAX_LOG_SIZE (seL4_LogBufferSize / \
              sizeof(benchmark_track_kernel_entry_t))
 
-extern timestamp_t ksEnter;
 extern seL4_Word ksLogIndex;
 extern seL4_Word ksLogIndexFinalized;
 
@@ -43,7 +42,7 @@ void benchmark_track_exit(void);
  */
 static inline void benchmark_track_start(void)
 {
-    ksEnter = timestamp();
+    ARCH_NODE_STATE(ksEnter) = timestamp();
 }
 #endif /* CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES */
 
