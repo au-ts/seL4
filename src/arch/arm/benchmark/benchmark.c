@@ -19,6 +19,10 @@ seL4_Word ksLogIndexFinalized = 0;
 UP_STATE_DEFINE(uint64_t, ccnt_num_overflows);
 #endif /* CONFIG_ARM_ENABLE_PMU_OVERFLOW_INTERRUPT */
 
+#if defined(CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES) || defined(CONFIG_BENCHMARK_TRACK_UTILISATION)
+UP_STATE_DEFINE(uint64_t, ksEnter);
+#endif /* defined(CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES) || defined(CONFIG_BENCHMARK_TRACK_UTILISATION) */
+
 #ifdef CONFIG_ENABLE_BENCHMARKS
 void arm_init_ccnt(void)
 {
