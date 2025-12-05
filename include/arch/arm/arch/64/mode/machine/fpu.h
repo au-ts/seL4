@@ -15,6 +15,9 @@ static inline void saveFpuState(tcb_t *thread)
     user_fpu_state_t *dest = &thread->tcbArch.tcbContext.fpuState;
     word_t temp;
 
+    // Explicitly synchronize before touching Fpu State
+    isb();
+
     asm volatile(
         /* SIMD and floating-point register file */
         ".arch_extension fp\n"
@@ -52,6 +55,9 @@ static inline void loadFpuState(const tcb_t *thread)
 {
     const user_fpu_state_t *src = &thread->tcbArch.tcbContext.fpuState;
     word_t temp;
+
+    // Explicitly synchronize before touching Fpu State
+    isb();
 
     asm volatile(
         /* SIMD and floating-point register file */
@@ -92,7 +98,7 @@ static inline void disableTrapFpu(void)
     MRS("cptr_el2", cptr);
     cptr &= ~(BIT(10) | BIT(31));
     MSR("cptr_el2", cptr);
-    isb();
+    //isb();
 }
 
 /* Enable FPU access in EL0 and EL1 */
@@ -102,7 +108,7 @@ static inline void enableFpuEL01(void)
     MRS("cpacr_el1", cpacr);
     cpacr |= (3 << CPACR_EL1_FPEN);
     MSR("cpacr_el1", cpacr);
-    isb();
+    //isb();
 }
 
 /* Enable the FPU to be used without faulting.
@@ -126,7 +132,7 @@ static inline void enableTrapFpu(void)
     MRS("cptr_el2", cptr);
     cptr |= (BIT(10) | BIT(31));
     MSR("cptr_el2", cptr);
-    isb();
+    //isb();
 }
 
 /* Disable FPU access in EL0 */
@@ -137,7 +143,7 @@ static inline void disableFpuEL0(void)
     cpacr &= ~(3 << CPACR_EL1_FPEN);
     cpacr |= (1 << CPACR_EL1_FPEN);
     MSR("cpacr_el1", cpacr);
-    isb();
+    //isb();
 }
 
 /* Disable the FPU so that usage of it causes a fault */
