@@ -19,6 +19,7 @@ static inline void c_entry_hook(void)
     arch_c_entry_hook();
 #if defined(CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES) || defined(CONFIG_BENCHMARK_TRACK_UTILISATION)
     ksEnter = timestamp();
+    ksEnterInst = instructions();
 #endif
 }
 

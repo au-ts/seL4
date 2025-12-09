@@ -17,6 +17,11 @@ static inline timestamp_t timestamp(void)
     return riscv_read_cycle();
 }
 
+static inline uint64_t instructions(void)
+{
+    return riscv_read_instret();
+}
+
 static inline void benchmark_arch_utilisation_reset(void)
 {
     /* nothing here */

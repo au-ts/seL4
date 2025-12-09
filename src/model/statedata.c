@@ -68,6 +68,8 @@ UP_STATE_DEFINE(timestamp_t, benchmark_end_time);
 UP_STATE_DEFINE(timestamp_t, benchmark_kernel_time);
 UP_STATE_DEFINE(timestamp_t, benchmark_kernel_number_entries);
 UP_STATE_DEFINE(timestamp_t, benchmark_kernel_number_schedules);
+UP_STATE_DEFINE(timestamp_t, benchmark_start_instructions);
+UP_STATE_DEFINE(timestamp_t, benchmark_end_instructions);
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */
 
 /* Units of work we have completed since the last time we checked for

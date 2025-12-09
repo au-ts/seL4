@@ -36,3 +36,10 @@ static inline uint64_t riscv_read_cycle(void)
     asm volatile("rdcycle %0" : "=r"(n));
     return n;
 }
+
+static inline uint64_t riscv_read_instret(void)
+{
+    word_t n;
+    asm volatile("rdinstret %0" : "=r"(n));
+    return n;
+}

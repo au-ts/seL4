@@ -14,6 +14,7 @@
 
 #ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
 extern timestamp_t ksEnter;
+extern timestamp_t ksEnterInst;
 
 void benchmark_track_utilisation_dump(void);
 
@@ -55,6 +56,7 @@ static inline void benchmark_utilisation_finalise(void)
     benchmark_utilisation_switch(NODE_STATE(ksCurThread), NODE_STATE(ksIdleThread));
 
     NODE_STATE(benchmark_end_time) = ksEnter;
+    NODE_STATE(benchmark_end_instructions) = ksEnterInst;
     NODE_STATE(benchmark_log_utilisation_enabled) = false;
 }
 

@@ -28,6 +28,7 @@ extern kernel_entry_t ksKernelEntry;
              sizeof(benchmark_track_kernel_entry_t))
 
 extern timestamp_t ksEnter;
+extern timestamp_t ksEnterInst;
 extern seL4_Word ksLogIndex;
 extern seL4_Word ksLogIndexFinalized;
 
@@ -44,6 +45,7 @@ void benchmark_track_exit(void);
 static inline void benchmark_track_start(void)
 {
     ksEnter = timestamp();
+    ksEnterInst = instructions();
 }
 #endif /* CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES */
 

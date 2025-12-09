@@ -87,6 +87,8 @@ NODE_STATE_DECLARE(timestamp_t, benchmark_end_time);
 NODE_STATE_DECLARE(timestamp_t, benchmark_kernel_time);
 NODE_STATE_DECLARE(timestamp_t, benchmark_kernel_number_entries);
 NODE_STATE_DECLARE(timestamp_t, benchmark_kernel_number_schedules);
+NODE_STATE_DECLARE(timestamp_t, benchmark_start_instructions);
+NODE_STATE_DECLARE(timestamp_t, benchmark_end_instructions);
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */
 
 NODE_STATE_END(nodeState);
