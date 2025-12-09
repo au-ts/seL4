@@ -40,7 +40,11 @@ enum benchmark_track_util_ipc_index {
     BENCHMARK_TOTAL_KERNEL_UTILISATION,
     /* Total number of times the kernel is entered on the current core */
     BENCHMARK_TOTAL_NUMBER_KERNEL_ENTRIES,
+
+    /* Total instructions used by the core for the period */
     BENCHMARK_TOTAL_INSTRUCTIONS,
+    /* Total instructions spent inside the kernel by the core for the period */
+    BENCHMARK_TOTAL_KERNEL_INSTRUCTIONS,
 };
 
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */

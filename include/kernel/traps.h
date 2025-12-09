@@ -35,10 +35,12 @@ static inline void c_exit_hook(void)
 #ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
     if (likely(NODE_STATE(benchmark_log_utilisation_enabled))) {
         timestamp_t exit = timestamp();
+        timestamp_t exit_inst = instructions();
         NODE_STATE(ksCurThread)->benchmark.number_kernel_entries++;
         NODE_STATE(ksCurThread)->benchmark.kernel_utilisation += exit - ksEnter;
         NODE_STATE(benchmark_kernel_number_entries)++;
         NODE_STATE(benchmark_kernel_time) += exit - ksEnter;
+        NODE_STATE(benchmark_kernel_instructions) += exit_inst - ksEnterInst;
     }
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */
 
