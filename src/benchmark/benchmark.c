@@ -53,6 +53,7 @@ exception_t handle_SysBenchmarkResetLog(void)
     NODE_STATE(benchmark_kernel_number_schedules) = 1;
     NODE_STATE(benchmark_start_instructions) = ksEnterInst;
     NODE_STATE(benchmark_kernel_instructions) = 0;
+    NODE_STATE(ksCurThread)->benchmark.schedule_start_instruction = ksEnterInst;
     benchmark_arch_utilisation_reset();
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */
 
@@ -136,6 +137,7 @@ exception_t handle_SysBenchmarkDumpAllThreadsUtilisation(void)
         printf("      \"NUMBER_SCHEDULES\":%lu,\n", (word_t) curr->benchmark.number_schedules);
         printf("      \"KERNEL_UTILISATION\":%lu,\n", (word_t) curr->benchmark.kernel_utilisation);
         printf("      \"NUMBER_KERNEL_ENTRIES\":%lu\n", (word_t) curr->benchmark.number_kernel_entries);
+        printf("      \"INSTRUCTION\":%lu,\n", (word_t) curr->benchmark.instruction);
         printf("    }");
         if (TCB_PTR_DEBUG_PTR(curr)->tcbDebugNext != NULL) {
             printf(",\n");

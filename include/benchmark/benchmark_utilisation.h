@@ -39,11 +39,13 @@ static inline void benchmark_utilisation_switch(tcb_t *heir, tcb_t *next)
 #endif /* CONFIG_ARM_ENABLE_PMU_OVERFLOW_INTERRUPT */
         }
 
+        heir->benchmark.instruction += (ksEnterInst - heir->benchmark.schedule_start_instruction);
+
         /* Reset next thread utilisation */
         next->benchmark.schedule_start_time = ksEnter;
         next->benchmark.number_schedules++;
         NODE_STATE(benchmark_kernel_number_schedules)++;
-
+        next->benchmark.schedule_start_instruction = ksEnterInst;
     }
 }
 

@@ -35,6 +35,7 @@ void benchmark_track_utilisation_dump(void)
     buffer[BENCHMARK_TCB_NUMBER_SCHEDULES] = tcb->benchmark.number_schedules; /* Number of times scheduled */
     buffer[BENCHMARK_TCB_KERNEL_UTILISATION] = tcb->benchmark.kernel_utilisation; /* Utilisation spent in kernel */
     buffer[BENCHMARK_TCB_NUMBER_KERNEL_ENTRIES] = tcb->benchmark.number_kernel_entries; /* Number of kernel entries */
+    buffer[BENCHMARK_TCB_INSTRUCTION] = tcb->benchmark.instruction; /* Requested thread instruction */
 
     /* Idle counters */
     buffer[BENCHMARK_IDLE_LOCALCPU_UTILISATION] = NODE_STATE(
@@ -52,7 +53,13 @@ void benchmark_track_utilisation_dump(void)
                                                     ksIdleThread)->benchmark.kernel_utilisation; /* Utilisation spent in kernel */
     buffer[BENCHMARK_IDLE_NUMBER_KERNEL_ENTRIES] = NODE_STATE(
                                                        ksIdleThread)->benchmark.number_kernel_entries; /* Number of kernel entries */
-
+    buffer[BENCHMARK_IDLE_LOCALCPU_INSTRUCTION] = NODE_STATE(ksIdleThread)->benchmark.instruction;
+#ifdef ENABLE_SMP_SUPPORT
+    buffer[BENCHMARK_IDLE_TCBCPU_INSTRUCTION] = NODE_STATE_ON_CORE(ksIdleThread,
+                                                                   tcb->tcbAffinity)->benchmark.instruction; /* Idle thread instruction of CPU the TCB is running on */
+#else
+    buffer[BENCHMARK_IDLE_TCBCPU_INSTRUCTION] = buffer[BENCHMARK_IDLE_LOCALCPU_INSTRUCTION];
+#endif
 
     /* Total counters */
 #ifdef CONFIG_ARM_ENABLE_PMU_OVERFLOW_INTERRUPT
@@ -77,5 +84,7 @@ void benchmark_track_reset_utilisation(tcb_t *tcb)
     tcb->benchmark.number_kernel_entries = 0;
     tcb->benchmark.kernel_utilisation = 0;
     tcb->benchmark.schedule_start_time = 0;
+    tcb->benchmark.instruction = 0;
+    tcb->benchmark.schedule_start_instruction = 0;
 }
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */

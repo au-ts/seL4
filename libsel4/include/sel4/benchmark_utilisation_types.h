@@ -45,6 +45,11 @@ enum benchmark_track_util_ipc_index {
     BENCHMARK_TOTAL_INSTRUCTIONS,
     /* Total instructions spent inside the kernel by the core for the period */
     BENCHMARK_TOTAL_KERNEL_INSTRUCTIONS,
+    /* Number of instructions thread spends scheduled */
+    BENCHMARK_TCB_INSTRUCTION,
+    /* Number of instructions idle thread spends scheduled */
+    BENCHMARK_IDLE_LOCALCPU_INSTRUCTION,
+    BENCHMARK_IDLE_TCBCPU_INSTRUCTION,
 };
 
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */
