@@ -18,6 +18,7 @@ typedef struct {
     uint64_t    number_kernel_entries;
     uint64_t    schedule_start_instruction;
     uint64_t    instruction;
+    uint64_t    kernel_instruction;
 } benchmark_util_t;
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */
 

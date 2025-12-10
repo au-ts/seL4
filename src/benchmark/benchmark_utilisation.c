@@ -36,6 +36,7 @@ void benchmark_track_utilisation_dump(void)
     buffer[BENCHMARK_TCB_KERNEL_UTILISATION] = tcb->benchmark.kernel_utilisation; /* Utilisation spent in kernel */
     buffer[BENCHMARK_TCB_NUMBER_KERNEL_ENTRIES] = tcb->benchmark.number_kernel_entries; /* Number of kernel entries */
     buffer[BENCHMARK_TCB_INSTRUCTION] = tcb->benchmark.instruction; /* Requested thread instruction */
+    buffer[BENCHMARK_TCB_KERNEL_INSTRUCTION] = tcb->benchmark.kernel_instruction; /* Instruction spent in kernel */
 
     /* Idle counters */
     buffer[BENCHMARK_IDLE_LOCALCPU_UTILISATION] = NODE_STATE(
@@ -60,6 +61,8 @@ void benchmark_track_utilisation_dump(void)
 #else
     buffer[BENCHMARK_IDLE_TCBCPU_INSTRUCTION] = buffer[BENCHMARK_IDLE_LOCALCPU_INSTRUCTION];
 #endif
+    buffer[BENCHMARK_IDLE_KERNEL_INSTRUCTION] = NODE_STATE(
+                                                    ksIdleThread)->benchmark.kernel_instruction; /* Instruction spent in kernel */
 
     /* Total counters */
 #ifdef CONFIG_ARM_ENABLE_PMU_OVERFLOW_INTERRUPT
@@ -86,5 +89,6 @@ void benchmark_track_reset_utilisation(tcb_t *tcb)
     tcb->benchmark.schedule_start_time = 0;
     tcb->benchmark.instruction = 0;
     tcb->benchmark.schedule_start_instruction = 0;
+    tcb->benchmark.kernel_instruction = 0;
 }
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */

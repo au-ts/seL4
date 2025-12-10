@@ -138,6 +138,7 @@ exception_t handle_SysBenchmarkDumpAllThreadsUtilisation(void)
         printf("      \"KERNEL_UTILISATION\":%lu,\n", (word_t) curr->benchmark.kernel_utilisation);
         printf("      \"NUMBER_KERNEL_ENTRIES\":%lu\n", (word_t) curr->benchmark.number_kernel_entries);
         printf("      \"INSTRUCTION\":%lu,\n", (word_t) curr->benchmark.instruction);
+        printf("      \"KERNEL_INSTRUCTION\":%lu,\n", (word_t) curr->benchmark.kernel_instruction);
         printf("    }");
         if (TCB_PTR_DEBUG_PTR(curr)->tcbDebugNext != NULL) {
             printf(",\n");
