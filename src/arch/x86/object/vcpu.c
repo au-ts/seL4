@@ -294,7 +294,14 @@ static bool_t BOOT_CODE init_vtx_fixed_values(bool_t useTrueMsrs)
     entry_control_high = x86_rdmsr_low(entry_ctls);
     entry_control_low = x86_rdmsr_high(entry_ctls);
 
-    cr0_high = x86_rdmsr_low(IA32_VMX_CR0_FIXED0_MSR);
+    // Intel SDM, Vol. 3C, 24.8:
+    //
+    // > Later processors support a VM-execution control called "unrestricted
+    // > guest" (see Section 25.6.2). If this control is 1, CR0.PE and CR0.PG
+    // > may be 0 in VMX non-root operation (even if the capability MSR
+    // > IA32_VMX_CR0_FIXED0 reports otherwise).1 Such processors allow guest
+    // > software to run in unpaged protected mode or in real-address mode.
+    cr0_high = x86_rdmsr_low(IA32_VMX_CR0_FIXED0_MSR) & ~0x80000001;
     cr0_low = x86_rdmsr_low(IA32_VMX_CR0_FIXED1_MSR);
     cr4_high = x86_rdmsr_low(IA32_VMX_CR4_FIXED0_MSR);
     cr4_low = x86_rdmsr_low(IA32_VMX_CR4_FIXED1_MSR);
@@ -396,7 +403,7 @@ static bool_t BOOT_CODE check_vtx_fixed_values(bool_t useTrueMsrs)
     uint32_t local_entry_control_high = x86_rdmsr_low(entry_ctls);
     uint32_t local_entry_control_low = x86_rdmsr_high(entry_ctls);
 
-    uint32_t local_cr0_high = x86_rdmsr_low(IA32_VMX_CR0_FIXED0_MSR);
+    uint32_t local_cr0_high = x86_rdmsr_low(IA32_VMX_CR0_FIXED0_MSR) & ~0x80000001;
     uint32_t local_cr0_low = x86_rdmsr_low(IA32_VMX_CR0_FIXED1_MSR);
     uint32_t local_cr4_high = x86_rdmsr_low(IA32_VMX_CR4_FIXED0_MSR);
     uint32_t local_cr4_low = x86_rdmsr_low(IA32_VMX_CR4_FIXED1_MSR);
@@ -495,7 +502,8 @@ void vcpu_init(vcpu_t *vcpu)
     vmwrite(VMX_CONTROL_PRIMARY_PROCESSOR_CONTROLS, primary_control_high & primary_control_low);
     vmwrite(VMX_CONTROL_SECONDARY_PROCESSOR_CONTROLS, secondary_control_high & secondary_control_low);
     vmwrite(VMX_CONTROL_EXIT_CONTROLS, exit_control_high & exit_control_low);
-    vmwrite(VMX_CONTROL_ENTRY_CONTROLS, entry_control_high & entry_control_low);
+    // @billn allow vmenter with in non 64 bit mode and load VMCS EFER on entry
+    vmwrite(VMX_CONTROL_ENTRY_CONTROLS, ((entry_control_high & entry_control_low) & ~(1 << 9)) | BIT(15));
     vmwrite(VMX_CONTROL_MSR_ADDRESS, (word_t)kpptr_to_paddr(&msr_bitmap_region));
     vmwrite(VMX_GUEST_CR0, vcpu->cr0);
     vmwrite(VMX_GUEST_CR4, cr4_high & cr4_low);
