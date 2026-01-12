@@ -503,7 +503,7 @@ void vcpu_init(vcpu_t *vcpu)
     vmwrite(VMX_CONTROL_SECONDARY_PROCESSOR_CONTROLS, secondary_control_high & secondary_control_low);
     vmwrite(VMX_CONTROL_EXIT_CONTROLS, exit_control_high & exit_control_low);
     // @billn allow vmenter with in non 64 bit mode and load VMCS EFER on entry
-    vmwrite(VMX_CONTROL_ENTRY_CONTROLS, ((entry_control_high & entry_control_low) & ~(1 << 9)) | BIT(15));
+    vmwrite(VMX_CONTROL_ENTRY_CONTROLS, entry_control_high & entry_control_low);
     vmwrite(VMX_CONTROL_MSR_ADDRESS, (word_t)kpptr_to_paddr(&msr_bitmap_region));
     vmwrite(VMX_GUEST_CR0, vcpu->cr0);
     vmwrite(VMX_GUEST_CR4, cr4_high & cr4_low);
@@ -881,6 +881,10 @@ static exception_t decodeWriteVMCS(cap_t cap, word_t length, bool_t call, word_t
     case VMX_CONTROL_ENTRY_INTERRUPTION_INFO:
     case VMX_CONTROL_ENTRY_EXCEPTION_ERROR_CODE:
         break;
+    case VMX_CONTROL_ENTRY_CONTROLS:
+        // @bill hack should check allowed bits
+        // value = applyFixedBits(value, entry_control_high, entry_control_low);
+        break;
     case VMX_CONTROL_PIN_EXECUTION_CONTROLS:
         value = applyFixedBits(value, pin_control_high, pin_control_low);
         break;
@@ -1022,6 +1026,7 @@ static exception_t decodeReadVMCS(cap_t cap, word_t length, bool_t call, word_t 
     case VMX_DATA_IO_RDI:
     case VMX_DATA_IO_RIP:
     case VMX_DATA_GUEST_LINEAR_ADDRESS:
+    case VMX_CONTROL_ENTRY_CONTROLS:
     case VMX_CONTROL_ENTRY_INTERRUPTION_INFO:
     case VMX_CONTROL_PIN_EXECUTION_CONTROLS:
     case VMX_CONTROL_PRIMARY_PROCESSOR_CONTROLS:
