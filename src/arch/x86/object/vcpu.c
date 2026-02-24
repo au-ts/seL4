@@ -880,6 +880,8 @@ static exception_t decodeWriteVMCS(cap_t cap, word_t length, bool_t call, word_t
     case VMX_CONTROL_EXCEPTION_BITMAP:
     case VMX_CONTROL_ENTRY_INTERRUPTION_INFO:
     case VMX_CONTROL_ENTRY_EXCEPTION_ERROR_CODE:
+    case VMX_CONTROL_VIRTUAL_APIC_ADDRESS:
+    case VMX_CONTROL_APIC_ACCESS_ADDRESS:
         break;
     case VMX_CONTROL_ENTRY_CONTROLS:
         // @bill hack should check allowed bits
@@ -1035,6 +1037,8 @@ static exception_t decodeReadVMCS(cap_t cap, word_t length, bool_t call, word_t 
     case VMX_GUEST_CR0:
     case VMX_GUEST_CR3:
     case VMX_GUEST_CR4:
+    case VMX_CONTROL_VIRTUAL_APIC_ADDRESS:
+    case VMX_CONTROL_APIC_ACCESS_ADDRESS:
         break;
     default:
         userError("VCPU ReadVMCS: Invalid field %lx.", (long)field);
