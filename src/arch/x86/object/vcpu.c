@@ -882,6 +882,11 @@ static exception_t decodeWriteVMCS(cap_t cap, word_t length, bool_t call, word_t
     case VMX_CONTROL_ENTRY_EXCEPTION_ERROR_CODE:
     case VMX_CONTROL_VIRTUAL_APIC_ADDRESS:
     case VMX_CONTROL_APIC_ACCESS_ADDRESS:
+    case VMX_GUEST_INTERRUPT_STATUS:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_0:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_1:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_2:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_3:
         break;
     case VMX_CONTROL_ENTRY_CONTROLS:
         // @bill hack should check allowed bits
@@ -1032,6 +1037,7 @@ static exception_t decodeReadVMCS(cap_t cap, word_t length, bool_t call, word_t 
     case VMX_CONTROL_ENTRY_INTERRUPTION_INFO:
     case VMX_CONTROL_PIN_EXECUTION_CONTROLS:
     case VMX_CONTROL_PRIMARY_PROCESSOR_CONTROLS:
+    case VMX_CONTROL_SECONDARY_PROCESSOR_CONTROLS:
     case VMX_CONTROL_EXCEPTION_BITMAP:
     case VMX_CONTROL_EXIT_CONTROLS:
     case VMX_GUEST_CR0:
@@ -1039,6 +1045,11 @@ static exception_t decodeReadVMCS(cap_t cap, word_t length, bool_t call, word_t 
     case VMX_GUEST_CR4:
     case VMX_CONTROL_VIRTUAL_APIC_ADDRESS:
     case VMX_CONTROL_APIC_ACCESS_ADDRESS:
+    case VMX_GUEST_INTERRUPT_STATUS:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_0:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_1:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_2:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_3:
         break;
     default:
         userError("VCPU ReadVMCS: Invalid field %lx.", (long)field);
@@ -1353,6 +1364,8 @@ exception_t handleVmexit(void)
     case LDTR_OR_TR:
     case TPR_BELOW_THRESHOLD:
     case APIC_ACCESS:
+    case APIC_WRITE:
+    case VIRTUALIZED_EOI:
         qualification = vmread(VMX_DATA_EXIT_QUALIFICATION);
         break;
     default:
