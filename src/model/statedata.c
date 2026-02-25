@@ -72,6 +72,10 @@ UP_STATE_DEFINE(word_t, benchmark_kernel_number_entries_fastpath);
 UP_STATE_DEFINE(word_t, benchmark_kernel_number_schedules);
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */
 
+#ifdef CONFIG_ENABLE_MULTIKERNEL_SUPPORT
+UP_STATE_DEFINE(node_id_t, boot_cpu_id);
+#endif /* CONFIG_ENABLE_MULTIKERNEL_SUPPORT */
+
 /* Units of work we have completed since the last time we checked for
  * pending interrupts */
 word_t ksWorkUnitsCompleted;

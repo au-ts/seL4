@@ -524,6 +524,8 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
     node_id_t boot_node_id;
     asm volatile("mrs %0, tpidr_el1" : "=r"(boot_node_id));
 
+    NODE_STATE(boot_cpu_id) = boot_node_id;
+
     if (!IS_ALIGNED(ksKernelElfPaddrBase, seL4_LargePageBits)) {
         printf("kernel elf paddr base is not aligned\n");
         return false;
@@ -556,7 +558,8 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
     init_plat();
 
     /* If a DTB was provided, pass the data on as extra bootinfo */
-    p_region_t dtb_p_reg = P_REG_EMPTY;
+    // @kwinter: Is this dtb_p_reg needed?
+    // p_region_t dtb_p_reg = P_REG_EMPTY;
     if (dtb_size > 0) {
         paddr_t dtb_phys_end = dtb_phys_addr + dtb_size;
         if (dtb_phys_end < dtb_phys_addr) {
@@ -580,10 +583,10 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
         /* DTB seems valid and accessible, pass it on in bootinfo. */
         extra_bi_size += sizeof(seL4_BootInfoHeader) + dtb_size;
         /* Remember the memory region it uses. */
-        dtb_p_reg = (p_region_t) {
-            .start = dtb_phys_addr,
-            .end   = dtb_phys_end
-        };
+        // dtb_p_reg = (p_region_t) {
+            // .start = dtb_phys_addr,
+            // .end   = dtb_phys_end
+        // };
     }
 
     /* The region of the initial thread is the user image + ipcbuf and boot info */

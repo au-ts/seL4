@@ -90,7 +90,9 @@ NODE_STATE_DECLARE(word_t, benchmark_kernel_number_entries);
 NODE_STATE_DECLARE(word_t, benchmark_kernel_number_entries_fastpath);
 NODE_STATE_DECLARE(word_t, benchmark_kernel_number_schedules);
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */
-
+#ifdef CONFIG_ENABLE_MULTIKERNEL_SUPPORT
+NODE_STATE_DECLARE(node_id_t, boot_cpu_id);
+#endif /* CONFIG_ENABLE_MULTIKERNEL_SUPPORT */
 NODE_STATE_END(nodeState);
 
 extern word_t ksNumCPUs;
