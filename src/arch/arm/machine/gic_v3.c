@@ -313,7 +313,7 @@ void plat_setIRQTrigger(irq_t irq, bool_t trigger)
             gic_dist->icfgrn[word] = icfgr;
         }
     } else {
-        printf("plat_setIRQTrigger GICv3: Attempting to modify GIC on core: %d\n", NODE_STATE(boot_cpu_id));
+        printf("plat_setIRQTrigger GICv3: Attempting to modify GIC on core: %lu\n", NODE_STATE(boot_cpu_id));
     }
 
     return;

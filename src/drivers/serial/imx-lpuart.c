@@ -23,12 +23,19 @@
 #define STAT_TDRE (1 << 23)
 
 #define UART_REG(x) ((volatile uint32_t *)(UART_PPTR + (x)))
+#define UART_EARLY_REG(x) ((volatile uint32_t *)(0x5a070000 + (x)))
 
 #if defined(CONFIG_DEBUG_BUILD) || defined(CONFIG_PRINTING)
 void uart_drv_putchar(unsigned char c)
 {
     while (!(*UART_REG(STAT) & STAT_TDRE)) { }
     *UART_REG(TRANSMIT) = c;
+}
+
+void uart_drv_early_putchar(unsigned char c)
+{
+    while (!(*UART_EARLY_REG(STAT) & STAT_TDRE));
+    *UART_EARLY_REG(TRANSMIT) = c;
 }
 #endif
 
