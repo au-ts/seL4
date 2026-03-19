@@ -1056,6 +1056,29 @@
                 </description>
             </error>
         </method>
+        <method id="X86VCPUSetAPICvPages" name="SetAPICvPages" manual_name="Set APICv Pages">
+            <condition><config var="CONFIG_INTEL_APICV"/></condition>
+            <brief>
+                Set the APIC-access and virtual-APIC physical address fields of the VMCS.
+            </brief>
+            <description>
+                Set the APIC-access and virtual-APIC physical address fields of the VMCS.
+            </description>
+            <param dir="in" name="apic_access" type="seL4_X86_Page"
+                description='Capability to a 4KiB APIC-access page.'/>
+            <param dir="in" name="virtual_apic" type="seL4_X86_Page"
+                description='Capability to a 4KiB virtual-APIC page.'/>
+            <error name="seL4_IllegalOperation">
+                <description>
+                    The <texttt text="_service"/> is a CPtr to a capability of the wrong type.
+                </description>
+            </error>
+            <error name="seL4_InvalidCapability">
+                <description>
+                    The <texttt text="apic_access"/> and/or <texttt text="virtual_apic"/> is a CPtr to a capability of the wrong type.
+                </description>
+            </error>
+        </method>
     </interface>
     <interface name="seL4_X86_EPTPDPT" manual_name="Extended Page Table Page-Directory Pointers Table"
         cap_description="Capability to the EPT PDPT being operated on.">

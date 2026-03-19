@@ -337,6 +337,43 @@ static bool_t BOOT_CODE init_vtx_fixed_values(bool_t useTrueMsrs)
         exit_control_mask |= BIT(15);
     }
 
+#ifdef CONFIG_INTEL_APICV
+    bool_t vmx_feature_use_tpr_shadow = true;
+    bool_t vmx_virt_apic_accesses = true;
+    bool_t vmx_apic_reg_virt = true;
+    bool_t vmx_virt_irq_delivery = true;
+
+    /* Check for APICv */
+    if (!(primary_control_low & BIT(21))) {
+        printf("vt-x: warning: Use TPR shadow not supported.\n");
+        vmx_feature_use_tpr_shadow = false;
+    }
+
+    if (!(secondary_control_low & BIT(0))) {
+        printf("vt-x: warning: Virtualize APIC accesses not supported.\n");
+        vmx_virt_apic_accesses = false;
+    }
+
+    if (!(secondary_control_low & BIT(8))) {
+         printf("vt-x: warning: APIC-register virtualization not supported.\n");
+        vmx_apic_reg_virt = false;
+    }
+
+    if (!(secondary_control_low & BIT(9))) {
+        printf("vt-x: warning: Virtual-interrupt delivery not supported.\n");
+        vmx_virt_irq_delivery = false;
+    }
+
+    if (!vmx_feature_use_tpr_shadow && !vmx_virt_apic_accesses && !vmx_apic_reg_virt && !vmx_virt_irq_delivery) {
+        printf("vt-x: Intel APICv features not supported. Consider disabling 'INTEL_APICV' config.\n");
+        return false;
+    }
+
+    // @billn do we need to prevent APICv features from being turned on if the virtual apic and apic access page caps
+    // have not been provided? Previously the kernel allow us to turn it on with these fields uninitialised anyways
+
+#endif /* CONFIG_INTEL_APICV */
+
     /* See if the hardware requires bits that require to be high to be low */
     uint32_t missing;
     missing = (~pin_control_low) & pin_control_mask;
@@ -893,6 +930,13 @@ static exception_t decodeWriteVMCS(cap_t cap, word_t length, bool_t call, word_t
     case VMX_CONTROL_EXCEPTION_BITMAP:
     case VMX_CONTROL_ENTRY_INTERRUPTION_INFO:
     case VMX_CONTROL_ENTRY_EXCEPTION_ERROR_CODE:
+#ifdef CONFIG_INTEL_APICV
+    case VMX_GUEST_INTERRUPT_STATUS:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_0:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_1:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_2:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_3:
+#endif /* CONFIG_INTEL_APICV */
         break;
     case VMX_CONTROL_PIN_EXECUTION_CONTROLS:
         value = applyFixedBits(value, pin_control_high, pin_control_low);
@@ -1048,6 +1092,15 @@ static exception_t decodeReadVMCS(cap_t cap, word_t length, bool_t call, word_t 
     case VMX_GUEST_CR0:
     case VMX_GUEST_CR3:
     case VMX_GUEST_CR4:
+#ifdef CONFIG_INTEL_APICV
+    case VMX_CONTROL_VIRTUAL_APIC_ADDRESS:
+    case VMX_CONTROL_APIC_ACCESS_ADDRESS:
+    case VMX_GUEST_INTERRUPT_STATUS:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_0:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_1:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_2:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_3:
+#endif /* CONFIG_INTEL_APICV */
         break;
     default:
         userError("VCPU ReadVMCS: Invalid field %lx.", (long)field);
@@ -1083,6 +1136,93 @@ static exception_t decodeSetTCB(cap_t cap, word_t length, word_t *buffer)
 
     return invokeSetTCB(VCPU_PTR(cap_vcpu_cap_get_capVCPUPtr(cap)), TCB_PTR(cap_thread_cap_get_capTCBPtr(tcbCap)));
 }
+
+#ifdef CONFIG_INTEL_APICV
+static exception_t invokeVCPUSetAPICvPages(vcpu_t *vcpu, word_t apicAccess_paddr, word_t virtualApic_paddr)
+{
+    if (ARCH_NODE_STATE(x86KSCurrentVCPU) != vcpu) {
+        switchVCPU(vcpu);
+    }
+
+    vmwrite(VMX_CONTROL_APIC_ACCESS_ADDRESS, apicAccess_paddr);
+    vmwrite(VMX_CONTROL_VIRTUAL_APIC_ADDRESS, virtualApic_paddr);
+
+    setThreadState(NODE_STATE(ksCurThread), ThreadState_Running);
+
+    return EXCEPTION_NONE;
+}
+
+static exception_t decodeVCPUSetAPICvPages(cap_t cap, word_t length, word_t *buffer)
+{
+    cte_t *apicAccessPageSlot;
+    cap_t apicAccessPageCap;
+    deriveCap_ret_t apicAccessPage_dc_ret;
+    pptr_t apicAccess_pptr;
+    word_t apicAccess_paddr;
+
+    cte_t *virtualApicPageSlot;
+    cap_t virtualApicPageCap;
+    deriveCap_ret_t virtualApicPage_dc_ret;
+    pptr_t virtualApic_pptr;
+    word_t virtualApic_paddr;
+
+    if (current_extra_caps.excaprefs[0] == NULL || current_extra_caps.excaprefs[1] == NULL) {
+        userError("VCPU SetAPICvPages: Truncated message.");
+        current_syscall_error.type = seL4_TruncatedMessage;
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    apicAccessPageSlot = current_extra_caps.excaprefs[0];
+    apicAccessPageCap = current_extra_caps.excaprefs[0]->cap;
+    virtualApicPageSlot = current_extra_caps.excaprefs[1];
+    virtualApicPageCap = current_extra_caps.excaprefs[1]->cap;
+
+    apicAccessPage_dc_ret = deriveCap(apicAccessPageSlot, apicAccessPageCap);
+    virtualApicPage_dc_ret = deriveCap(virtualApicPageSlot, virtualApicPageCap);
+
+    if (apicAccessPage_dc_ret.status != EXCEPTION_NONE) {
+        return apicAccessPage_dc_ret.status;
+    }
+
+    if (virtualApicPage_dc_ret.status != EXCEPTION_NONE) {
+        return virtualApicPage_dc_ret.status;
+    }
+
+    if (cap_get_capType(apicAccessPage_dc_ret.cap) != cap_frame_cap) {
+        userError("APIC-access cap is not a frame cap.");
+        current_syscall_error.type = seL4_InvalidCapability;
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    if (cap_get_capType(virtualApicPage_dc_ret.cap) != cap_frame_cap) {
+        userError("Virtual-APIC cap is not a frame cap.");
+        current_syscall_error.type = seL4_InvalidCapability;
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    if (cap_frame_cap_get_capFSize(apicAccessPage_dc_ret.cap) != X86_SmallPage) {
+        userError("APIC-access frame is not 4 KiB.");
+        current_syscall_error.type = seL4_InvalidCapability;
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    if (cap_frame_cap_get_capFSize(virtualApicPage_dc_ret.cap) != X86_SmallPage) {
+        userError("Virtual-APIC frame is not 4 KiB.");
+        current_syscall_error.type = seL4_InvalidCapability;
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    // todo check cap rights
+
+    apicAccess_pptr = cap_frame_cap_get_capFBasePtr(apicAccessPage_dc_ret.cap);
+    apicAccess_paddr = pptr_to_paddr((void *) apicAccess_pptr);
+
+    virtualApic_pptr = cap_frame_cap_get_capFBasePtr(virtualApicPage_dc_ret.cap);
+    virtualApic_paddr = pptr_to_paddr((void *) virtualApic_pptr);
+
+    return invokeVCPUSetAPICvPages(VCPU_PTR(cap_vcpu_cap_get_capVCPUPtr(cap)), apicAccess_paddr, virtualApic_paddr);
+}
+#endif /* CONFIG_INTEL_APICV */
 
 void vcpu_update_state_sysvmenter(vcpu_t *vcpu)
 {
@@ -1152,6 +1292,10 @@ exception_t decodeX86VCPUInvocation(
     case X86VCPUReadMSR:
         return decodeVCPUReadMSR(cap, length, buffer);
 #endif /* CONFIG_X86_64_VTX_64BIT_GUESTS */
+#ifdef CONFIG_INTEL_APICV
+    case X86VCPUSetAPICvPages:
+        return decodeVCPUSetAPICvPages(cap, length, buffer);
+#endif /* CONFIG_INTEL_APICV */
     default:
         userError("VCPU: Illegal operation.");
         current_syscall_error.type = seL4_IllegalOperation;
@@ -1362,6 +1506,10 @@ exception_t handleVmexit(void)
     case LDTR_OR_TR:
     case TPR_BELOW_THRESHOLD:
     case APIC_ACCESS:
+#ifdef CONFIG_INTEL_APICV
+    case APIC_WRITE:
+    case VIRTUALIZED_EOI:
+#endif /* CONFIG_INTEL_APICV */
         qualification = vmread(VMX_DATA_EXIT_QUALIFICATION);
         break;
     default:
