@@ -1419,7 +1419,7 @@ static exception_t decodeARMVSpaceRootInvocation(word_t invLabel, word_t length,
     pte_t pte;
 
     switch (invLabel) {
-    case ARMVSpaceAbsolutePageMap:
+    case ARMVSpaceAbsolutePageMap: {
         asid_t frame_asid;
         lookupSlot_ret_t lu_ret;
         cte_t *frameCapSlot;
@@ -1454,27 +1454,7 @@ static exception_t decodeARMVSpaceRootInvocation(word_t invLabel, word_t length,
                                 rightsFromWord(getSyscallArg(3, buffer)));
         attributes = vmAttributesFromWord(getSyscallArg(4, buffer));
         frameSize = cap_frame_cap_get_capFSize(frameCap);
-#if 0
-        printf("frame cap slot: %llu\n",frameCap.words[0]);
-        printf("frame vaddr to map: %016lx\n", vaddr);
-        printf("frame rights to map: %lu\n", vmRights);
-        printf("frame attrs to map: %llu\n", attributes.words[0]);
 
-        switch(frameSize) {
-            case ARMSmallPage:
-                printf("frame size in bits: %d\n", seL4_PageBits);
-                break;
-            case ARMLargePage:
-                printf("frame size in bits: %d\n", seL4_LargePageBits);
-                break;
-            case ARMHugePage:
-                printf("frame size in bits: %d\n", seL4_HugePageBits);
-                break;
-            default:
-                printf("ARMVSpaceAbsoluteMap: invalid frame size found!\n");
-                return EXCEPTION_FAULT;
-        }
-#endif
         vspaceRoot = VSPACE_PTR(cap_vspace_cap_get_capVSBasePtr(cap));
         asid = cap_vspace_cap_get_capVSMappedASID(cap);
 
@@ -1538,7 +1518,50 @@ static exception_t decodeARMVSpaceRootInvocation(word_t invLabel, word_t length,
         setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
         return performPageInvocationMap(asid, frameCap, frameCapSlot,
                                         makeUserPagePTE(base, vmRights, attributes, frameSize), pt_lu_ret.ptSlot);
+    }
+    case ARMVSpaceAbsolutePageUnmap: {
+        lookupSlot_ret_t lu_ret;
+        cte_t *frameCapSlot;
+        word_t frame_index, frame_w_bits;
+        cap_t frameCapRoot, frameCap;
 
+        frameCapRoot = current_extra_caps.excaprefs[0]->cap;
+        frame_index = getSyscallArg(0, buffer);
+        frame_w_bits = getSyscallArg(1, buffer);
+
+        lu_ret = lookupTargetSlot(frameCapRoot, frame_index, frame_w_bits);
+        if (lu_ret.status != EXCEPTION_NONE) {
+            userError("CNode operation: Target slot invalid.");
+            return lu_ret.status;
+        }
+        frameCapSlot = lu_ret.slot;
+        frameCap = frameCapSlot->cap;
+
+        if (cap_get_capType(frameCap) != cap_frame_cap) {
+            current_syscall_error.type = seL4_IllegalOperation;
+            userError("ARMVSpaceAbsoluteUnmap: invalid caps given.");
+            return EXCEPTION_SYSCALL_ERROR;
+        }
+#if 1   /* just for sanity check? */
+        vspaceRoot = VSPACE_PTR(cap_vspace_cap_get_capVSBasePtr(cap));
+        asid = cap_vspace_cap_get_capVSMappedASID(cap);
+
+        find_ret = findVSpaceForASID(asid);
+        if (unlikely(find_ret.status != EXCEPTION_NONE)) {
+            current_syscall_error.type = seL4_FailedLookup;
+            current_syscall_error.failedLookupWasSource = false;
+            return EXCEPTION_SYSCALL_ERROR;
+        }
+
+        if (unlikely(find_ret.vspace_root != vspaceRoot)) {
+            current_syscall_error.type = seL4_InvalidCapability;
+            current_syscall_error.invalidCapNumber = 1;
+            return EXCEPTION_SYSCALL_ERROR;
+        }
+#endif
+        setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
+        return performPageInvocationUnmap(frameCap, frameCapSlot);
+    }
     case ARMVSpaceClean_Data:
     case ARMVSpaceInvalidate_Data:
     case ARMVSpaceCleanInvalidate_Data:
