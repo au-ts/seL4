@@ -252,6 +252,13 @@ else()
   config_set(KernelArmHasTlbLock ARM_HAS_TLB_LOCK OFF)
 endif()
 
+config_option(
+  KernelArmAbsMap ARM_ABS_MAP
+  "Allow mapping to create from non-local/local frames via absolute
+   addressing scheme (CNode + index + depth)."
+  DEFAULT OFF
+  DEPENDS "KernelSel4ArchAarch64")
+
 add_sources(
   DEP "KernelArchARM"
   PREFIX src/arch/arm
