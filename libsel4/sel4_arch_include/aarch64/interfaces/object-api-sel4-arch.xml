@@ -274,6 +274,28 @@
                 </description>
             </error>
         </method>
+        <method id="ARMVSpaceAbsolutePageUnmap" name="Unmap_Absolute" manual_label="vspace_absolute_page_unmap">
+            <brief>
+                Unmap a page from an address space with an absolute addressing scheme,
+                or update the mapping attributes with an absolute addressing scheme.
+            </brief>
+            <description>
+                TODO.
+            </description>
+            <param dir="in" name="src_root" type="seL4_CNode" description="CPtr to the CNode that forms the root of the source CSpace. Must be at a depth equivalent to the wordsize."/>
+            <param dir="in" name="frame" type="seL4_Word" description="CPtr to the source slot of a frame. Resolved from the root of the source CSpace."/>
+            <param dir="in" name="src_depth" type="seL4_Uint8" description="Number of bits of src_index to resolve to find the source slot."/>
+            <error name="seL4_IllegalOperation">
+                <description>
+                    The <texttt text="_service"/> is a CPtr to a capability of the wrong type.
+                </description>
+            </error>
+            <error name="seL4_InvalidCapability">
+                <description>
+                    The <texttt text="_service"/> is a CPtr to a capability of the wrong type.
+                </description>
+            </error>
+        </method>
     </interface>
     <interface name="seL4_ARM_SMC" manual_name="SMC" cap_description="Capability to allow threads to make Secure Monitor Calls.">
         <method id="ARMSMCCall" name="Call" manual_name="SMC Call" manual_label="smc_call">
