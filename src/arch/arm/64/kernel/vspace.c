@@ -1419,6 +1419,7 @@ static exception_t decodeARMVSpaceRootInvocation(word_t invLabel, word_t length,
     pte_t pte;
 
     switch (invLabel) {
+#ifdef CONFIG_ARM_ABS_MAP
     case ARMVSpaceAbsolutePageMap: {
         asid_t frame_asid;
         lookupSlot_ret_t lu_ret;
@@ -1505,8 +1506,6 @@ static exception_t decodeARMVSpaceRootInvocation(word_t invLabel, word_t length,
 
         base = pptr_to_paddr((void *)cap_frame_cap_get_capFBasePtr(frameCap));
 
-        //while (1);
-
         lookupPTSlot_ret_t pt_lu_ret = lookupPTSlot(vspaceRoot, vaddr);
         if (unlikely(pt_lu_ret.ptBitsLeft != pageBitsForSize(frameSize))) {
             current_lookup_fault = lookup_fault_missing_capability_new(pt_lu_ret.ptBitsLeft);
@@ -1562,6 +1561,8 @@ static exception_t decodeARMVSpaceRootInvocation(word_t invLabel, word_t length,
         setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
         return performPageInvocationUnmap(frameCap, frameCapSlot);
     }
+#endif /* CONFIG_ARM_ABS_MAP */
+
     case ARMVSpaceClean_Data:
     case ARMVSpaceInvalidate_Data:
     case ARMVSpaceCleanInvalidate_Data:
