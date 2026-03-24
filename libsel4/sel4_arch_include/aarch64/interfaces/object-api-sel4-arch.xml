@@ -287,6 +287,8 @@
             <param dir="in" name="src_root" type="seL4_CNode" description="CPtr to the CNode that forms the root of the source CSpace. Must be at a depth equivalent to the wordsize."/>
             <param dir="in" name="frame" type="seL4_Word" description="CPtr to the source slot of a frame. Resolved from the root of the source CSpace."/>
             <param dir="in" name="src_depth" type="seL4_Uint8" description="Number of bits of src_index to resolve to find the source slot."/>
+            <param dir="in" name="num_frames" type="seL4_Word"
+                description="Number of frames to unmap."/>
             <error name="seL4_IllegalOperation">
                 <description>
                     The <texttt text="_service"/> is a CPtr to a capability of the wrong type.
