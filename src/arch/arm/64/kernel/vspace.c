@@ -1585,26 +1585,58 @@ static exception_t decodeARMVSpaceRootInvocation(word_t invLabel, word_t length,
     case ARMVSpaceAbsolutePageUnmap: {
         lookupSlot_ret_t lu_ret;
         cte_t *frameCapSlot;
-        word_t frame_index, frame_w_bits;
+        word_t frame_index, frame_w_bits, frame_num;
         cap_t frameCapRoot, frameCap;
+        word_t rootNodeSize;
 
         frameCapRoot = current_extra_caps.excaprefs[0]->cap;
         frame_index = getSyscallArg(0, buffer);
         frame_w_bits = getSyscallArg(1, buffer);
+        frame_num = getSyscallArg(2, buffer);
 
-        lu_ret = lookupTargetSlot(frameCapRoot, frame_index, frame_w_bits);
-        if (lu_ret.status != EXCEPTION_NONE) {
-            userError("CNode operation: Target slot invalid.");
-            return lu_ret.status;
-        }
-        frameCapSlot = lu_ret.slot;
-        frameCap = frameCapSlot->cap;
-
-        if (cap_get_capType(frameCap) != cap_frame_cap) {
-            current_syscall_error.type = seL4_IllegalOperation;
-            userError("ARMVSpaceAbsoluteUnmap: invalid caps given.");
+        rootNodeSize = 1ul << cap_cnode_cap_get_capCNodeRadix(frameCapRoot);
+        if (frame_index > rootNodeSize - 1) {
+            userError("ARMVSpaceAbsoluteUnmap: Destination frame index #%d too large.",
+                    (int)frame_index);
+            current_syscall_error.type = seL4_RangeError;
+            current_syscall_error.rangeErrorMin = 0;
+            current_syscall_error.rangeErrorMax = rootNodeSize - 1;
             return EXCEPTION_SYSCALL_ERROR;
         }
+
+        if (frame_num < 1 || frame_num > CONFIG_ARM_ABS_MAP_BATCH_LIMIT) {
+            userError("ARMVSpaceAbsoluteUnmap: Number of requested frames (%d) too small or large.",
+                    (int)frame_num);
+            current_syscall_error.type = seL4_RangeError;
+            current_syscall_error.rangeErrorMin = 1;
+            current_syscall_error.rangeErrorMax = CONFIG_ARM_ABS_MAP_BATCH_LIMIT;
+            return EXCEPTION_SYSCALL_ERROR;
+        }
+
+        if (frame_num > rootNodeSize - frame_index) {
+            userError("ARMVSpaceAbsoluteUnmap: Requested frame window overruns size of node.");
+            current_syscall_error.type = seL4_RangeError;
+            current_syscall_error.rangeErrorMin = 1;
+            current_syscall_error.rangeErrorMax = rootNodeSize - frame_index;
+            return EXCEPTION_SYSCALL_ERROR;
+        }
+
+        for (word_t i = frame_index; i < frame_index + frame_num; ++i) {
+            lu_ret = lookupTargetSlot(frameCapRoot, i, frame_w_bits);
+            if (lu_ret.status != EXCEPTION_NONE) {
+                userError("ARMVSpaceAbsoluteUnmap: Target slot (%d) invalid.", (int)i);
+                return lu_ret.status;
+            }
+            frameCapSlot = lu_ret.slot;
+            frameCap = frameCapSlot->cap;
+
+            if (cap_get_capType(frameCap) != cap_frame_cap) {
+                current_syscall_error.type = seL4_IllegalOperation;
+                userError("ARMVSpaceAbsoluteUnmap: invalid caps given.");
+                return EXCEPTION_SYSCALL_ERROR;
+            }
+        }
+
 #if 1   /* just for sanity check? */
         vspaceRoot = VSPACE_PTR(cap_vspace_cap_get_capVSBasePtr(cap));
         asid = cap_vspace_cap_get_capVSMappedASID(cap);
@@ -1622,8 +1654,16 @@ static exception_t decodeARMVSpaceRootInvocation(word_t invLabel, word_t length,
             return EXCEPTION_SYSCALL_ERROR;
         }
 #endif
+        /* ---- point of no return ---- */
+        for (word_t i = frame_index; i < frame_index + frame_num; ++i) {
+            lu_ret = lookupTargetSlot(frameCapRoot, i, frame_w_bits);
+            frameCapSlot = lu_ret.slot;
+            frameCap = frameCapSlot->cap;
+            performPageInvocationUnmap(frameCap, frameCapSlot);
+        }
+
         setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
-        return performPageInvocationUnmap(frameCap, frameCapSlot);
+        return EXCEPTION_NONE;
     }
 #endif /* CONFIG_ARM_ABS_MAP */
 
