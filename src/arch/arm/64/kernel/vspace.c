@@ -1424,37 +1424,48 @@ static exception_t decodeARMVSpaceRootInvocation(word_t invLabel, word_t length,
         asid_t frame_asid;
         lookupSlot_ret_t lu_ret;
         cte_t *frameCapSlot;
-        word_t frame_index, frame_w_bits;
+        word_t frame_index, frame_w_bits, frame_num;
         cap_t frameCapRoot, frameCap;
-        vptr_t vaddr;
+        word_t rootNodeSize;
+        vptr_t vaddr, curVaddr;
         paddr_t base;
         vm_attributes_t attributes;
-        vm_rights_t vmRights;
-        vm_page_size_t frameSize;
+        vm_rights_t vmRights, vmBaseRights;
+        seL4_CapRights_t vmGivenRights;
+        vm_page_size_t frameSize, frameBaseSize;
+        bool_t id_check_flag;
 
         frameCapRoot = current_extra_caps.excaprefs[0]->cap;
         frame_index = getSyscallArg(0, buffer);
         frame_w_bits = getSyscallArg(1, buffer);
+        frame_num = getSyscallArg(5, buffer);
 
-        lu_ret = lookupTargetSlot(frameCapRoot, frame_index, frame_w_bits);
-        if (lu_ret.status != EXCEPTION_NONE) {
-            userError("CNode operation: Target slot invalid.");
-            return lu_ret.status;
-        }
-        frameCapSlot = lu_ret.slot;
-        frameCap = frameCapSlot->cap;
-
-        if (cap_get_capType(frameCap) != cap_frame_cap) {
-            current_syscall_error.type = seL4_IllegalOperation;
-            userError("ARMVSpaceAbsoluteMap: invalid caps given.");
+        rootNodeSize = 1ul << cap_cnode_cap_get_capCNodeRadix(frameCapRoot);
+        if (frame_index > rootNodeSize - 1) {
+            userError("ARMVSpaceAbsoluteMap: Destination frame index #%d too large.",
+                    (int)frame_index);
+            current_syscall_error.type = seL4_RangeError;
+            current_syscall_error.rangeErrorMin = 0;
+            current_syscall_error.rangeErrorMax = rootNodeSize - 1;
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        vaddr = getSyscallArg(2, buffer);
-        vmRights = maskVMRights(cap_frame_cap_get_capFVMRights(frameCap),
-                                rightsFromWord(getSyscallArg(3, buffer)));
-        attributes = vmAttributesFromWord(getSyscallArg(4, buffer));
-        frameSize = cap_frame_cap_get_capFSize(frameCap);
+        if (frame_num < 1 || frame_num > CONFIG_ARM_ABS_MAP_BATCH_LIMIT) {
+            userError("ARMVSpaceAbsoluteMap: Number of requested frames (%d) too small or large.",
+                    (int)frame_num);
+            current_syscall_error.type = seL4_RangeError;
+            current_syscall_error.rangeErrorMin = 1;
+            current_syscall_error.rangeErrorMax = CONFIG_ARM_ABS_MAP_BATCH_LIMIT;
+            return EXCEPTION_SYSCALL_ERROR;
+        }
+
+        if (frame_num > rootNodeSize - frame_index) {
+            userError("ARMVSpaceAbsoluteMap: Requested frame window overruns size of node.");
+            current_syscall_error.type = seL4_RangeError;
+            current_syscall_error.rangeErrorMin = 1;
+            current_syscall_error.rangeErrorMax = rootNodeSize - frame_index;
+            return EXCEPTION_SYSCALL_ERROR;
+        }
 
         vspaceRoot = VSPACE_PTR(cap_vspace_cap_get_capVSBasePtr(cap));
         asid = cap_vspace_cap_get_capVSMappedASID(cap);
@@ -1472,51 +1483,104 @@ static exception_t decodeARMVSpaceRootInvocation(word_t invLabel, word_t length,
             return EXCEPTION_SYSCALL_ERROR;
         }
 
-        if (unlikely(!checkVPAlignment(frameSize, vaddr))) {
-            current_syscall_error.type = seL4_AlignmentError;
-            return EXCEPTION_SYSCALL_ERROR;
-        }
+        /* At this point, vspace and CNode are fine, check the frame caps now */
 
-        /* In the case of remap, the cap should have a valid asid */
-        frame_asid = cap_frame_cap_get_capFMappedASID(frameCap);
+        vaddr = getSyscallArg(2, buffer);
+        vmGivenRights = rightsFromWord(getSyscallArg(3, buffer));
+        attributes = vmAttributesFromWord(getSyscallArg(4, buffer));
 
-        if (frame_asid != asidInvalid) {
-            if (frame_asid != asid) {
-                userError("ARMPageMap: Attempting to remap a frame that does not belong to the passed address space");
+        id_check_flag = false;
+
+        /* Ensure that the frame slots are all frames. */
+        for (word_t i = frame_index; i < frame_index + frame_num; i++) {
+
+            lu_ret = lookupTargetSlot(frameCapRoot, i, frame_w_bits);
+            if (lu_ret.status != EXCEPTION_NONE) {
+                userError("ARMVSpaceAbsoluteMap: Target slot (%d) invalid at the given CNode.", (int)i);
+                return lu_ret.status;
+            }
+            frameCapSlot = lu_ret.slot;
+            frameCap = frameCapSlot->cap;
+
+            if (cap_get_capType(frameCap) != cap_frame_cap) {
+                current_syscall_error.type = seL4_IllegalOperation;
+                userError("ARMVSpaceAbsoluteMap: invalid caps given.");
+                return EXCEPTION_SYSCALL_ERROR;
+            }
+
+            vmRights = maskVMRights(cap_frame_cap_get_capFVMRights(frameCap), vmGivenRights);
+            frameSize = cap_frame_cap_get_capFSize(frameCap);
+
+            if (id_check_flag != true) {
+                vmBaseRights = vmRights;
+                frameBaseSize = frameSize;
+                id_check_flag = true;
+            }
+            if (unlikely(frameBaseSize != frameSize || vmBaseRights != vmRights)) {
+                userError("ARMVSpaceAbsoluteMap: given frame caps are not identical in rights or size.");
                 current_syscall_error.type = seL4_InvalidCapability;
                 current_syscall_error.invalidCapNumber = 1;
                 return EXCEPTION_SYSCALL_ERROR;
+            }
 
-            } else if (cap_frame_cap_get_capFMappedAddress(frameCap) != vaddr) {
-                userError("ARMPageMap: Attempting to map frame into multiple addresses");
-                current_syscall_error.type = seL4_InvalidArgument;
-                current_syscall_error.invalidArgumentNumber = 0;
+            curVaddr = vaddr + (i - frame_index) * BIT(pageBitsForSize(frameSize));
+            if (unlikely(!checkVPAlignment(frameSize, curVaddr))) {
+                current_syscall_error.type = seL4_AlignmentError;
                 return EXCEPTION_SYSCALL_ERROR;
             }
-        } else {
-            if (unlikely(vaddr + BIT(pageBitsForSize(frameSize)) - 1 > USER_TOP)) {
-                current_syscall_error.type = seL4_InvalidArgument;
-                current_syscall_error.invalidArgumentNumber = 0;
+
+            /* In the case of remap, the cap should have a valid asid */
+            frame_asid = cap_frame_cap_get_capFMappedASID(frameCap);
+
+            if (frame_asid != asidInvalid) {
+                if (frame_asid != asid) {
+                    userError("ARMVSpaceAbsoluteMap: Attempting to remap a frame that does not belong to the passed address space");
+                    current_syscall_error.type = seL4_InvalidCapability;
+                    current_syscall_error.invalidCapNumber = 0;
+                    return EXCEPTION_SYSCALL_ERROR;
+
+                } else if (cap_frame_cap_get_capFMappedAddress(frameCap) != curVaddr) {
+                    userError("ARMVSpaceAbsoluteMap: Attempting to map frame into multiple addresses");
+                    current_syscall_error.type = seL4_InvalidArgument;
+                    current_syscall_error.invalidArgumentNumber = 2;
+                    return EXCEPTION_SYSCALL_ERROR;
+                }
+            } else {
+                if (unlikely(curVaddr + BIT(pageBitsForSize(frameSize)) - 1 > USER_TOP)) {
+                    current_syscall_error.type = seL4_InvalidArgument;
+                    current_syscall_error.invalidArgumentNumber = 0;
+                    return EXCEPTION_SYSCALL_ERROR;
+                }
+            }
+            lookupPTSlot_ret_t pt_lu_ret = lookupPTSlot(vspaceRoot, curVaddr);
+            if (unlikely(pt_lu_ret.ptBitsLeft != pageBitsForSize(frameSize))) {
+                current_lookup_fault = lookup_fault_missing_capability_new(pt_lu_ret.ptBitsLeft);
+                current_syscall_error.type = seL4_FailedLookup;
+                current_syscall_error.failedLookupWasSource = false;
                 return EXCEPTION_SYSCALL_ERROR;
             }
         }
+        /* ---- point of no return ---- */
 
-        frameCap = cap_frame_cap_set_capFMappedASID(frameCap, asid);
-        frameCap = cap_frame_cap_set_capFMappedAddress(frameCap, vaddr);
+        for (word_t i = frame_index; i < frame_index + frame_num; i++) {
+            lu_ret = lookupTargetSlot(frameCapRoot, i, frame_w_bits);
+            frameCapSlot = lu_ret.slot;
+            frameCap = frameCapSlot->cap;
 
-        base = pptr_to_paddr((void *)cap_frame_cap_get_capFBasePtr(frameCap));
+            vmRights = maskVMRights(cap_frame_cap_get_capFVMRights(frameCap), vmGivenRights);
+            frameSize = cap_frame_cap_get_capFSize(frameCap);
+            curVaddr = vaddr + (i - frame_index) * BIT(pageBitsForSize(frameSize));
 
-        lookupPTSlot_ret_t pt_lu_ret = lookupPTSlot(vspaceRoot, vaddr);
-        if (unlikely(pt_lu_ret.ptBitsLeft != pageBitsForSize(frameSize))) {
-            current_lookup_fault = lookup_fault_missing_capability_new(pt_lu_ret.ptBitsLeft);
-            current_syscall_error.type = seL4_FailedLookup;
-            current_syscall_error.failedLookupWasSource = false;
-            return EXCEPTION_SYSCALL_ERROR;
+            frameCap = cap_frame_cap_set_capFMappedASID(frameCap, asid);
+            frameCap = cap_frame_cap_set_capFMappedAddress(frameCap, curVaddr);
+
+            base = pptr_to_paddr((void *)cap_frame_cap_get_capFBasePtr(frameCap));
+            lookupPTSlot_ret_t pt_lu_ret = lookupPTSlot(vspaceRoot, curVaddr);
+            performPageInvocationMap(asid, frameCap, frameCapSlot,
+                                     makeUserPagePTE(base, vmRights, attributes, frameSize), pt_lu_ret.ptSlot);
         }
-
         setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
-        return performPageInvocationMap(asid, frameCap, frameCapSlot,
-                                        makeUserPagePTE(base, vmRights, attributes, frameSize), pt_lu_ret.ptSlot);
+        return EXCEPTION_NONE;
     }
     case ARMVSpaceAbsolutePageUnmap: {
         lookupSlot_ret_t lu_ret;

@@ -259,6 +259,12 @@ config_option(
   DEFAULT OFF
   DEPENDS "KernelSel4ArchAarch64")
 
+config_string(
+  KernelArmAbsMapBatchLimit ARM_ABS_MAP_BATCH_LIMIT
+  "Maximum number of frames that can be mapped in a single Absolute_map() invocation." DEFAULT 256
+  DEPENDS "KernelArmAbsMap"
+  UNQUOTE)
+
 add_sources(
   DEP "KernelArchARM"
   PREFIX src/arch/arm

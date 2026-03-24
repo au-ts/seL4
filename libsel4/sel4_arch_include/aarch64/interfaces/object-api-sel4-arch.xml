@@ -239,6 +239,8 @@
                     VM Attributes for the mapping.<docref> Possible values for this type are given in <autoref label="ch:vspace"/>  .</docref>
                 </description>
             </param>
+            <param dir="in" name="num_frames" type="seL4_Word"
+                description="Number of frames to map."/>
             <error name="seL4_AlignmentError">
                 <description>
                     The <texttt text="vaddr"/> is not aligned to the page size of <texttt text="_service"/>.
