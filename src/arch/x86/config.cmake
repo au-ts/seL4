@@ -315,6 +315,19 @@ config_option(
   DEFAULT OFF
   DEPENDS "KernelArchX86")
 
+config_option(
+  KernelX86AbsMap X86_ABS_MAP
+  "Allow mapping to create from non-local/local frames via absolute
+   addressing scheme (CNode + index + depth)."
+  DEFAULT OFF
+  DEPENDS "KernelArchX86")
+
+config_string(
+  KernelX86AbsMapBatchLimit X86_ABS_MAP_BATCH_LIMIT
+  "Maximum number of frames that can be mapped in a single Absolute_map() invocation." DEFAULT 256
+  DEPENDS "KernelX86AbsMap"
+  UNQUOTE)
+
 if(KernelSel4ArchIA32)
   set(KernelSetTLSBaseSelf ON)
   math(EXPR KernelPaddrUserTop "0xffff0000")
