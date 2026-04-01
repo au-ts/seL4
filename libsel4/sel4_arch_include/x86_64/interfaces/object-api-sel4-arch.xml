@@ -29,6 +29,93 @@
         <member name="gs_base"/>
     </struct>
 
+    <interface name="seL4_X64_PML4" manual_name="PML4" cap_description="Capability to the VSpace being operated on.">
+        <method id="X86VSpaceAbsolutePageMap" name="Map_Absolute" manual_label="vspace_absolute_page_map">
+            <brief>
+                Map a page into an address space with an absolute addressing scheme,
+                or update the mapping attributes with an absolute addressing scheme.
+            </brief>
+            <description>
+                TODO.
+            </description>
+            <param dir="in" name="src_root" type="seL4_CNode" description="CPtr to the CNode that forms the root of the source CSpace. Must be at a depth equivalent to the wordsize."/>
+            <param dir="in" name="frame" type="seL4_Word" description="CPtr to the source slot of a frame. Resolved from the root of the source CSpace."/>
+            <param dir="in" name="src_depth" type="seL4_Uint8" description="Number of bits of src_index to resolve to find the source slot."/>
+            <param dir="in" name="vaddr" type="seL4_Word"
+            description="Virtual address to map the page into."/>
+            <param dir="in" name="rights" type="seL4_CapRights_t">
+                <description>
+                    Rights for the mapping.<docref> Possible values for this type are given in <autoref label="sec:cap_rights"/>  .</docref>
+                </description>
+            </param>
+            <param dir="in" name="attr" type="seL4_X86_VMAttributes">
+                <description>
+                    VM Attributes for the mapping.<docref> Possible values for this type are given in <autoref label="ch:vspace"/>  .</docref>
+                </description>
+            </param>
+            <param dir="in" name="num_frames" type="seL4_Word"
+                description="Number of frames to map."/>
+            <error name="seL4_AlignmentError">
+                <description>
+                    The <texttt text="vaddr"/> is not aligned to the page size of <texttt text="_service"/>.
+                </description>
+            </error>
+            <error name="seL4_DeleteFirst">
+                <description>
+                    A mapping already exists in <texttt text="vspace"/> at <texttt text="vaddr"/>.
+                </description>
+            </error>
+            <error name="seL4_FailedLookup">
+                <description>
+                    The <texttt text="vspace"/> does not have a paging structure at the required level mapped at <texttt text="vaddr"/>.
+                    Or, <texttt text="vspace"/> is not assigned to an ASID pool.
+                </description>
+            </error>
+            <error name="seL4_IllegalOperation">
+                <description>
+                    The <texttt text="_service"/> is a CPtr to a capability of the wrong type.
+                </description>
+            </error>
+            <error name="seL4_InvalidArgument">
+                <description>
+                    The <texttt text="_service"/> is already mapped in <texttt text="vspace"/> at a different virtual address.
+                    Or, <texttt text="vaddr"/> is in the kernel virtual address range.
+                </description>
+            </error>
+            <error name="seL4_InvalidCapability">
+                <description>
+                    The <texttt text="_service"/> or <texttt text="vspace"/> is a CPtr to a capability of the wrong type.
+                    Or, <texttt text="vspace"/> is not assigned to an ASID pool.
+                    Or, <texttt text="_service"/> is already mapped in a different VSpace.
+                </description>
+            </error>
+        </method>
+        <method id="X86VSpaceAbsolutePageUnmap" name="Unmap_Absolute" manual_label="vspace_absolute_page_unmap">
+            <brief>
+                Unmap a page from an address space with an absolute addressing scheme,
+                or update the mapping attributes with an absolute addressing scheme.
+            </brief>
+            <description>
+                TODO.
+            </description>
+            <param dir="in" name="src_root" type="seL4_CNode" description="CPtr to the CNode that forms the root of the source CSpace. Must be at a depth equivalent to the wordsize."/>
+            <param dir="in" name="frame" type="seL4_Word" description="CPtr to the source slot of a frame. Resolved from the root of the source CSpace."/>
+            <param dir="in" name="src_depth" type="seL4_Uint8" description="Number of bits of src_index to resolve to find the source slot."/>
+            <param dir="in" name="num_frames" type="seL4_Word"
+                description="Number of frames to unmap."/>
+            <error name="seL4_IllegalOperation">
+                <description>
+                    The <texttt text="_service"/> is a CPtr to a capability of the wrong type.
+                </description>
+            </error>
+            <error name="seL4_InvalidCapability">
+                <description>
+                    The <texttt text="_service"/> is a CPtr to a capability of the wrong type.
+                </description>
+            </error>
+        </method>
+    </interface>
+
     <interface name="seL4_X86_PDPT" manual_name="PDPT" cap_description="Capability to the PDPT being operated on.">
         <method id="X86PDPTMap" name="Map">
             <brief>
