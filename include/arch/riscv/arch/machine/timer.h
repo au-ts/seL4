@@ -62,8 +62,13 @@ static inline ticks_t getCurrentTime(void)
 /* set the next deadline irq - deadline is absolute */
 static inline void setDeadline(ticks_t deadline)
 {
+#ifdef CONFIG_RISCV_USE_SSTC
+    // TODO: 32-bit support
+    asm volatile("csrw stimecmp, %0" :: "rK"(deadline));
+#else
     /* Setting the timer acknowledges any existing IRQs */
     sbi_set_timer(deadline);
+#endif
 }
 
 /* ack previous deadline irq */

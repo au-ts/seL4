@@ -40,6 +40,13 @@ config_option(
   DEFAULT OFF
   DEPENDS "KernelArchRiscV")
 
+config_option(
+  KernelRiscvUseSstc
+  RISCV_USE_SSTC
+  "TODO"
+  DEFAULT OFF
+  DEPENDS "KernelArchRiscV")
+
 # Until RISC-V has instructions to count leading/trailing zeros, we provide
 # library implementations. Platforms that implement the bit manipulation
 # extension can override these settings to remove the library functions from
