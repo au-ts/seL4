@@ -10,6 +10,8 @@
 #include <api/failures.h>
 
 #define VCPU_VMCS_SIZE 4096
+#define VCPU_APICV_ACCESS_PAGE_SIZE 4096
+#define VCPU_APICV_VIRTUAL_APIC_PAGE_SIZE 4096
 #define VCPU_IOBITMAP_SIZE 8192
 
 #define VMX_CONTROL_VPID 0x00000000
@@ -22,6 +24,7 @@
 #define VMX_GUEST_GS_SELECTOR 0x0000080A
 #define VMX_GUEST_LDTR_SELECTOR 0x0000080C
 #define VMX_GUEST_TR_SELECTOR 0x0000080E
+#define VMX_GUEST_INTERRUPT_STATUS 0x00000810
 
 #define VMX_HOST_ES_SELECTOR 0x00000C00
 #define VMX_HOST_CS_SELECTOR 0x00000C02
@@ -42,6 +45,10 @@
 #define VMX_CONTROL_VIRTUAL_APIC_ADDRESS 0x00002012
 #define VMX_CONTROL_APIC_ACCESS_ADDRESS 0x00002014
 #define VMX_CONTROL_EPT_POINTER 0x0000201A
+#define VMX_CONTROL_EOI_EXIT_BITMAP_0 0x0000201C
+#define VMX_CONTROL_EOI_EXIT_BITMAP_1 0x0000201E
+#define VMX_CONTROL_EOI_EXIT_BITMAP_2 0x00002020
+#define VMX_CONTROL_EOI_EXIT_BITMAP_3 0x00002022
 
 #define VMX_DATA_GUEST_PHYSICAL 0x00002400
 
@@ -211,6 +218,7 @@ enum exit_reasons {
     /* 0x2A */
     TPR_BELOW_THRESHOLD = 0x2B,
     APIC_ACCESS = 0x2C,
+    VIRTUALIZED_EOI = 0x2D,
     GDTR_OR_IDTR = 0x2E,
     LDTR_OR_TR = 0x2F,
     EPT_VIOLATION = 0x30,
@@ -220,7 +228,8 @@ enum exit_reasons {
     VMX_PREEMPTION_TIMER = 0x34,
     INVVPID = 0x35,
     WBINVD = 0x36,
-    XSETBV = 0x37
+    XSETBV = 0x37,
+    APIC_WRITE = 0x38
 };
 
 #define VPID_INVALID 0
@@ -274,7 +283,7 @@ enum vcpu_msr_register {
 
 #endif
 
-typedef enum vcpu_gp_register vcpu_gp_register_t;;
+typedef enum vcpu_gp_register vcpu_gp_register_t;
 
 const vcpu_gp_register_t crExitRegs[];
 
@@ -282,10 +291,23 @@ struct vcpu {
     /* Storage for VMCS region. First field of vcpu_t so they share address.
      * Will use at most 4KiB of memory. Statically reserve 4KiB for convenience. */
     char vmcs[VCPU_VMCS_SIZE];
+
+#ifdef CONFIG_INTEL_APICV
+    /* Storage for the 2 pages needed for Intel APICv. Place it after the VMCS
+     * to maintain 4KiB alignment. */
+    char apicv_access[VCPU_APICV_ACCESS_PAGE_SIZE];
+    char apicv_virtual_apic[VCPU_APICV_VIRTUAL_APIC_PAGE_SIZE];
+#endif
+
     word_t io[VCPU_IOBITMAP_SIZE / sizeof(word_t)];
 
     /* Place the fpu state here so that it is aligned */
     user_fpu_state_t fpuState;
+
+#ifdef CONFIG_INTEL_APICV
+    asid_t apicv_access_mapped_asid;
+    asid_t apicv_virtual_apic_mapped_asid;
+#endif
 
     /* Arrays for guest and hosts MSR registers */
 #ifdef CONFIG_X86_64_VTX_64BIT_GUESTS

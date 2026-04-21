@@ -91,6 +91,16 @@ config_string(
   UNQUOTE)
 
 config_option(
+  KernelIntelApicv
+  INTEL_APICV
+  "Enable support for Intel APIC Virtualization Technology (APICv). This allows userspace VMM
+   software to use hardware support for emulating many virtual APIC accesses, tracking virtual APIC
+   state, and delivering virtual interrupts directly in VMX non-root operation without requiring a
+   VM exit. APICv is not available on all machines."
+  DEFAULT OFF
+  DEPENDS "KernelArchX86;KernelVTX;NOT KernelVerificationBuild")
+
+config_option(
   KernelHugePage HUGE_PAGE
   "Add support for 1GB huge page. Not all recent processor models support this feature." DEFAULT ON
   DEPENDS "KernelSel4ArchX86_64" DEFAULT_DISABLED OFF)

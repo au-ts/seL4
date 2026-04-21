@@ -337,6 +337,39 @@ static bool_t BOOT_CODE init_vtx_fixed_values(bool_t useTrueMsrs)
         exit_control_mask |= BIT(15);
     }
 
+#ifdef CONFIG_INTEL_APICV
+    bool_t vmx_feature_use_tpr_shadow = true;
+    bool_t vmx_virt_apic_accesses = true;
+    bool_t vmx_apic_reg_virt = true;
+    bool_t vmx_virt_irq_delivery = true;
+
+    /* Check for APICv */
+    if (!(primary_control_low & BIT(21))) {
+        printf("vt-x: warning: Use TPR shadow not supported.\n");
+        vmx_feature_use_tpr_shadow = false;
+    }
+
+    if (!(secondary_control_low & BIT(0))) {
+        printf("vt-x: warning: Virtualize APIC accesses not supported.\n");
+        vmx_virt_apic_accesses = false;
+    }
+
+    if (!(secondary_control_low & BIT(8))) {
+         printf("vt-x: warning: APIC-register virtualization not supported.\n");
+        vmx_apic_reg_virt = false;
+    }
+
+    if (!(secondary_control_low & BIT(9))) {
+        printf("vt-x: warning: Virtual-interrupt delivery not supported.\n");
+        vmx_virt_irq_delivery = false;
+    }
+
+    if (!vmx_feature_use_tpr_shadow && !vmx_virt_apic_accesses && !vmx_apic_reg_virt && !vmx_virt_irq_delivery) {
+        printf("vt-x: Intel APICv features not supported. Consider disabling 'INTEL_APICV' config.\n");
+        return false;
+    }
+#endif /* CONFIG_INTEL_APICV */
+
     /* See if the hardware requires bits that require to be high to be low */
     uint32_t missing;
     missing = (~pin_control_low) & pin_control_mask;
@@ -527,6 +560,14 @@ void vcpu_init(vcpu_t *vcpu)
     memset(vcpu->io, ~(word_t)0, VCPU_IOBITMAP_SIZE);
     vmwrite(VMX_CONTROL_IOA_ADDRESS, pptr_to_paddr(vcpu->io));
     vmwrite(VMX_CONTROL_IOB_ADDRESS, pptr_to_paddr((char *)vcpu->io + (VCPU_IOBITMAP_SIZE / 2)));
+
+#ifdef CONFIG_INTEL_APICV
+    memset(vcpu->apicv_access, ~(word_t)0, VCPU_APICV_ACCESS_PAGE_SIZE);
+    memset(vcpu->apicv_virtual_apic, ~(word_t)0, VCPU_APICV_VIRTUAL_APIC_PAGE_SIZE);
+
+    vmwrite(VMX_CONTROL_APIC_ACCESS_ADDRESS, pptr_to_paddr(vcpu->apicv_access));
+    vmwrite(VMX_CONTROL_VIRTUAL_APIC_ADDRESS, pptr_to_paddr(vcpu->apicv_virtual_apic));
+#endif /* CONFIG_INTEL_APICV */
 }
 
 static void dissociateVcpuTcb(tcb_t *tcb, vcpu_t *vcpu)
@@ -893,6 +934,13 @@ static exception_t decodeWriteVMCS(cap_t cap, word_t length, bool_t call, word_t
     case VMX_CONTROL_EXCEPTION_BITMAP:
     case VMX_CONTROL_ENTRY_INTERRUPTION_INFO:
     case VMX_CONTROL_ENTRY_EXCEPTION_ERROR_CODE:
+#ifdef CONFIG_INTEL_APICV
+    case VMX_GUEST_INTERRUPT_STATUS:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_0:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_1:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_2:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_3:
+#endif /* CONFIG_INTEL_APICV */
         break;
     case VMX_CONTROL_PIN_EXECUTION_CONTROLS:
         value = applyFixedBits(value, pin_control_high, pin_control_low);
@@ -1048,6 +1096,13 @@ static exception_t decodeReadVMCS(cap_t cap, word_t length, bool_t call, word_t 
     case VMX_GUEST_CR0:
     case VMX_GUEST_CR3:
     case VMX_GUEST_CR4:
+#ifdef CONFIG_INTEL_APICV
+    case VMX_GUEST_INTERRUPT_STATUS:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_0:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_1:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_2:
+    case VMX_CONTROL_EOI_EXIT_BITMAP_3:
+#endif /* CONFIG_INTEL_APICV */
         break;
     default:
         userError("VCPU ReadVMCS: Invalid field %lx.", (long)field);
@@ -1083,6 +1138,237 @@ static exception_t decodeSetTCB(cap_t cap, word_t length, word_t *buffer)
 
     return invokeSetTCB(VCPU_PTR(cap_vcpu_cap_get_capVCPUPtr(cap)), TCB_PTR(cap_thread_cap_get_capTCBPtr(tcbCap)));
 }
+
+#ifdef CONFIG_INTEL_APICV
+static exception_t decodeVCPUMapApicAccessPage(
+    cap_t cap,
+    word_t length,
+    word_t *buffer)
+{
+    vcpu_t          *vcpu;
+    paddr_t         paddr;
+    word_t          gpa;
+    cap_t           pml4Cap;
+    ept_pml4e_t     *pml4;
+    asid_t          asid;
+    lookupEPTPTSlot_ret_t lu_ret;
+    ept_pte_t pte;
+
+    vcpu = VCPU_PTR(cap_vcpu_cap_get_capVCPUPtr(cap));
+
+    if (length < 1 || current_extra_caps.excaprefs[0] == NULL) {
+        userError("X86VCPUMapApicAccessPage: Truncated Message.");
+
+        current_syscall_error.type = seL4_TruncatedMessage;
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    pml4Cap = current_extra_caps.excaprefs[0]->cap;
+
+    if (cap_get_capType(pml4Cap) != cap_ept_pml4_cap ||
+        !cap_ept_pml4_cap_get_capPML4IsMapped(pml4Cap)) {
+        userError("X86VCPUMapApicAccessPage: Attempting to map frame into invalid EPT PML4.");
+        current_syscall_error.type = seL4_InvalidCapability;
+        current_syscall_error.invalidCapNumber = 1;
+
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    if (vcpu->apicv_access_mapped_asid != asidInvalid) {
+        userError("X86VCPUMapApicAccessPage: Already mapped.");
+        current_syscall_error.type = seL4_InvalidCapability;
+
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    paddr = pptr_to_paddr(vcpu->apicv_access);
+    pml4 = (ept_pml4e_t *)(cap_ept_pml4_cap_get_capPML4BasePtr(pml4Cap));
+    asid = cap_ept_pml4_cap_get_capPML4MappedASID(pml4Cap);
+
+    findEPTForASID_ret_t find_ret = findEPTForASID(asid);
+    if (find_ret.status != EXCEPTION_NONE) {
+        current_syscall_error.type = seL4_FailedLookup;
+        current_syscall_error.failedLookupWasSource = false;
+
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    if (find_ret.ept != pml4) {
+        current_syscall_error.type = seL4_InvalidCapability;
+        current_syscall_error.invalidCapNumber = 1;
+
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    gpa = getSyscallArg(0, buffer);
+
+    if (!checkVPAlignment(X86_SmallPage, gpa)) {
+        userError("X86VCPUMapApicAccessPage: GPA 0x%lx unaligned.\n", gpa);
+        current_syscall_error.type = seL4_AlignmentError;
+
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    lu_ret = lookupEPTPTSlot(pml4, gpa);
+    if (lu_ret.status != EXCEPTION_NONE) {
+        userError("X86VCPUMapApicAccessPage: paging structures not found.\n");
+        current_syscall_error.type = seL4_FailedLookup;
+        current_syscall_error.failedLookupWasSource = false;
+        /* current_lookup_fault will have been set by lookupEPTPTSlot */
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    if (ept_pte_ptr_get_read(lu_ret.ptSlot)) {
+        userError("X86EPTPageMap: Mapping already present.");
+        current_syscall_error.type = seL4_DeleteFirst;
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    vcpu->apicv_access_mapped_asid = asid;
+
+    printf("X86EPTPageMap: success for GPA 0x%lx, HPA 0x%lx\n", gpa, paddr);
+
+    pte = ept_pte_new(
+                paddr,
+                0, /* avl_cte_depth */
+                0, /* ignore_pat */
+                EPTWriteBack, /* cache type */
+                0, /* execute */
+                1, /* write */
+                1  /* read */);
+
+    cte_t throwaway;
+    setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
+    return performEPTPageMapPTE(cap, &throwaway, lu_ret.ptSlot, pte, pml4);
+}
+
+static exception_t decodeVCPUMapVirtualApicPage(
+    cap_t cap,
+    word_t length,
+    word_t *buffer)
+{
+    // (void) cap;
+    // (void) length;
+    // (void) buffer;
+    // return EXCEPTION_NONE;
+
+    vcpu_t          *vcpu;
+    word_t          vaddr;
+    // word_t          vtop;
+    // word_t          w_rightsMask;
+    paddr_t         paddr;
+    cap_t           vspaceCap;
+    vspace_root_t  *vspace;
+    vm_rights_t     vmRights;
+    vm_attributes_t vmAttr;
+    asid_t          asid;
+
+    vcpu = VCPU_PTR(cap_vcpu_cap_get_capVCPUPtr(cap));
+
+    if (length < 3 || current_extra_caps.excaprefs[0] == NULL) {
+        userError("X86VCPUMapApicAccessPage: Truncated Message.");
+
+        current_syscall_error.type = seL4_TruncatedMessage;
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    vaddr = getSyscallArg(0, buffer);
+    // w_rightsMask = getSyscallArg(1, buffer);
+    vmAttr = vmAttributesFromWord(getSyscallArg(2, buffer));
+    vspaceCap = current_extra_caps.excaprefs[0]->cap;
+
+    if (!isValidNativeRoot(vspaceCap)) {
+        userError("X86FrameMap: Attempting to map frame into invalid page directory cap.");
+        current_syscall_error.type = seL4_InvalidCapability;
+        current_syscall_error.invalidCapNumber = 1;
+
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    vspace = (vspace_root_t *)pptr_of_cap(vspaceCap);
+    asid = cap_get_capMappedASID(vspaceCap);
+    // vmRights = maskVMRights(capVMRights, rightsFromWord(w_rightsMask));
+    vmRights = VMReadWrite;
+
+    // @billn understand what this is
+    // if (cap_frame_cap_get_capFMappedASID(cap) != asidInvalid) {
+    //     if (cap_frame_cap_get_capFMappedASID(cap) != asid) {
+    //         current_syscall_error.type = seL4_InvalidCapability;
+    //         current_syscall_error.invalidCapNumber = 1;
+
+    //         return EXCEPTION_SYSCALL_ERROR;
+    //     }
+
+    //     if (cap_frame_cap_get_capFMapType(cap) != X86_MappingVSpace) {
+    //         userError("X86Frame: Attempting to remap frame with different mapping type");
+    //         current_syscall_error.type = seL4_IllegalOperation;
+
+    //         return EXCEPTION_SYSCALL_ERROR;
+    //     }
+
+    //     if (cap_frame_cap_get_capFMappedAddress(cap) != vaddr) {
+    //         userError("X86Frame: Attempting to map frame into multiple addresses");
+    //         current_syscall_error.type = seL4_InvalidArgument;
+    //         current_syscall_error.invalidArgumentNumber = 0;
+
+    //         return EXCEPTION_SYSCALL_ERROR;
+    //     }
+    // } else {
+    //     vtop = vaddr + BIT(pageBitsForSize(frameSize));
+
+    //     /* check vaddr and vtop against USER_TOP to catch case where vaddr + frame_size wrapped around */
+    //     if (vaddr > USER_TOP || vtop > USER_TOP) {
+    //         userError("X86Frame: Mapping address too high.");
+    //         current_syscall_error.type = seL4_InvalidArgument;
+    //         current_syscall_error.invalidArgumentNumber = 0;
+
+    //         return EXCEPTION_SYSCALL_ERROR;
+    //     }
+    // }
+
+    {
+        findVSpaceForASID_ret_t find_ret;
+
+        find_ret = findVSpaceForASID(asid);
+        if (find_ret.status != EXCEPTION_NONE) {
+            current_syscall_error.type = seL4_FailedLookup;
+            current_syscall_error.failedLookupWasSource = false;
+
+            return EXCEPTION_SYSCALL_ERROR;
+        }
+
+        if (find_ret.vspace_root != vspace) {
+            current_syscall_error.type = seL4_InvalidCapability;
+            current_syscall_error.invalidCapNumber = 1;
+
+            return EXCEPTION_SYSCALL_ERROR;
+        }
+    }
+
+    if (!checkVPAlignment(X86_SmallPage, vaddr)) {
+        current_syscall_error.type = seL4_AlignmentError;
+
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    paddr = pptr_to_paddr(vcpu->apicv_virtual_apic);
+
+    {
+        create_mapping_pte_return_t map_ret;
+
+        map_ret = createSafeMappingEntries_PTE(paddr, vaddr, vmRights, vmAttr, vspace);
+        if (map_ret.status != EXCEPTION_NONE) {
+            return map_ret.status;
+        }
+
+        setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
+
+        cte_t throwaway;
+        return performX86PageInvocationMapPTE(cap, &throwaway, map_ret.ptSlot, map_ret.pte, vspace);
+    }
+}
+
+#endif /* CONFIG_INTEL_APICV */
 
 void vcpu_update_state_sysvmenter(vcpu_t *vcpu)
 {
@@ -1152,6 +1438,12 @@ exception_t decodeX86VCPUInvocation(
     case X86VCPUReadMSR:
         return decodeVCPUReadMSR(cap, length, buffer);
 #endif /* CONFIG_X86_64_VTX_64BIT_GUESTS */
+#ifdef CONFIG_INTEL_APICV
+    case X86VCPUMapApicAccessPage:
+        return decodeVCPUMapApicAccessPage(cap, length, buffer);
+    case X86VCPUMapVirtualApicPage:
+        return decodeVCPUMapVirtualApicPage(cap, length, buffer);
+#endif /* CONFIG_INTEL_APICV */
     default:
         userError("VCPU: Illegal operation.");
         current_syscall_error.type = seL4_IllegalOperation;
@@ -1362,6 +1654,10 @@ exception_t handleVmexit(void)
     case LDTR_OR_TR:
     case TPR_BELOW_THRESHOLD:
     case APIC_ACCESS:
+#ifdef CONFIG_INTEL_APICV
+    case APIC_WRITE:
+    case VIRTUALIZED_EOI:
+#endif /* CONFIG_INTEL_APICV */
         qualification = vmread(VMX_DATA_EXIT_QUALIFICATION);
         break;
     default:
