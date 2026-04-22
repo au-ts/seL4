@@ -6,6 +6,8 @@
 
 #include <config.h>
 
+// #define CONFIG_IOMMU
+
 #ifdef CONFIG_IOMMU
 
 #include <api/syscall.h>
@@ -308,19 +310,15 @@ exception_t decodeX86IOMapInvocation(
     vtd_pte_t  iopte;
     paddr_t    paddr;
     lookupIOPTSlot_ret_t lu_ret;
+    vm_page_size_t  frameSize;
     vm_rights_t frame_cap_rights;
     seL4_CapRights_t dma_cap_rights_mask;
+
+    frameSize = cap_frame_cap_get_capFSize(cap);
 
     if (current_extra_caps.excaprefs[0] == NULL || length < 2) {
         userError("X86PageMapIO: Truncated message.");
         current_syscall_error.type = seL4_TruncatedMessage;
-        return EXCEPTION_SYSCALL_ERROR;
-    }
-
-    if (cap_frame_cap_get_capFSize(cap) != X86_SmallPage) {
-        userError("X86PageMapIO: Invalid page size.");
-        current_syscall_error.type = seL4_InvalidCapability;
-        current_syscall_error.invalidCapNumber = 0;
         return EXCEPTION_SYSCALL_ERROR;
     }
 
@@ -360,38 +358,53 @@ exception_t decodeX86IOMapInvocation(
         return EXCEPTION_SYSCALL_ERROR;
     }
 
+    /* Get root page table? */
     vtd_pte = (vtd_pte_t *)paddr_to_pptr(vtd_cte_ptr_get_asr(vtd_context_slot));
-    lu_ret  = lookupIOPTSlot(vtd_pte, io_address);
-    if (lu_ret.status != EXCEPTION_NONE || lu_ret.level != 0) {
-        current_syscall_error.type = seL4_FailedLookup;
-        current_syscall_error.failedLookupWasSource = false;
-        return EXCEPTION_SYSCALL_ERROR;
+
+    switch (frameSize) {
+        case X86_SmallPage: {
+            lu_ret  = lookupIOPTSlot(vtd_pte, io_address);
+            if (lu_ret.status != EXCEPTION_NONE || lu_ret.level != 0) {
+                current_syscall_error.type = seL4_FailedLookup;
+                current_syscall_error.failedLookupWasSource = false;
+                return EXCEPTION_SYSCALL_ERROR;
+            }
+
+            if (vtd_pte_ptr_get_addr(lu_ret.ioptSlot) != 0) {
+                current_syscall_error.type = seL4_DeleteFirst;
+                return EXCEPTION_SYSCALL_ERROR;
+            }
+
+            dma_cap_rights_mask = rightsFromWord(getSyscallArg(0, buffer));
+            frame_cap_rights    = cap_frame_cap_get_capFVMRights(cap);
+
+            bool_t write = seL4_CapRights_get_capAllowWrite(dma_cap_rights_mask) && (frame_cap_rights == VMReadWrite);
+            bool_t read = seL4_CapRights_get_capAllowRead(dma_cap_rights_mask) && (frame_cap_rights != VMKernelOnly);
+            if (write || read) {
+                iopte = vtd_pte_new(paddr, !!write, !!read);
+            } else {
+                current_syscall_error.type = seL4_InvalidArgument;
+                current_syscall_error.invalidArgumentNumber = 0;
+                return EXCEPTION_SYSCALL_ERROR;
+            }
+
+            cap = cap_frame_cap_set_capFMapType(cap, X86_MappingIOSpace);
+            cap = cap_frame_cap_set_capFMappedASID(cap, pci_request_id);
+            cap = cap_frame_cap_set_capFMappedAddress(cap, io_address);
+
+            setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
+            return performX86IOInvocationMap(cap, slot, iopte, lu_ret.ioptSlot);
+        }
+        case X86_LargePage: {
+
+        }
+        default: {
+            userError("X86IOPageMap: Attempted to map unsupported page size.");
+            current_syscall_error.type = seL4_InvalidCapability;
+            current_syscall_error.invalidCapNumber = 0;
+            return EXCEPTION_SYSCALL_ERROR;
+        }
     }
-
-    if (vtd_pte_ptr_get_addr(lu_ret.ioptSlot) != 0) {
-        current_syscall_error.type = seL4_DeleteFirst;
-        return EXCEPTION_SYSCALL_ERROR;
-    }
-
-    dma_cap_rights_mask = rightsFromWord(getSyscallArg(0, buffer));
-    frame_cap_rights    = cap_frame_cap_get_capFVMRights(cap);
-
-    bool_t write = seL4_CapRights_get_capAllowWrite(dma_cap_rights_mask) && (frame_cap_rights == VMReadWrite);
-    bool_t read = seL4_CapRights_get_capAllowRead(dma_cap_rights_mask) && (frame_cap_rights != VMKernelOnly);
-    if (write || read) {
-        iopte = vtd_pte_new(paddr, !!write, !!read);
-    } else {
-        current_syscall_error.type = seL4_InvalidArgument;
-        current_syscall_error.invalidArgumentNumber = 0;
-        return EXCEPTION_SYSCALL_ERROR;
-    }
-
-    cap = cap_frame_cap_set_capFMapType(cap, X86_MappingIOSpace);
-    cap = cap_frame_cap_set_capFMappedASID(cap, pci_request_id);
-    cap = cap_frame_cap_set_capFMappedAddress(cap, io_address);
-
-    setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
-    return performX86IOInvocationMap(cap, slot, iopte, lu_ret.ioptSlot);
 }
 
 void deleteIOPageTable(cap_t io_pt_cap)
