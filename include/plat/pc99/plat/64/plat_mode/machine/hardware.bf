@@ -42,4 +42,15 @@ block vtd_pte {
     field       read                1
 }
 
+-- Intel VT-d Page Table Entry
+block vtd_pd_pte {
+    --- Assume AVAIL and TM as Reserved
+    field_high  addr                44
+    padding                         12
+    field       page_size           1
+    padding                         5
+    field       write               1
+    field       read                1  
+}
+
 #endif

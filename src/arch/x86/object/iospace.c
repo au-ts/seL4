@@ -121,6 +121,29 @@ static inline lookupIOPTSlot_ret_t lookupIOPTSlot(vtd_pte_t *iopt, word_t io_add
     }
 }
 
+static inline lookupIOPDSlot_ret_t lookupIOPDSlot(vtd_pte_t *iopt, word_t io_address)
+{
+    lookupIOPDSlot_ret_t ret;
+
+    if (iopt == 0) {
+        ret.iopdSlot    = 0;
+        ret.level       = 0;
+        ret.status      = EXCEPTION_LOOKUP_FAULT;
+        return ret;
+    } else {
+        lookupIOPTSlot_ret_t intermediate;
+        intermediate = lookupIOPTSlot_resolve_levels(iopt, io_address >> PAGE_BITS,
+                                             x86KSnumIOPTLevels - 2, x86KSnumIOPTLevels - 2);
+        
+        lookupIOPDSlot_ret_t ret = (lookupIOPDSlot_ret_t) {
+            .iopdSlot = (vtd_pd_pte_t *) intermediate.ioptSlot,
+            .level = intermediate.level,
+        };
+
+        return ret;
+    }
+}
+
 void unmapVTDContextEntry(cap_t cap)
 {
     vtd_cte_t *cte = lookup_vtd_context_slot(cap);
@@ -294,6 +317,15 @@ static exception_t performX86IOInvocationMap(cap_t cap, cte_t *ctSlot, vtd_pte_t
     return EXCEPTION_NONE;
 }
 
+static exception_t performX86IOPDInvocationMap(cap_t cap, cte_t *ctSlot, vtd_pd_pte_t iopte, vtd_pd_pte_t *iopdSlot)
+{
+    ctSlot->cap = cap;
+    *iopdSlot = iopte;
+    flushCacheRange(iopdSlot, VTD_PTE_SIZE_BITS);
+
+    return EXCEPTION_NONE;
+}
+
 
 exception_t decodeX86IOMapInvocation(
     word_t       length,
@@ -307,9 +339,7 @@ exception_t decodeX86IOMapInvocation(
     uint32_t   pci_request_id;
     vtd_cte_t *vtd_context_slot;
     vtd_pte_t *vtd_pte;
-    vtd_pte_t  iopte;
     paddr_t    paddr;
-    lookupIOPTSlot_ret_t lu_ret;
     vm_page_size_t  frameSize;
     vm_rights_t frame_cap_rights;
     seL4_CapRights_t dma_cap_rights_mask;
@@ -363,6 +393,9 @@ exception_t decodeX86IOMapInvocation(
 
     switch (frameSize) {
         case X86_SmallPage: {
+            vtd_pte_t  iopte;
+
+            lookupIOPTSlot_ret_t lu_ret;
             lu_ret  = lookupIOPTSlot(vtd_pte, io_address);
             if (lu_ret.status != EXCEPTION_NONE || lu_ret.level != 0) {
                 current_syscall_error.type = seL4_FailedLookup;
@@ -396,7 +429,38 @@ exception_t decodeX86IOMapInvocation(
             return performX86IOInvocationMap(cap, slot, iopte, lu_ret.ioptSlot);
         }
         case X86_LargePage: {
+            vtd_pd_pte_t  iopte;
 
+            lookupIOPDSlot_ret_t lu_ret;
+            lu_ret = lookupIOPDSlot(vtd_pte, io_address);
+            if (lu_ret.status != EXCEPTION_NONE || lu_ret.level != 0) {
+                current_syscall_error.type = seL4_FailedLookup;
+                current_syscall_error.failedLookupWasSource = false;
+                return EXCEPTION_SYSCALL_ERROR;
+            }
+
+            // if (vtd_pte_ptr_get_addr(lu_ret.iopdSlot) != 0) {
+            //     userError("2mib slot already mapped!");
+            //     current_syscall_error.type = seL4_DeleteFirst;
+            //     return EXCEPTION_SYSCALL_ERROR;
+            // }
+
+            if (vtd_pd_pte_ptr_get_addr(lu_ret.iopdSlot) != 0) {
+                userError("2mib slot already mapped!");
+                current_syscall_error.type = seL4_DeleteFirst;
+                return EXCEPTION_SYSCALL_ERROR;
+            }
+
+            printf("io mapping 2mb at 0x%lx\n", paddr);
+
+            iopte = vtd_pd_pte_new(paddr, 1, 1, 1);
+
+            cap = cap_frame_cap_set_capFMapType(cap, X86_MappingIOSpace);
+            cap = cap_frame_cap_set_capFMappedASID(cap, pci_request_id);
+            cap = cap_frame_cap_set_capFMappedAddress(cap, io_address);
+
+            setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
+            return performX86IOPDInvocationMap(cap, slot, iopte, lu_ret.iopdSlot);
         }
         default: {
             userError("X86IOPageMap: Attempted to map unsupported page size.");

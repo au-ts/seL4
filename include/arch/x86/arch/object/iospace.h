@@ -33,6 +33,13 @@ struct lookupIOPTSlot_ret {
 };
 typedef struct lookupIOPTSlot_ret lookupIOPTSlot_ret_t;
 
+struct lookupIOPDSlot_ret {
+    exception_t status;
+    vtd_pd_pte_t *iopdSlot;
+    int         level;
+};
+typedef struct lookupIOPDSlot_ret lookupIOPDSlot_ret_t;
+
 cap_t master_iospace_cap(void);
 exception_t decodeX86IOPTInvocation(word_t invLabel, word_t length, cte_t *slot, cap_t cap, word_t  *buffer);
 exception_t decodeX86IOMapInvocation(word_t length, cte_t *slot, cap_t cap, word_t *buffer);
