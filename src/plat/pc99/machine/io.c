@@ -41,9 +41,35 @@ void uart_drv_putchar(
     out8(x86KSdebugPort, c);
 }
 
+#define VGA_MEMORY  0xB8000
+static int vga_col = 0, vga_row = 0;
+
+static void vga_putchar(unsigned char c);
+static void vga_console_putchar(unsigned char c);
+
+static void vga_putchar(unsigned char c) {
+    volatile uint16_t *fb = (volatile uint16_t *)paddr_to_pptr(VGA_MEMORY);
+    if (c == '\n') { vga_col = 0; vga_row++; }
+    else {
+        fb[vga_row * 80 + vga_col] = (uint16_t)(0x0200u | (uint8_t)c); /* green */
+        if (++vga_col >= 80) { vga_col = 0; vga_row++; }
+    }
+    /* wrap */
+    if (vga_row >= 24) {
+        memset((char *)fb, 0, 25 * 80 * 2);
+        vga_row = 0;
+        vga_col = 0;
+    }
+}
+
+static void vga_console_putchar(unsigned char c) {
+    vga_putchar(c);
+}
+
 void kernel_putDebugChar(unsigned char c)
 {
     /* this will take care of CR/LF handling and call uart_drv_putchar() */
+    vga_console_putchar(c);
     uart_console_putchar(c);
 }
 
