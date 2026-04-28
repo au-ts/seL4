@@ -58,6 +58,18 @@ class RISCVConfig(Config):
     MEGAPAGE_BITS_RV64 = 21  # 2^21 = 2 MiByte
     MEGA_PAGE_SIZE_RV64 = 2**MEGAPAGE_BITS_RV64
 
+    def __init__(self, sel4arch, addrspace_max):
+        super().__init__(sel4arch, addrspace_max)
+        if sel4arch == 'riscv32':
+            self.KERNEL_PHYS_ALIGN = self.MEGAPAGE_BITS_RV32
+        elif sel4arch == 'riscv64':
+            self.KERNEL_PHYS_ALIGN = self.MEGAPAGE_BITS_RV64
+        else:
+            raise ValueError('Unsupported sel4arch "{}" specified.'.format(self.sel4arch))
+
+    def get_kernel_phys_align(self) -> int:
+        return self.KERNEL_PHYS_ALIGN
+
     def get_device_page_bits(self) -> int:
         ''' Get page size in bits for mapping devices for this arch '''
         if (self.sel4arch == 'riscv32'):

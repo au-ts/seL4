@@ -9,6 +9,9 @@
         /delete-node/ linux,cma;
     };
 
+    /delete-node/ memory@0;
+    /delete-node/ memory@100000000;
+
     chosen {
         seL4,kernel-devices =
             &{/soc/clint@e4000000},
@@ -26,8 +29,7 @@
     */
     memory@80000 {
         device_type = "memory";
-        reg = <0x00000000 0x00080000 0x00000000 0x7ef80000>,
-              <0x00000001 0x00000000 0x00000003 0x80000000>;
+        reg = <0x00000000 0x00000000 0x00000000 0x7c000000>;
     };
 
     /*
@@ -43,7 +45,7 @@
 
     /*
      * Reserve memory regions that must not be used by seL4:
-     * - (512 KiB): M-mode / OpenSBI
+     * - (2 MiB): M-mode / OpenSBI
      * - (16 MiB): framebuffer / S-mode runtime
      */
     reserved-memory {
@@ -52,7 +54,7 @@
         ranges;
 
         mmode_resv0@0 {
-            reg = <0x00000000 0x00000000 0x00000000 0x00080000>;
+            reg = <0x00000000 0x00000000 0x00000000 0x00200000>;
             no-map;
         };
 
