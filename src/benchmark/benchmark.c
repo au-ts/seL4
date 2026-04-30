@@ -52,6 +52,16 @@ exception_t handle_SysBenchmarkResetLog(void)
     NODE_STATE(benchmark_kernel_number_entries) = 0;
     NODE_STATE(benchmark_kernel_number_schedules) = 1;
     benchmark_arch_utilisation_reset();
+
+#ifdef CONFIG_ARCH_AARCH64
+    for (int i = 0; i < 6; i++) {
+        asm volatile("msr PMSELR_EL0, %0" :: "r"(i));
+        uint64_t value;
+        asm volatile("mrs %0, PMXEVCNTR_EL0" : "=r"(value));
+        NODE_STATE(ksCurThread)->benchmark.pmu_events_start[i] = value;
+    }
+#endif
+
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */
 
     setRegister(NODE_STATE(ksCurThread), capRegister, seL4_NoError);

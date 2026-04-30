@@ -17,6 +17,10 @@ typedef struct {
     uint64_t    kernel_utilisation;
     uint64_t    number_kernel_entries;
 
+#ifdef CONFIG_ARCH_AARCH64
+    uint64_t pmu_events[6];
+    uint64_t pmu_events_start[6];
+#endif
 } benchmark_util_t;
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */
 

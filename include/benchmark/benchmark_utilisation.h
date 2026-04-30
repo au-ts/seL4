@@ -43,6 +43,38 @@ static inline void benchmark_utilisation_switch(tcb_t *heir, tcb_t *next)
         next->benchmark.number_schedules++;
         NODE_STATE(benchmark_kernel_number_schedules)++;
 
+#ifdef CONFIG_ARCH_AARCH64
+        // assumes an Armv8.4 and earlier implementation that does not implement FEAT_PMUv3p5 and uses 32-bit event counters without overflows
+        uint64_t pmu_events[6];
+        uint64_t pmu_types[3];
+        for (int i = 0; i < 6; i++) {
+            asm volatile("msr PMSELR_EL0, %0" :: "r"(i));
+            if (i % 2 == 1) {
+                uint64_t type;
+                asm volatile("mrs %0, PMXEVTYPER_EL0" : "=r"(type));
+                pmu_types[i / 2] = type;
+            }
+            uint64_t value;
+            asm volatile("mrs %0, PMXEVCNTR_EL0" : "=r"(value));
+            pmu_events[i] = value;
+        }
+
+        for (int i = 0; i < 6; i++) {
+            // for the chain event
+            if (i % 2 == 0 && ((pmu_types[i / 2] & 0xFFFF) == 0x001E)) {
+                uint64_t value = (heir->benchmark.pmu_events[i + 1] << 32) + heir->benchmark.pmu_events[i] + (pmu_events[i + 1] << 32) + pmu_events[i] - (heir->benchmark.pmu_events_start[i + 1] << 32) - heir->benchmark.pmu_events_start[i];
+                heir->benchmark.pmu_events[i] = value & 0xFFFFFFFF;
+                heir->benchmark.pmu_events[i + 1] = value >> 32;
+                i += 1;
+            } else {
+                heir->benchmark.pmu_events[i] += pmu_events[i] - heir->benchmark.pmu_events_start[i];
+            }
+        }
+
+        for (int i = 0; i < 6; i++) {
+            next->benchmark.pmu_events_start[i] = pmu_events[i];
+        }
+#endif
     }
 }
 

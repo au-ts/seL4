@@ -65,6 +65,11 @@ void benchmark_track_utilisation_dump(void)
     buffer[BENCHMARK_TOTAL_KERNEL_UTILISATION] = NODE_STATE(benchmark_kernel_time);
     buffer[BENCHMARK_TOTAL_NUMBER_KERNEL_ENTRIES] = NODE_STATE(benchmark_kernel_number_entries);
 
+#ifdef CONFIG_ARCH_AARCH64
+    for (int i = BENCHMARK_TCB_PMU_EVENTS_START; i < BENCHMARK_TCB_PMU_EVENTS_END; i++) {
+        buffer[i] = tcb->benchmark.pmu_events[i - BENCHMARK_TCB_PMU_EVENTS_START];
+    }
+#endif
 }
 
 void benchmark_track_reset_utilisation(tcb_t *tcb)
@@ -74,5 +79,12 @@ void benchmark_track_reset_utilisation(tcb_t *tcb)
     tcb->benchmark.number_kernel_entries = 0;
     tcb->benchmark.kernel_utilisation = 0;
     tcb->benchmark.schedule_start_time = 0;
+
+#ifdef CONFIG_ARCH_AARCH64
+    for (int i = BENCHMARK_TCB_PMU_EVENTS_START; i < BENCHMARK_TCB_PMU_EVENTS_END; i++) {
+        tcb->benchmark.pmu_events[i - BENCHMARK_TCB_PMU_EVENTS_START] = 0;
+        tcb->benchmark.pmu_events_start[i - BENCHMARK_TCB_PMU_EVENTS_START] = 0;
+    }
+#endif
 }
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */

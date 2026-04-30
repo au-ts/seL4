@@ -40,6 +40,13 @@ enum benchmark_track_util_ipc_index {
     BENCHMARK_TOTAL_KERNEL_UTILISATION,
     /* Total number of times the kernel is entered on the current core */
     BENCHMARK_TOTAL_NUMBER_KERNEL_ENTRIES,
+
+    BENCHMARK_TCB_PMU_EVENTS_START,
+#ifdef CONFIG_ARCH_AARCH64
+    BENCHMARK_TCB_PMU_EVENTS_END = BENCHMARK_TCB_PMU_EVENTS_START + 6,
+#else
+    BENCHMARK_TCB_PMU_EVENTS_END = BENCHMARK_TCB_PMU_EVENTS_START,
+#endif
 };
 
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */
