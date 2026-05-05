@@ -31,12 +31,19 @@
 #define UART_CHANNEL_STS_TXEMPTY     BIT(3)
 
 #define UART_REG(x) ((volatile uint32_t *)(UART_PPTR + (x)))
+#define UART_EARLY_REG(x) ((volatile uint32_t *)(0xff000000 + (x)))
 
 #ifdef CONFIG_PRINTING
 void uart_drv_putchar(unsigned char c)
 {
     while (!(*UART_REG(UART_CHANNEL_STS) & UART_CHANNEL_STS_TXEMPTY));
     *UART_REG(UART_TX_RX_FIFO) = c;
+}
+
+void uart_drv_early_putchar(unsigned char c)
+{
+    while (!(*UART_EARLY_REG(UART_CHANNEL_STS) & UART_CHANNEL_STS_TXEMPTY));
+    *UART_EARLY_REG(UART_TX_RX_FIFO) = c;
 }
 #endif /* CONFIG_PRINTING */
 
