@@ -359,6 +359,16 @@ BOOT_CODE static void release_secondary_cpus(void)
 
 static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
 {
+    // see below note about boot_node_id mpidr_el1_get_Aff0
+    node_id_t boot_node_id;
+    asm volatile("mrs %0, tpidr_el1" : "=r"(boot_node_id));
+
+    NODE_STATE(boot_cpu_id) = boot_node_id;
+
+    for (volatile uint64_t c = 0; c < (boot_node_id * 0x80000000); c++) {
+        asm volatile("" ::: "memory");
+    }
+
     printf("kernel boot info addr: 0x%lx\n", kernel_boot_info_p);
 
     seL4_KernelBootInfo *kernel_boot_info = (void *)kernel_boot_info_p;
@@ -519,10 +529,6 @@ static BOOT_CODE bool_t try_init_kernel(paddr_t kernel_boot_info_p)
     // // XXX: How is this different to getCurrentCPUIndex()
     // // XXX: What is difference between node_id_t and cpu_id_t?
     // node_id_t boot_node_id = mpidr_el1_get_Aff0(mpidr_el1);
-
-    // is this guaranteed to still be what the loader set?
-    node_id_t boot_node_id;
-    asm volatile("mrs %0, tpidr_el1" : "=r"(boot_node_id));
 
     if (!IS_ALIGNED(ksKernelElfPaddrBase, seL4_LargePageBits)) {
         printf("kernel elf paddr base is not aligned\n");
