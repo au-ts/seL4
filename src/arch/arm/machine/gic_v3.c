@@ -277,43 +277,38 @@ BOOT_CODE static void cpu_iface_init(void)
 
 void plat_setIRQTrigger(irq_t irq, bool_t trigger)
 {
-    // Only allow setIRQTrigger on core 0
-    if (NODE_STATE(boot_cpu_id) == 0) {
 
-        /* GICv3 has read-only GICR_ICFG0 for SGI with
-         * default value 0xaaaaaaaa, and read-write GICR_ICFG1
-         * for PPI with default 0x00000000.*/
-        word_t hw_irq = IRQT_TO_IRQ(irq);
-        word_t core = IRQT_TO_CORE(irq);
-        if (HW_IRQ_IS_SGI(hw_irq)) {
-            return;
-        }
-        int word = hw_irq >> 4;
-        int bit = ((hw_irq & 0xf) * 2);
-        uint32_t icfgr = 0;
-        if (HW_IRQ_IS_PPI(hw_irq)) {
-            /// XXX: I think whether or not ICFGR does anything for SGI/PPIs is implemented defined
-            icfgr = gic_rdist_sgi_ppi_map[core]->icfgr1;
-        } else {
-            icfgr = gic_dist->icfgrn[word];
-        }
-
-        if (trigger) {
-            icfgr |= (2 << bit);
-        } else {
-            icfgr &= ~(3 << bit);
-        }
-
-        if (HW_IRQ_IS_PPI(hw_irq)) {
-            gic_rdist_sgi_ppi_map[core]->icfgr1 = icfgr;
-        } else {
-            /* Update GICD_ICFGR<n>. Note that the interrupt should
-             * be disabled before changing the field, and this function
-             * assumes the caller has disabled the interrupt. */
-            gic_dist->icfgrn[word] = icfgr;
-        }
+    /* GICv3 has read-only GICR_ICFG0 for SGI with
+     * default value 0xaaaaaaaa, and read-write GICR_ICFG1
+     * for PPI with default 0x00000000.*/
+    word_t hw_irq = IRQT_TO_IRQ(irq);
+    word_t core = IRQT_TO_CORE(irq);
+    if (HW_IRQ_IS_SGI(hw_irq)) {
+        return;
+    }
+    int word = hw_irq >> 4;
+    int bit = ((hw_irq & 0xf) * 2);
+    uint32_t icfgr = 0;
+    if (HW_IRQ_IS_PPI(hw_irq)) {
+        /// XXX: I think whether or not ICFGR does anything for SGI/PPIs is implemented defined
+        icfgr = gic_rdist_sgi_ppi_map[core]->icfgr1;
     } else {
-        printf("plat_setIRQTrigger GICv3: Attempting to modify GIC on core: %lu\n", NODE_STATE(boot_cpu_id));
+        icfgr = gic_dist->icfgrn[word];
+    }
+
+    if (trigger) {
+        icfgr |= (2 << bit);
+    } else {
+        icfgr &= ~(3 << bit);
+    }
+
+    if (HW_IRQ_IS_PPI(hw_irq)) {
+        gic_rdist_sgi_ppi_map[core]->icfgr1 = icfgr;
+    } else {
+        /* Update GICD_ICFGR<n>. Note that the interrupt should
+         * be disabled before changing the field, and this function
+         * assumes the caller has disabled the interrupt. */
+        gic_dist->icfgrn[word] = icfgr;
     }
 
     return;
