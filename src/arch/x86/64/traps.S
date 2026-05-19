@@ -568,6 +568,9 @@ BEGIN_FUNC(kernel_exception)
     movq    24(%r8), %r8     # RFLAGS
     # handleKernelException(vector, errorcode, RIP, RSP, RFLAGS, CR0, CR2, CR3, CR4)
     movq    %cr0, %r9
+
+    subq    $8, %rsp
+
     movq    %cr4, %r11
     push    %r11
     movq    %cr3, %r11
