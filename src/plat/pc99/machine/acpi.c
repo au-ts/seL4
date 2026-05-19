@@ -139,13 +139,17 @@ typedef struct acpi_madt_ioapic {
 compile_assert(acpi_madt_ioapic_packed,
                sizeof(acpi_madt_ioapic_t) == sizeof(acpi_madt_header_t) + 10)
 
-typedef struct acpi_madt_iso {
+struct acpi_madt_iso {
     acpi_madt_header_t header;
     uint8_t            bus; /* always 0 (ISA) */
     uint8_t            source;
     uint32_t           gsi;
     uint16_t           flags;
-} acpi_madt_iso_t;
+} __attribute__((packed));
+typedef struct acpi_madt_iso acpi_madt_iso_t;
+compile_assert(acpi_madt_iso_packed,
+               sizeof(acpi_madt_iso_t) == sizeof(acpi_madt_header_t) + 8)
+
 /* We can't assert on the sizeof acpi_madt_iso because it contains trailing
  * padding.
  */
