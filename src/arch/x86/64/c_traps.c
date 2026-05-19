@@ -41,16 +41,17 @@ static void NORETURN restore_vmx(tcb_t *cur_thread, vcpu_t *vcpu)
 #ifdef CONFIG_X86_64_VTX_64BIT_GUESTS
     vcpu_restore_guest_msrs(vcpu);
 #endif /* CONFIG_X86_64_VTX_64BIT_GUESTS */
-    /* attempt to do a vmlaunch/vmresume */
-    asm volatile(
-        // Arguments are getting stored in general purpose registers that need to be used.
-        // Copy them to unused general purpose registers
-        "movq %[launched], %%rbx\n"
+    /* Attempt to do a vmlaunch/vmresume.
+     * Lock inputs to physical registers to prevent compiler from overlapping and corrupting them.*/
+    register word_t *r_launched asm("rbx") = &vcpu->launched;
 #ifdef CONFIG_X86_64_VTX_64BIT_GUESTS
-        "movq %[host_msr], %%r8\n"
-        "movq %[guest_msr], %%r9\n"
-        "movq %[reg], %%r10\n"
+    register word_t *r_host_msr asm("r8") = &vcpu->host_msr_registers[n_vcpu_msr_register];
+    register word_t *r_guest_msr asm("r9") = &vcpu->guest_msr_registers[VCPU_GS];
+    register word_t *r_reg asm("r10") = &vcpu->gp_registers[VCPU_EAX];
+#endif
 
+    asm volatile(
+#ifdef CONFIG_X86_64_VTX_64BIT_GUESTS
         // Save host's GS, Shadow GS, and FS
         "mov $0xC0000101, %%ecx\n"
         "rdmsr\n"
@@ -93,7 +94,7 @@ static void NORETURN restore_vmx(tcb_t *cur_thread, vcpu_t *vcpu)
         "wrmsr\n"
         "movq %%r10, %%rsp\n" // reg
 #else /* not CONFIG_X86_64_VTX_64BIT_GUESTS */
-        // Set our stack pointer to the top of the tcb so we can efficiently pop
+        // Set our stlaunchedack pointer to the top of the tcb so we can efficiently pop
         "movq %[reg], %%rsp\n"
 #endif /* CONFIG_X86_64_VTX_64BIT_GUESTS */
         "cmpq $0x1, (%%rbx)\n" // is the VM launched already?
@@ -183,13 +184,13 @@ static void NORETURN restore_vmx(tcb_t *cur_thread, vcpu_t *vcpu)
         "movq %[failed], %%rax\n"
         "jmp *%%rax\n"
         :
-        : [reg]"r"(&vcpu->gp_registers[VCPU_EAX]),
-        [launched]"r"(&vcpu->launched),
+        : [reg]"r"(r_reg),
+        [launched]"r"(r_launched),
 #ifdef CONFIG_X86_64_VTX_64BIT_GUESTS
         [failed]"r"(vmlaunch_failed),
         [stack_size]"i"(BIT(CONFIG_KERNEL_STACK_BITS)),
-        [guest_msr]"r"(&vcpu->guest_msr_registers[VCPU_GS]),
-        [host_msr]"r"(&vcpu->host_msr_registers[n_vcpu_msr_register])
+        [guest_msr]"r"(r_guest_msr),
+        [host_msr]"r"(r_host_msr)
 #else /* not CONFIG_X86_64_VTX_64BIT_GUESTS */
         [failed]"i"(&vmlaunch_failed),
         [stack_size]"i"(BIT(CONFIG_KERNEL_STACK_BITS))
