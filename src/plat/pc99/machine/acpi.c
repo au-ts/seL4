@@ -270,6 +270,16 @@ BOOT_CODE bool_t acpi_validate_rsdp(acpi_rsdp_t *acpi_rsdp)
     return true;
 }
 
+BOOT_CODE static bool_t acpi_madt_valid(acpi_madt_header_t *header, const char *name, uint8_t expected)
+{
+    if (header->length < expected) {
+        printf("ACPI: BIOS bug, MADT %s entry size %u < %u expected bytes.\n",
+               name, header->length, expected);
+        return false;
+    }
+    return true;
+}
+
 BOOT_CODE uint32_t acpi_madt_scan(
     acpi_rsdp_t *acpi_rsdp,
     cpu_id_t    *cpu_list,
@@ -315,6 +325,9 @@ BOOT_CODE uint32_t acpi_madt_scan(
                  *  - APIC IDs < 0xFF should be listed in APIC subtable, APIC IDs >= 0xFF
                  *    should be listed in X2APIC subtable */
                 case MADT_APIC: {
+                    if (!acpi_madt_valid(acpi_madt_header, "APIC", sizeof(acpi_madt_apic_t))) {
+                        break;
+                    }
                     /* what Intel calls apic_id is what is called cpu_id in seL4! */
                     uint8_t  cpu_id = ((acpi_madt_apic_t *)acpi_madt_header)->apic_id;
                     uint32_t flags  = ((acpi_madt_apic_t *)acpi_madt_header)->flags;
@@ -330,6 +343,9 @@ BOOT_CODE uint32_t acpi_madt_scan(
                     break;
                 }
                 case MADT_x2APIC: {
+                    if (!acpi_madt_valid(acpi_madt_header, "x2APIC", sizeof(acpi_madt_x2apic_t))) {
+                        break;
+                    }
                     uint32_t cpu_id = ((acpi_madt_x2apic_t *)acpi_madt_header)->x2apic_id;
                     uint32_t flags  = ((acpi_madt_x2apic_t *)acpi_madt_header)->flags;
                     if (flags == 1) {
@@ -344,6 +360,9 @@ BOOT_CODE uint32_t acpi_madt_scan(
                     break;
                 }
                 case MADT_IOAPIC:
+                    if (!acpi_madt_valid(acpi_madt_header, "IOAPIC", sizeof(acpi_madt_ioapic_t))) {
+                        break;
+                    }
                     printf(
                         "ACPI: MADT_IOAPIC ioapic_id=%d ioapic_addr=0x%x gsib=%d\n",
                         ((acpi_madt_ioapic_t *)acpi_madt_header)->ioapic_id,
@@ -358,6 +377,9 @@ BOOT_CODE uint32_t acpi_madt_scan(
                     }
                     break;
                 case MADT_ISO: {
+                    if (!acpi_madt_valid(acpi_madt_header, "ISO", sizeof(acpi_madt_iso_t))) {
+                        break;
+                    }
                     UNUSED acpi_madt_iso_t *iso = (acpi_madt_iso_t *)acpi_madt_header;
                     printf("ACPI: MADT_ISO bus=%d source=%d gsi=0x%x%02x flags=0x%x\n",
                            iso->bus, iso->source, iso->gsi_high, iso->gsi_low, iso->flags);
