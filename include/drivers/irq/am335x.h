@@ -90,7 +90,7 @@ static inline bool_t isIRQPending(void)
 /* Enable or disable irq according to the 'disable' flag. */
 static inline void maskInterrupt(bool_t disable, irq_t irq)
 {
-    if (likely(irq < maxIRQ)) {
+    if (likely(irq <= maxIRQ)) {
         if (disable) {
             intc->intcps_n[irq / 32].intcps_mir_set = 1 << (irq & 31);
         } else {
@@ -119,8 +119,20 @@ static inline void handleSpuriousIRQ(void)
     dsb();
 }
 
+void setIRQTrigger(irq_t irq, bool_t trigger)
+{
+    /* Unreachable; not supported on this platform. */
+    UNREACHABLE();
+}
+
 static inline void plat_sendSGI(word_t irq, word_t target)
 {
     /* Unreachable; not supported on this platform. */
-    halt();
+    UNREACHABLE();
+}
+
+static inline bool_t plat_SGITargetValid(word_t target)
+{
+    /* no SGIs on this platform */
+    return false;
 }

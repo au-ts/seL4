@@ -12,6 +12,7 @@
 #include <kernel/cspace.h>
 #include <kernel/thread.h>
 #include <kernel/vspace.h>
+#include <object/domain.h>
 #ifdef CONFIG_KERNEL_MCS
 #include <object/schedcontext.h>
 #endif
@@ -93,11 +94,11 @@ void restart(tcb_t *target)
         cancelIPC(target);
 #ifdef CONFIG_KERNEL_MCS
         setThreadState(target, ThreadState_Restart);
-        if (sc_sporadic(target->tcbSchedContext)
-            && target->tcbSchedContext != NODE_STATE(ksCurSC)) {
-            refill_unblock_check(target->tcbSchedContext);
+        sched_context_t *sc = target->tcbSchedContext;
+        if (sc_sporadic(sc) && sc != NODE_STATE(ksCurSC)) {
+            refill_unblock_check(sc);
         }
-        schedContext_resume(target->tcbSchedContext);
+        schedContext_resume(sc);
         if (isSchedulable(target)) {
             possibleSwitchTo(target);
         }
@@ -304,16 +305,18 @@ void doNBRecvFailedTransfer(tcb_t *thread)
 
 void prepareSetDomain(tcb_t *tptr, dom_t dom)
 {
-#ifdef CONFIG_HAVE_FPU
     if (ksCurDomain != dom) {
+        Arch_prepareSetDomain(tptr, dom);
+#ifdef CONFIG_HAVE_FPU
         /* Save FPU state now to avoid touching cross-domain state later */
         fpuRelease(tptr);
-    }
 #endif
+    }
 }
 
 static void prepareNextDomain(void)
 {
+    Arch_prepareNextDomain();
 #ifdef CONFIG_HAVE_FPU
     /* Save FPU state now to avoid touching cross-domain state later */
     switchLocalFpuOwner(NULL);
@@ -323,19 +326,15 @@ static void prepareNextDomain(void)
 static void nextDomain(void)
 {
     ksDomScheduleIdx++;
-    if (ksDomScheduleIdx >= ksDomScheduleLength) {
-        ksDomScheduleIdx = 0;
+    if (dschedule_is_end_marker(ksDomScheduleIdx)) {
+        ksDomScheduleIdx = ksDomScheduleStart;
     }
 #ifdef CONFIG_KERNEL_MCS
     NODE_STATE(ksReprogram) = true;
 #endif
     ksWorkUnitsCompleted = 0;
-    ksCurDomain = ksDomSchedule[ksDomScheduleIdx].domain;
-#ifdef CONFIG_KERNEL_MCS
-    ksDomainTime = usToTicks(ksDomSchedule[ksDomScheduleIdx].length * US_IN_MS);
-#else
-    ksDomainTime = ksDomSchedule[ksDomScheduleIdx].length;
-#endif
+    ksCurDomain = dschedule_domain(ksDomSchedule[ksDomScheduleIdx]);
+    ksDomainTime = dschedule_duration(ksDomSchedule[ksDomScheduleIdx]);
 }
 
 #ifdef CONFIG_KERNEL_MCS

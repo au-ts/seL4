@@ -218,6 +218,7 @@ devices:
   # supported platforms.
   - compatible:
       - riscv,cpu-intc
+      - riscv,clint0
     regions:
       - index: 0
         kernel: CLINT_PPTR
