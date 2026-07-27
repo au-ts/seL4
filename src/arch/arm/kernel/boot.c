@@ -59,6 +59,7 @@ BOOT_CODE static bool_t arch_init_freemem(p_region_t ui_p_reg,
         }
         reserved[index].start = (pptr_t) paddr_to_pptr(dtb_p_reg.start);
         reserved[index].end = (pptr_t) paddr_to_pptr(dtb_p_reg.end);
+        printf("start and end of dtb: [%lx, %lx)\n", dtb_p_reg.start, dtb_p_reg.end);
         index++;
     }
 
@@ -66,6 +67,7 @@ BOOT_CODE static bool_t arch_init_freemem(p_region_t ui_p_reg,
         /* the dtb region could be empty */
         reserved[index].start = (pptr_t) paddr_to_pptr(extra_device_p_reg.start);
         reserved[index].end = (pptr_t) paddr_to_pptr(extra_device_p_reg.end);
+        printf("start and end of extra_device @ %d: [%lx, %lx)\n", index, extra_device_p_reg.start, extra_device_p_reg.end);
         index++;
     }
 
@@ -94,6 +96,7 @@ BOOT_CODE static bool_t arch_init_freemem(p_region_t ui_p_reg,
                 index++;
                 reserved[index] = mode_reserved_region[0];
             }
+            printf("start and end of ui_reg: [%lx, %lx)\n", ui_reg.start, ui_reg.end);
             index++;
         } else {
             if (index >= ARRAY_SIZE(reserved)) {
@@ -102,6 +105,7 @@ BOOT_CODE static bool_t arch_init_freemem(p_region_t ui_p_reg,
                 return false;
             }
             reserved[index] = ui_reg;
+            printf("start and end of ui_reg @ %d: [%lx, %lx)\n", index, ui_reg.start, ui_reg.end);
             index++;
         }
     } else {
@@ -359,6 +363,7 @@ static BOOT_CODE bool_t try_init_kernel(
     word_t extra_device_size
 )
 {
+
     cap_t root_cnode_cap;
     cap_t it_ap_cap;
     cap_t it_pd_cap;
@@ -397,6 +402,14 @@ static BOOT_CODE bool_t try_init_kernel(
         printf("ERROR: CPU init failed\n");
         return false;
     }
+    printf("ui_p_reg_start: %lx\n", ui_p_reg_start);
+    printf("ui_p_reg_end: %lx\n", ui_p_reg_end);
+    printf("pv_offset: %lx\n", pv_offset);
+    printf("v_entry: %lx\n", v_entry);
+    printf("dtb_phys_addr: %lx\n", dtb_phys_addr);
+    printf("dtb_size: %lx\n", dtb_size);
+    printf("extra_device_addr_start: %lx\n", extra_device_addr_start);
+    printf("extra_device_size: %lx\n", extra_device_size);
 
     /* debug output via serial port is only available from here */
     printf("Bootstrapping kernel\n");
@@ -452,6 +465,11 @@ static BOOT_CODE bool_t try_init_kernel(
         return false;
     }
 
+	printf("ui_p_reg: [%lx, %lx)\n", ui_p_reg.start, ui_p_reg.end);
+	printf("dtb_p_reg: [%lx, %lx)\n", dtb_p_reg.start, dtb_p_reg.end);
+	printf("extra_device_p_reg: [%lx, %lx)\n", extra_device_p_reg.start, extra_device_p_reg.end);
+	printf("it_v_reg: [%lx, %lx)\n", it_v_reg.start, it_v_reg.end);
+	printf("extra_bi_size_bits: %ld\n", extra_bi_size_bits);
     if (!arch_init_freemem(ui_p_reg, dtb_p_reg, extra_device_p_reg, it_v_reg, extra_bi_size_bits)) {
         printf("ERROR: free memory management initialization failed\n");
         return false;
@@ -696,6 +714,8 @@ BOOT_CODE VISIBLE void init_kernel(
                              );
 
 #endif /* ENABLE_SMP_SUPPORT */
+
+	printf("size of tcb_t: %ld\n", sizeof(tcb_t));
 
     if (!result) {
         fail("ERROR: kernel init failed");

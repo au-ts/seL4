@@ -160,39 +160,41 @@ set(BASE_EXE_LINKER_FLAGS "${common_flags} ${common_exe_flags} "
 include(${KERNEL_FLAGS_PATH})
 
 add_compile_options(
-  -std=c99
-  #-----------------------------------
-  # Configure warnings
-  #-----------------------------------
-  -Wall
-  -Werror
-  -Wstrict-prototypes
-  -Wmissing-prototypes
-  -Wnested-externs
-  -Wmissing-declarations
-  -Wundef
-  -Wpointer-arith
-  -Wno-nonnull
-  #-----------------------------------
-  # Configure compiler settings.
-  #-----------------------------------
-  -nostdinc # Do not use any system include paths, only use those given
-            # explicitly by the "-I <path>" parameters.
-  -ffreestanding # implies "-fno-builtin". Execution will not start at main().
-                 # No assumptions about the meaning of function names from the
-                 # standard library are made, except for memcpy(), memmove(),
-                 # memset() and memcmp(). __builtin_trap() will call abort().
-  -fno-stack-protector
-  -fno-asynchronous-unwind-tables
-  # GCC < 10 and clang < 11 put uninitialized global variables into a 'COMMON'
-  # section unless '-fno-common' is specified. The linker will put anything
-  # from 'COMMON' as the end of the '.bss' if nothing else is specified in the
-  # linker script. Besides making the variable placement look odd, this also
-  # tends to waste a page because we puts large aligned block at the end.
-  # Eventually, GCC 10 and clang 11 made '-fno-common' the default, see
-  # - https://gcc.gnu.org/gcc-10/changes.html
-  # - https://releases.llvm.org/11.0.0/tools/clang/docs/ReleaseNotes.html
-  -fno-common)
+    -DCONFIG_THREAD_LOCAL_PMU
+    -std=c99
+    #-----------------------------------
+    # Configure warnings
+    #-----------------------------------
+    -Wall
+    -Werror
+    -Wstrict-prototypes
+    -Wmissing-prototypes
+    -Wnested-externs
+    -Wmissing-declarations
+    -Wundef
+    -Wpointer-arith
+    -Wno-nonnull
+    #-----------------------------------
+    # Configure compiler settings.
+    #-----------------------------------
+    -nostdinc # Do not use any system include paths, only use those given
+              # explicitly by the "-I <path>" parameters.
+    -ffreestanding # implies "-fno-builtin". Execution will not start at main().
+                   # No assumptions about the meaning of function names from the
+                   # standard library are made, except for memcpy(), memmove(),
+                   # memset() and memcmp(). __builtin_trap() will call abort().
+    -fno-stack-protector
+    -fno-asynchronous-unwind-tables
+    # GCC < 10 and clang < 11 put uninitialized global variables into a 'COMMON'
+    # section unless '-fno-common' is specified. The linker will put anything
+    # from 'COMMON' as the end of the '.bss' if nothing else is specified in the
+    # linker script. Besides making the variable placement look odd, this also
+    # tends to waste a page because we puts large aligned block at the end.
+    # Eventually, GCC 10 and clang 11 made '-fno-common' the default, see
+    # - https://gcc.gnu.org/gcc-10/changes.html
+    # - https://releases.llvm.org/11.0.0/tools/clang/docs/ReleaseNotes.html
+    -fno-common
+)
 
 # Linker parameters. There are two kinds actually:
 #   - flags processed by GCC when invoking it as linker wrapper
