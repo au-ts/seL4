@@ -710,7 +710,7 @@ BOOT_CODE VISIBLE void init_kernel(
                              pv_offset,
                              v_entry,
                              dtb_addr_p, dtb_size,
-                             extra_device_addr_p, extra_device_size
+                             0, 0
                              );
 
 #endif /* ENABLE_SMP_SUPPORT */

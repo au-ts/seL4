@@ -160,7 +160,6 @@ set(BASE_EXE_LINKER_FLAGS "${common_flags} ${common_exe_flags} "
 include(${KERNEL_FLAGS_PATH})
 
 add_compile_options(
-    -DCONFIG_THREAD_LOCAL_PMU
     -std=c99
     #-----------------------------------
     # Configure warnings
