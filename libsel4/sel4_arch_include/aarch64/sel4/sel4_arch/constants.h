@@ -89,7 +89,7 @@ typedef enum {
     seL4_VCPUReg_AFSR1,
     seL4_VCPUReg_ESR,
     seL4_VCPUReg_FAR,
-    seL4_VCPUReg_ISR,
+    seL4_VCPUReg_PAR,
     seL4_VCPUReg_VBAR,
 
     /* thread pointer/ID registers EL0/EL1 */
@@ -263,7 +263,7 @@ SEL4_SIZE_SANITY(seL4_VSpaceEntryBits, seL4_VSpaceIndexBits, seL4_VSpaceBits);
  * Anything address above the range above triggers an
  * address size fault.
  */
-/* First address in the virtual address space that is not accessible to user level */
+/* (Deprecated) Last address in the virtual address space that is accessible to user level */
 #if defined(CONFIG_ARM_PA_SIZE_BITS_44)
 #define seL4_UserTop 0x00000fffffffffff
 #elif defined(CONFIG_ARM_PA_SIZE_BITS_40)
@@ -273,6 +273,9 @@ SEL4_SIZE_SANITY(seL4_VSpaceEntryBits, seL4_VSpaceIndexBits, seL4_VSpaceBits);
 #endif
 
 #else
-/* First address in the virtual address space that is not accessible to user level */
+/* (Deprecated) Last address in the virtual address space that is accessible to user level */
 #define seL4_UserTop 0x00007fffffffffff
 #endif
+
+/* Last address in the virtual address space that is accessible to user level */
+#define seL4_UserVSpaceTop seL4_UserTop
