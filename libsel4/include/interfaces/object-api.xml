@@ -868,7 +868,7 @@
                 a thread with a bound VPMU, the hardware state will be swapped to that of the VPMU object.
                 If no VPMU is bound to a thread, then no context switching of PMU registers occurs.
             </description>
-            <param dir="in" name="vpmu" type="seL4_Word" description="Virtual PMU object to bind"/>
+            <param dir="in" name="vpmu" type="seL4_CPtr" description="Virtual PMU object to bind"/>
         </method>
 
 

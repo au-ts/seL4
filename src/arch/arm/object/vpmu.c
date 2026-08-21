@@ -8,7 +8,7 @@ UP_STATE_DEFINE(vpmu_t, cpu_pmu_state);
 UP_STATE_DEFINE(vpmu_t *, armCurVPMU);
 
 /* FEAT_PMUv3_EXT */
-static exception_t decodeVPMUControl_ReadEventCounter(word_t length, cap_t cap, word_t *buffer, vpmu_t *vpmu)
+static exception_t decodeVPMUControl_ReadEventCounter(word_t *buffer, vpmu_t *vpmu, bool_t call)
 {
     seL4_Word counter = getSyscallArg(0, buffer);
 
@@ -24,25 +24,39 @@ static exception_t decodeVPMUControl_ReadEventCounter(word_t length, cap_t cap, 
         current_syscall_error.type = seL4_InvalidArgument;
         return EXCEPTION_SYSCALL_ERROR;
     }
-    if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
-        // Current VPMU is running on hardware, so read directly from hardware.
-        uint32_t cnt_sel = 1 << counter;
 
-        uint32_t counter_value;
+    setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
 
-        MSR(PMSELR_EL0, cnt_sel);
-        isb();
-        MRS(PMXEVCNTR_EL0, counter_value);
-        setRegister(NODE_STATE(ksCurThread), msgRegisters[0], counter_value);
-    } else {
-        setRegister(NODE_STATE(ksCurThread), msgRegisters[0], pmu_regs->event_counters[counter]);
+    if (call) {
+		uint32_t res = 0;
+        if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
+            // Current VPMU is running on hardware, so read directly from hardware.
+            uint32_t cnt_sel = 1 << counter;
+
+            uint32_t counter_value;
+
+            MSR(PMSELR_EL0, cnt_sel);
+            isb();
+            MRS(PMXEVCNTR_EL0, counter_value);
+            res = counter_value;
+        } else {
+            res = pmu_regs->event_counters[counter];
+        }
+        tcb_t *thread = NODE_STATE(ksCurThread);
+
+        word_t *ipcBuffer = lookupIPCBuffer(true, thread);
+        setRegister(thread, badgeRegister, 0);
+        unsigned int length = setMR(thread, ipcBuffer, 0, res);
+        setRegister(thread, msgInfoRegister, wordFromMessageInfo(
+                        seL4_MessageInfo_new(0, 0, 0, length)));
     }
+    setThreadState(NODE_STATE(ksCurThread), ThreadState_Running);
 
     return EXCEPTION_NONE;
 }
 
 /* FEAT_PMUv3_EXT */
-static exception_t decodeVPMUControl_WriteEventCounter(word_t length, cap_t cap, word_t *buffer, vpmu_t *vpmu)
+static exception_t decodeVPMUControl_WriteEventCounter(word_t *buffer, vpmu_t *vpmu)
 {
     seL4_Word counter = getSyscallArg(0, buffer);
     seL4_Word value = getSyscallArg(1, buffer);
@@ -60,6 +74,10 @@ static exception_t decodeVPMUControl_WriteEventCounter(word_t length, cap_t cap,
         return EXCEPTION_SYSCALL_ERROR;
     }
 
+    // TODO: @0aids move error checking outta here.^^
+
+    setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
+
     if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
         uint32_t cnt_sel = 1 << counter;
 
@@ -75,25 +93,38 @@ static exception_t decodeVPMUControl_WriteEventCounter(word_t length, cap_t cap,
     return EXCEPTION_NONE;
 }
 
-static exception_t decodeVPMUControl_ReadCycleCounter(word_t length, cap_t cap, word_t *buffer, vpmu_t *vpmu)
+static exception_t decodeVPMUControl_ReadCycleCounter(vpmu_t *vpmu, bool_t call)
 {
-    pmu_state_t *pmu_regs = &vpmu->reg_state; 
+    setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
 
-    seL4_Word cycle_counter;
+    if (call) {
+        pmu_state_t *pmu_regs = &vpmu->reg_state; 
 
-    if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
+        seL4_Word cycle_counter;
+
+        if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
         MRS(PMU_CYCLE_CTR, cycle_counter);
-    } else {
-        cycle_counter = pmu_regs->cycle_counter;
-    }
+        } else {
+            cycle_counter = pmu_regs->cycle_counter;
+        }
 
-    setRegister(NODE_STATE(ksCurThread), msgRegisters[0], cycle_counter);
+        tcb_t *thread = NODE_STATE(ksCurThread);
+
+        word_t *ipcBuffer = lookupIPCBuffer(true, thread);
+        setRegister(thread, badgeRegister, 0);
+        unsigned int length = setMR(thread, ipcBuffer, 0, cycle_counter);
+        setRegister(thread, msgInfoRegister, wordFromMessageInfo(
+                        seL4_MessageInfo_new(0, 0, 0, length)));
+    }
+    setThreadState(NODE_STATE(ksCurThread), ThreadState_Running);
 
     return EXCEPTION_NONE;
 }
 
-static exception_t decodeVPMUControl_WriteCycleCounter(word_t length, cap_t cap, word_t *buffer, vpmu_t *vpmu)
+static exception_t decodeVPMUControl_WriteCycleCounter(word_t *buffer, vpmu_t *vpmu)
 {
+    setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
+
     pmu_state_t *pmu_regs = &vpmu->reg_state; 
 
     seL4_Word counter_value = getSyscallArg(0, buffer);
@@ -110,10 +141,8 @@ static exception_t decodeVPMUControl_WriteCycleCounter(word_t length, cap_t cap,
 
 
 /* FEAT_PMUv3_EXT */
-static exception_t decodeVPMUControl_CounterControl(word_t length, cap_t cap, word_t *buffer, vpmu_t *vpmu)
+static exception_t decodeVPMUControl_CounterControl(word_t *buffer, vpmu_t *vpmu)
 {
-    pmu_state_t *pmu_regs = &vpmu->reg_state; 
-
     seL4_Word cntl_val = getSyscallArg(0, buffer);
 
     if (cntl_val > 2) {
@@ -122,15 +151,23 @@ static exception_t decodeVPMUControl_CounterControl(word_t length, cap_t cap, wo
         return EXCEPTION_SYSCALL_ERROR;
     }
 
+    // TODO: @0aids move error checking outside of this function.
+    // not calling so no running
+    setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
+
+    // pmu_state_t *pmu_regs = &vpmu->reg_state; 
+
     uint32_t pmcr = 0;
     uint32_t pmcntenset = 0;
-    if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
-        MRS(PMCR_EL0, pmcr);
-        MRS(PMCNTENSET_EL0, pmcntenset);
-    } else {
-        pmcr = pmu_regs->pmcr;
-        pmcntenset = pmu_regs->pmcntenset;
-    }
+    // This prevents it from updating correctly, and will be fixed by
+    // properly implementing context switching.
+    // if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
+    MRS(PMCR_EL0, pmcr);
+    MRS(PMCNTENSET_EL0, pmcntenset);
+    // } else {
+    //     pmcr = pmu_regs->pmcr;
+    //     pmcntenset = pmu_regs->pmcntenset;
+    // }
 
     switch(cntl_val) {
         case 0: {
@@ -164,39 +201,53 @@ static exception_t decodeVPMUControl_CounterControl(word_t length, cap_t cap, wo
             break;
     }
 
-    if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
-        MSR(PMCR_EL0, pmcr);
-        MSR(PMCNTENSET_EL0, pmcntenset);
-        isb();
-    } else {
-        pmu_regs->pmcr = pmcr;
-        pmu_regs->pmcntenset = pmcntenset;
-    }
+
+    // @0aids: same as above.
+    // reset and ensure PMCCFILTR_EL0 are all off.
+    // if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
+    MSR(PMCR_EL0, pmcr);
+    MSR(PMCNTENSET_EL0, pmcntenset);
+    // } else {
+    //     pmu_regs->pmcr = pmcr;
+    //     pmu_regs->pmcntenset = pmcntenset;
+    // }
+    isb();
 
     return EXCEPTION_NONE;
 }
 
 /* FEAT_PMUv3_EXT */
-static exception_t decodeVPMUControl_ReadInterruptValue(word_t length, cap_t cap, word_t *buffer, vpmu_t *vpmu)
+static exception_t decodeVPMUControl_ReadInterruptValue(vpmu_t *vpmu, bool_t call)
 {
-    pmu_state_t *pmu_regs = &vpmu->reg_state; 
+    setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
 
-    // Get the interrupt flag from the PMU
-    uint32_t irqFlag = 0;
+    if (call) {
+        pmu_state_t *pmu_regs = &vpmu->reg_state; 
 
-    if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
-        MRS(PMOVSCLR_EL0, irqFlag);
-    } else {
-        irqFlag = pmu_regs->pmovsclr;
+        // Get the interrupt flag from the PMU
+        uint32_t irqFlag = 0;
+
+        if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
+            MRS(PMOVSCLR_EL0, irqFlag);
+        } else {
+            irqFlag = pmu_regs->pmovsclr;
+        }
+        tcb_t *thread = NODE_STATE(ksCurThread);
+
+        word_t *ipcBuffer = lookupIPCBuffer(true, thread);
+        setRegister(thread, badgeRegister, 0);
+        unsigned int length = setMR(thread, ipcBuffer, 0, irqFlag);
+        setRegister(thread, msgInfoRegister, wordFromMessageInfo(
+                        seL4_MessageInfo_new(0, 0, 0, length)));
     }
-
-    setRegister(NODE_STATE(ksCurThread), msgRegisters[0], irqFlag);
+    setThreadState(NODE_STATE(ksCurThread), ThreadState_Running);
 
     return EXCEPTION_NONE;
 }
 
-static exception_t decodeVPMUControl_WriteInterruptValue(word_t length, cap_t cap, word_t *buffer, vpmu_t *vpmu)
+static exception_t decodeVPMUControl_WriteInterruptValue(word_t *buffer, vpmu_t *vpmu)
 {
+    setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
     pmu_state_t *pmu_regs = &vpmu->reg_state; 
 
     seL4_Word interrupt_value = getSyscallArg(0, buffer);
@@ -211,10 +262,13 @@ static exception_t decodeVPMUControl_WriteInterruptValue(word_t length, cap_t ca
     return EXCEPTION_NONE;
 }
 
-static exception_t decodeVPMUControl_InterruptControl(word_t length, cap_t cap, word_t *buffer, vpmu_t *vpmu)
+static exception_t decodeVPMUControl_InterruptControl(word_t *buffer, vpmu_t *vpmu)
 {
+    setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
     pmu_state_t *pmu_regs = &vpmu->reg_state; 
 
+    // TODO: @0aids add wellformed-ness checks outside of this function.
+    // For this specific argument?
     seL4_Word interrupt_ctl = getSyscallArg(0, buffer);
 
     if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
@@ -226,14 +280,26 @@ static exception_t decodeVPMUControl_InterruptControl(word_t length, cap_t cap, 
     return EXCEPTION_NONE;
 }
 
-static exception_t decodeVPMUControl_NumCounters(word_t length, cap_t cap, word_t *buffer)
+static exception_t decodeVPMUControl_NumCounters(cap_t cap, bool_t call)
 {
-    // Find number of counters available on hardware, the VPMU will match this
-    uint32_t ctrl_reg;
-    MRS(PMCR_EL0, ctrl_reg);
-    uint32_t num_counters = (ctrl_reg >> 11) & 0x1f;
+    setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
+	if (call)
+	{
+        // Find number of counters available on hardware, the VPMU will match this
+        uint32_t ctrl_reg;
+        MRS(PMCR_EL0, ctrl_reg);
+        uint32_t num_counters = (ctrl_reg >> 11) & 0x1f;
 
-    setRegister(NODE_STATE(ksCurThread), msgRegisters[0], num_counters);
+        tcb_t *thread = NODE_STATE(ksCurThread);
+        word_t *ipcBuffer = lookupIPCBuffer(true, thread);
+        setRegister(thread, badgeRegister, 0);
+
+        unsigned int length = setMR(thread, ipcBuffer, 0, num_counters);
+
+        setRegister(thread, msgInfoRegister, wordFromMessageInfo(
+                        seL4_MessageInfo_new(0, 0, 0, length)));
+	}
+    setThreadState(NODE_STATE(ksCurThread), ThreadState_Running);
 
     return EXCEPTION_NONE;
 }
@@ -286,6 +352,7 @@ static exception_t decodeVPMUControl_GetProfilingInfo(word_t length, cap_t cap, 
 }
 #endif /* CONFIG_PROFILER_ENABLE */
 
+// TODO: @0aids Error checking before invocations.
 exception_t decodeARMVPMUInvocation(word_t label, unsigned int length, cptr_t cptr,
                                          cte_t *srcSlot, cap_t cap,
                                          bool_t call, word_t *buffer)
@@ -294,23 +361,23 @@ exception_t decodeARMVPMUInvocation(word_t label, unsigned int length, cptr_t cp
 
     switch(label) {
         case VPMUReadEventCounter:
-            return decodeVPMUControl_ReadEventCounter(length, cap, buffer, vpmu);
+            return decodeVPMUControl_ReadEventCounter(buffer, vpmu, call);
         case VPMUWriteEventCounter:
-            return decodeVPMUControl_WriteEventCounter(length, cap, buffer, vpmu);
+            return decodeVPMUControl_WriteEventCounter(buffer, vpmu);
         case VPMUReadCycleCounter:
-            return decodeVPMUControl_ReadCycleCounter(length, cap, buffer, vpmu);
+            return decodeVPMUControl_ReadCycleCounter(vpmu, call);
         case VPMUWriteCycleCounter:
-            return decodeVPMUControl_WriteCycleCounter(length, cap, buffer, vpmu);
+            return decodeVPMUControl_WriteCycleCounter(buffer, vpmu);
         case VPMUCounterControl:
-            return decodeVPMUControl_CounterControl(length, cap, buffer, vpmu);
+            return decodeVPMUControl_CounterControl(buffer, vpmu);
         case VPMUReadInterruptValue:
-            return decodeVPMUControl_ReadInterruptValue(length, cap, buffer, vpmu);
+            return decodeVPMUControl_ReadInterruptValue(vpmu, call);
         case VPMUWriteInterruptValue:
-            return decodeVPMUControl_WriteInterruptValue(length, cap, buffer, vpmu);
+            return decodeVPMUControl_WriteInterruptValue(buffer, vpmu);
         case VPMUInterruptControl:
-            return decodeVPMUControl_InterruptControl(length, cap, buffer, vpmu);
+            return decodeVPMUControl_InterruptControl(buffer, vpmu);
         case VPMUNumCounters:
-            return decodeVPMUControl_NumCounters(length, cap, buffer);
+            return decodeVPMUControl_NumCounters(cap, call);
         case VPMUSetVIRQ:
             return decodeVPMUControl_SetVIRQ(length, cap, buffer, vpmu);
         case VPMUAckVIRQ:
