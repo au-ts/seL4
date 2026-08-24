@@ -39,6 +39,9 @@ static inline cap_t FORCE_INLINE lookup_fp(cap_t cap, cptr_t cptr)
         slot = CTE_PTR(cap_cnode_cap_get_capCNodePtr(cap)) + radix;
 
         cap = slot->cap;
+
+        /** GHOSTUPD: "(\<acute>guardBits + \<acute>radixBits > 0, id)" */
+
         bits += guardBits + radixBits;
 
     } while (unlikely(bits < wordBits && cap_capType_equals(cap, cap_cnode_cap)));
