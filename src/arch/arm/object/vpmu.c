@@ -9,22 +9,45 @@ UP_STATE_DEFINE(vpmu_t *, armCurVPMU);
 
 #define PMCR_GET_NUM_CTRS(pmcr) ((pmcr >> 11) & 0x1f)
 
+// returns true if suspended.
+// can't do global variables because of possible in-kernel preemption.
+static inline bool_t beginVpmuTransaction(vpmu_t *vpmu)
+{
+        switch (thread_state_get_tsType(vpmu->tcb->tcbState)) {
+#ifdef CONFIG_VTX
+            case ThreadState_RunningVM:
+#endif
+            case ThreadState_Running:
+                // preempt the tcb. this should force it to save the registers
+                invokeTCB_Suspend(vpmu->tcb);
+                assert(thread_state_get_tsType(vpmu->tcb->tcbState) == ThreadState_Inactive);
+                return true;
+        }
+        return false;
+}
+static inline void endVpmuTransaction(vpmu_t *vpmu, bool_t suspended)
+{
+    if (!suspended) return;
+    invokeTCB_Resume(vpmu->tcb);
+}
+
 static exception_t decodeVPMUControl_ReadCycleCounter(vpmu_t *vpmu, bool_t call)
 {
-    // if the vpmu is not the current thread then we cannot just read from pmu_regs, as that
-    // would be the old value.
-    setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
+    tcb_t *thread = NODE_STATE(ksCurThread);
+    setThreadState(thread, ThreadState_Restart);
 
     if (call) {
-        pmu_state_t *pmu_regs = &vpmu->reg_state; 
-
-        tcb_t *thread = NODE_STATE(ksCurThread);
+        bool_t sus = beginVpmuTransaction(vpmu);
+        // if the vpmu is not the current thread then we cannot just read from pmu_regs, as that
+        // would be the old value. In this we preempt the bound TCB to perform a ctxt switch,
+        // which would update the registers.
 
         word_t *ipcBuffer = lookupIPCBuffer(true, thread);
         setRegister(thread, badgeRegister, 0);
-        unsigned int length = setMR(thread, ipcBuffer, 0, pmu_regs->cycle_counter);
+        unsigned int length = setMR(thread, ipcBuffer, 0, vpmu->reg_state.cycle_counter);
         setRegister(thread, msgInfoRegister, wordFromMessageInfo(
                         seL4_MessageInfo_new(0, 0, 0, length)));
+        endVpmuTransaction(vpmu, sus);
     }
 
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Running);
@@ -36,11 +59,13 @@ static exception_t decodeVPMUControl_WriteCycleCounter(word_t *buffer, vpmu_t *v
 {
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
 
-    pmu_state_t *pmu_regs = &vpmu->reg_state; 
-
     seL4_Word counter_value = getSyscallArg(0, buffer);
 
-    pmu_regs->cycle_counter = counter_value;
+
+    bool_t sus = beginVpmuTransaction(vpmu);
+    vpmu->reg_state.cycle_counter = counter_value;
+    endVpmuTransaction(vpmu, sus);
+
 
     return EXCEPTION_NONE;
 }
@@ -61,6 +86,7 @@ static exception_t decodeVPMUControl_CounterControl(word_t *buffer, vpmu_t *vpmu
     // not calling so no running
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
 
+    bool_t sus = beginVpmuTransaction(vpmu);
     pmu_state_t *pmu_regs = &vpmu->reg_state; 
 
     uint32_t pmcr = 0;
@@ -105,6 +131,7 @@ static exception_t decodeVPMUControl_CounterControl(word_t *buffer, vpmu_t *vpmu
 
     pmu_regs->pmcr = pmcr;
     pmu_regs->pmcntenset = pmcntenset;
+    endVpmuTransaction(vpmu, sus);
 
     return EXCEPTION_NONE;
 }
