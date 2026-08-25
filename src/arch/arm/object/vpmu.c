@@ -7,6 +7,8 @@
 UP_STATE_DEFINE(vpmu_t, cpu_pmu_state);
 UP_STATE_DEFINE(vpmu_t *, armCurVPMU);
 
+#define PMCR_GET_NUM_CTRS(pmcr) ((pmcr >> 11) & 0x1f)
+
 /* FEAT_PMUv3_EXT */
 static exception_t decodeVPMUControl_ReadEventCounter(word_t *buffer, vpmu_t *vpmu, bool_t call)
 {
@@ -15,9 +17,7 @@ static exception_t decodeVPMUControl_ReadEventCounter(word_t *buffer, vpmu_t *vp
     pmu_state_t *pmu_regs = &vpmu->reg_state; 
 
     // Validate the counter is within range. We will match the number of counters available to the VPMU with that of hardware.
-    uint32_t ctrl_reg;
-    MRS(PMCR_EL0, ctrl_reg);
-    uint32_t num_counters = (ctrl_reg >> 11) & 0x1f;
+    uint32_t num_counters = PMCR_GET_NUM_CTRS(pmu_regs->pmcr);
 
     if (counter > num_counters && counter < 32) {
         userError("PMUControl_CounterControl: Invalid counter.");
@@ -29,19 +29,7 @@ static exception_t decodeVPMUControl_ReadEventCounter(word_t *buffer, vpmu_t *vp
 
     if (call) {
 		uint32_t res = 0;
-        if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
-            // Current VPMU is running on hardware, so read directly from hardware.
-            uint32_t cnt_sel = 1 << counter;
-
-            uint32_t counter_value;
-
-            MSR(PMSELR_EL0, cnt_sel);
-            isb();
-            MRS(PMXEVCNTR_EL0, counter_value);
-            res = counter_value;
-        } else {
-            res = pmu_regs->event_counters[counter];
-        }
+        res = pmu_regs->event_counters[counter];
         tcb_t *thread = NODE_STATE(ksCurThread);
 
         word_t *ipcBuffer = lookupIPCBuffer(true, thread);
@@ -58,39 +46,40 @@ static exception_t decodeVPMUControl_ReadEventCounter(word_t *buffer, vpmu_t *vp
 /* FEAT_PMUv3_EXT */
 static exception_t decodeVPMUControl_WriteEventCounter(word_t *buffer, vpmu_t *vpmu)
 {
-    seL4_Word counter = getSyscallArg(0, buffer);
-    seL4_Word value = getSyscallArg(1, buffer);
-    seL4_Word event = getSyscallArg(2, buffer);
+    userError("PMUControl_CounterControl: TODO");
+    current_syscall_error.type = seL4_InvalidArgument;
+    return EXCEPTION_SYSCALL_ERROR;
+    // seL4_Word counter = getSyscallArg(0, buffer);
+    // seL4_Word value = getSyscallArg(1, buffer);
+    // seL4_Word event = getSyscallArg(2, buffer);
 
-    pmu_state_t *pmu_regs = &vpmu->reg_state; 
+    // pmu_state_t *pmu_regs = &vpmu->reg_state; 
 
-    uint32_t ctrl_reg;
-    MRS(PMCR_EL0, ctrl_reg);
-    uint32_t num_counters = (ctrl_reg >> 11) & 0x1f;
+    // uint32_t num_counters = PMCR_GET_NUM_CTRS(pmu_regs->pmcr);
 
-    if (counter > num_counters && counter < 32) {
-        userError("PMUControl_CounterControl: Invalid counter.");
-        current_syscall_error.type = seL4_InvalidArgument;
-        return EXCEPTION_SYSCALL_ERROR;
-    }
+    // if (counter > num_counters && counter < 32) {
+    //     userError("PMUControl_CounterControl: Invalid counter.");
+    //     current_syscall_error.type = seL4_InvalidArgument;
+    //     return EXCEPTION_SYSCALL_ERROR;
+    // }
 
-    // TODO: @0aids move error checking outta here.^^
+    // // TODO: @0aids move error checking outta here.^^
 
-    setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
+    // setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
 
-    if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
-        uint32_t cnt_sel = 1 << counter;
+    // if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
+    //     uint32_t cnt_sel = 1 << counter;
 
-        MSR(PMSELR_EL0, cnt_sel);
-        MSR(PMXEVCNTR_EL0, value);
-        isb();
-        MSR(PMXEVTYPER_EL0, event);
-        isb();
-    } else {
-        pmu_regs->event_counters[counter] = value;
-        pmu_regs->event_type[counter] = event;
-    }
-    return EXCEPTION_NONE;
+    //     MSR(PMSELR_EL0, cnt_sel);
+    //     MSR(PMXEVCNTR_EL0, value);
+    //     isb();
+    //     MSR(PMXEVTYPER_EL0, event);
+    //     isb();
+    // } else {
+    //     pmu_regs->event_counters[counter] = value;
+    //     pmu_regs->event_type[counter] = event;
+    // }
+    // return EXCEPTION_NONE;
 }
 
 static exception_t decodeVPMUControl_ReadCycleCounter(vpmu_t *vpmu, bool_t call)
@@ -100,22 +89,15 @@ static exception_t decodeVPMUControl_ReadCycleCounter(vpmu_t *vpmu, bool_t call)
     if (call) {
         pmu_state_t *pmu_regs = &vpmu->reg_state; 
 
-        seL4_Word cycle_counter;
-
-        if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
-        MRS(PMU_CYCLE_CTR, cycle_counter);
-        } else {
-            cycle_counter = pmu_regs->cycle_counter;
-        }
-
         tcb_t *thread = NODE_STATE(ksCurThread);
 
         word_t *ipcBuffer = lookupIPCBuffer(true, thread);
         setRegister(thread, badgeRegister, 0);
-        unsigned int length = setMR(thread, ipcBuffer, 0, cycle_counter);
+        unsigned int length = setMR(thread, ipcBuffer, 0, pmu_regs->cycle_counter);
         setRegister(thread, msgInfoRegister, wordFromMessageInfo(
                         seL4_MessageInfo_new(0, 0, 0, length)));
     }
+
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Running);
 
     return EXCEPTION_NONE;
@@ -129,12 +111,7 @@ static exception_t decodeVPMUControl_WriteCycleCounter(word_t *buffer, vpmu_t *v
 
     seL4_Word counter_value = getSyscallArg(0, buffer);
 
-    if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
-        MSR(PMU_CYCLE_CTR, counter_value);
-        isb();
-    } else {
-        pmu_regs->cycle_counter = counter_value;
-    }
+    pmu_regs->cycle_counter = counter_value;
 
     return EXCEPTION_NONE;
 }
@@ -155,19 +132,12 @@ static exception_t decodeVPMUControl_CounterControl(word_t *buffer, vpmu_t *vpmu
     // not calling so no running
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
 
-    // pmu_state_t *pmu_regs = &vpmu->reg_state; 
+    pmu_state_t *pmu_regs = &vpmu->reg_state; 
 
     uint32_t pmcr = 0;
     uint32_t pmcntenset = 0;
-    // This prevents it from updating correctly, and will be fixed by
-    // properly implementing context switching.
-    // if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
-    MRS(PMCR_EL0, pmcr);
-    MRS(PMCNTENSET_EL0, pmcntenset);
-    // } else {
-    //     pmcr = pmu_regs->pmcr;
-    //     pmcntenset = pmu_regs->pmcntenset;
-    // }
+    pmcr = pmu_regs->pmcr;
+    pmcntenset = pmu_regs->pmcntenset;
 
     switch(cntl_val) {
         case 0: {
@@ -202,16 +172,8 @@ static exception_t decodeVPMUControl_CounterControl(word_t *buffer, vpmu_t *vpmu
     }
 
 
-    // @0aids: same as above.
-    // reset and ensure PMCCFILTR_EL0 are all off.
-    // if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
-    MSR(PMCR_EL0, pmcr);
-    MSR(PMCNTENSET_EL0, pmcntenset);
-    // } else {
-    //     pmu_regs->pmcr = pmcr;
-    //     pmu_regs->pmcntenset = pmcntenset;
-    // }
-    isb();
+    pmu_regs->pmcr = pmcr;
+    pmu_regs->pmcntenset = pmcntenset;
 
     return EXCEPTION_NONE;
 }
@@ -252,12 +214,7 @@ static exception_t decodeVPMUControl_WriteInterruptValue(word_t *buffer, vpmu_t 
 
     seL4_Word interrupt_value = getSyscallArg(0, buffer);
 
-    if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
-        MSR(PMOVSCLR_EL0, interrupt_value);
-        isb();
-    } else {
-        pmu_regs->pmovsclr = interrupt_value;
-    }
+    pmu_regs->pmovsclr = interrupt_value;
 
     return EXCEPTION_NONE;
 }
@@ -271,12 +228,8 @@ static exception_t decodeVPMUControl_InterruptControl(word_t *buffer, vpmu_t *vp
     // For this specific argument?
     seL4_Word interrupt_ctl = getSyscallArg(0, buffer);
 
-    if (ARCH_NODE_STATE(armCurVPMU) == vpmu) {
-        MSR(PMINTENSET_EL1, interrupt_ctl);
-        isb();
-    } else {
-        pmu_regs->pmintenset = interrupt_ctl;
-    }
+    pmu_regs->pmintenset = interrupt_ctl;
+
     return EXCEPTION_NONE;
 }
 

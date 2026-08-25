@@ -478,7 +478,7 @@ void switchToThread(tcb_t *thread)
 #endif /* CONFIG_HAVE_FPU */
 
 #ifdef CONFIG_THREAD_LOCAL_PMU
-    restorePmuState(thread);
+    tryRestorePmuState(thread);
 #endif /* CONFIG_THREAD_LOCAL_PMU */
 
     tcbSchedDequeue(thread);

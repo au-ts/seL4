@@ -174,12 +174,13 @@ typedef enum {
 #define seL4_DataFault 0
 #define seL4_InstructionFault 1
 /* object sizes - 2^n */
+/* It's not actually number of bits, but 2^n bytes. */
 #define seL4_PageBits 12
 #define seL4_LargePageBits 21
 #define seL4_HugePageBits 30
 #define seL4_SlotBits 5
 #if defined(CONFIG_THREAD_LOCAL_PMU)
-#define seL4_VPMUBits 14
+#define seL4_VPMUBits 9
 #endif
 #if defined(CONFIG_HARDWARE_DEBUG_API) || defined(CONFIG_ARM_HYP_ENABLE_VCPU_CP14_SAVE_AND_RESTORE) && \
     (defined(CONFIG_ARM_HYPERVISOR_SUPPORT) && defined(CONFIG_ENABLE_SMP_SUPPORT) && defined(CONFIG_BENCHMARK_TRACK_UTILISATION))

@@ -35,6 +35,10 @@ typedef struct vpmu {
     #endif /* CONFIG_PROFILER_ENABLE */
 } vpmu_t;
 
+compile_assert(vpmu_size_sane,
+               BIT(seL4_VPMUBits) >= sizeof(vpmu_t))
+compile_assert(vpmu_size_not_excessive,
+               BIT(seL4_VPMUBits - 1) < sizeof(vpmu_t))
 // If a VPMU is bound to the current running thread, and a valid
 // vIRQ handler is set, we will deliver this IRQ to the endpoint of the vPMU
 // and return 1. If no valid vIRQ is set, then we will return 0, and
@@ -44,4 +48,5 @@ uint8_t arm_vpmu_handle_irq(void);
 exception_t decodeARMVPMUInvocation(word_t label, unsigned int length, cptr_t cptr,
                                          cte_t *srcSlot, cap_t cap,
                                          bool_t call, word_t *buffer);
+
 #endif /* CONFIG_THREAD_LOCAL_PMU */

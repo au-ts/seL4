@@ -206,82 +206,113 @@ exception_t decodePMUControlInvocation(word_t label, unsigned int length, cptr_t
                                          bool_t call, word_t *buffer);
 
 #ifdef CONFIG_THREAD_LOCAL_PMU
-/* Store the PMU state into the user context */
-static inline void savePmuState(pmu_state_t *pmu_state)
-{
-    // pmu_state_t *pmuState = &thread->tcbArch.tcbContext.pmuState;
-    /* @kwinter: Should we disable the PMU here, or further up in the context
-    switching callchain?? Should we really disable at all? To disable or not to disable,
-    that is the question. */
-    MRS(PMU_CYCLE_CTR, pmu_state->cycle_counter);
 
-    // Get the number of counters available on this platform
-    uint32_t ctrl_reg;
-    MRS(PMCR_EL0, ctrl_reg);
-    uint32_t num_counters = (ctrl_reg >> 11) & 0x1f;
+// /* Store the PMU state into the user context */
+// static inline void savePmuState(pmu_state_t *pmu_state)
+// {
+//     // pmu_state_t *pmuState = &thread->tcbArch.tcbContext.pmuState;
+//     /* @kwinter: Should we disable the PMU here, or further up in the context
+//     switching callchain?? Should we really disable at all? To disable or not to disable,
+//     that is the question. */
+//     MRS(PMU_CYCLE_CTR, pmu_state->cycle_counter);
 
-    for (int i = 0; i < num_counters; i++) {
-        MSR(PMSELR_EL0, (1 << i));
-        MRS(PMXEVCNTR_EL0, pmu_state->event_counters[i]);
-        MRS(PMXEVTYPER_EL0, pmu_state->event_counters[i]);
-    }
+//     // Get the number of counters available on this platform
+//     uint32_t ctrl_reg;
+//     MRS(PMCR_EL0, ctrl_reg);
+//     uint32_t num_counters = (ctrl_reg >> 11) & 0x1f;
+
+//     for (int i = 0; i < num_counters; i++) {
+//         MSR(PMSELR_EL0, (1 << i));
+//         MRS(PMXEVCNTR_EL0, pmu_state->event_counters[i]);
+//         MRS(PMXEVTYPER_EL0, pmu_state->event_counters[i]);
+//     }
+//     MRS(PMCR_EL0, pmu_state->pmcr);
+//     MRS(PMCNTENSET_EL0, pmu_state->pmcntenset);
+//     MRS(PMOVSCLR_EL0, pmu_state->pmovsclr);
+//     MRS(PMINTENSET_EL1, pmu_state->pmintenset);
+// }
+
+// /* Load the PMU state from the user context into the PMU */
+// static inline void loadPmuState(pmu_state_t *pmu_state)
+// {
+//     /* @kwinter: Should we allow a write to enable the cycle counter here? Or disable
+//     it until we finish the context switching process. Would then have to keep
+//     track of even more state. */
+
+//     MSR(PMCR_EL0, pmu_state->pmcr);
+//     MSR(PMCNTENSET_EL0, pmu_state->pmcntenset);
+//     MSR(PMOVSCLR_EL0, pmu_state->pmovsclr);
+//     MSR(PMINTENSET_EL1, pmu_state->pmintenset);
+
+//     MSR(PMU_CYCLE_CTR, pmu_state->cycle_counter);
+
+//     // Get the number of counters available on this platform
+//     uint32_t ctrl_reg;
+//     MRS(PMCR_EL0, ctrl_reg);
+//     uint32_t num_counters = (ctrl_reg >> 11) & 0x1f;
+
+//     for (int i = 0; i < num_counters; i++) {
+//         MSR(PMSELR_EL0, (1 << i));
+//         MSR(PMXEVCNTR_EL0, pmu_state->event_counters[i]);
+//         MSR(PMXEVTYPER_EL0, pmu_state->event_counters[i]);
+//     }
+// }
+
+// static inline void restorePmuState(tcb_t *thread)
+// {
+//     if ((NODE_STATE(ksCurThread)->tcbArch.vpmu != NULL) &&
+//         (thread->tcbArch.vpmu != NULL)) {
+//         savePmuState(&NODE_STATE(ksCurThread)->tcbArch.vpmu->reg_state);
+//         loadPmuState(&NODE_STATE(ksCurThread)->tcbArch.vpmu->reg_state);
+//     } else if (NODE_STATE(ksCurThread)->tcbArch.vpmu != NULL) {
+//         // Transitioning from TCB doing per process monitoring to use global cpu
+//         // counters
+//         savePmuState(&NODE_STATE(ksCurThread)->tcbArch.vpmu->reg_state);
+//         loadPmuState(&ARCH_NODE_STATE(cpu_pmu_state).reg_state);
+//     } else if (thread->tcbFlags & seL4_TCBFlag_localPmuState) {
+//         // Transitioning from a TCB not doing per process monitoring to one that is
+//         savePmuState(&ARCH_NODE_STATE(cpu_pmu_state).reg_state);
+//         loadPmuState(&NODE_STATE(ksCurThread)->tcbArch.vpmu->reg_state);
+//     }
+//     /* In the case that we are transitioning between two TCB's not using per process
+//     PMU counters, then we don't need to alter any state, just continue to let the global
+//     counters persist. */
+
+//     /* @kwinter: There is an issue here related to how we set the TCB flags. As we can do
+//     this dynamically in this approach, then we should also do a simple save to the global counters
+//     every context switch. This is because if all threads are using the global PMU, then one decides
+//     to do per process monitoring, then all the global counters will reset back to 0, as the second
+//     case in the above if statement will be chosen, and the cpu_pmu_state will be unpopulated.
+//     We may need to change away from using these TCB flags. Is there a way to do this at build time? */
+// }
+
+// called during kernel entry. Saves the PMU related registers into the TCB's own state,
+// and restarts itself.
+static inline void trySavePmuState(tcb_t *thread) {
+    if (thread->tcbArch.vpmu == NULL) return;
+    pmu_state_t *pmu_state = &thread->tcbArch.vpmu->reg_state;
     MRS(PMCR_EL0, pmu_state->pmcr);
+    MRS(PMU_CYCLE_CTR, pmu_state->cycle_counter);
     MRS(PMCNTENSET_EL0, pmu_state->pmcntenset);
     MRS(PMOVSCLR_EL0, pmu_state->pmovsclr);
     MRS(PMINTENSET_EL1, pmu_state->pmintenset);
+
+    // disable the pmu
+    uint32_t pmcr_dis = pmu_state->pmcr & (~1u);
+    MSR(PMCR_EL0, pmcr_dis);
+    isb();
 }
 
-/* Load the PMU state from the user context into the PMU */
-static inline void loadPmuState(pmu_state_t *pmu_state)
-{
-    /* @kwinter: Should we allow a write to enable the cycle counter here? Or disable
-    it until we finish the context switching process. Would then have to keep
-    track of even more state. */
-
+// called before kernel exit. Writes all PMU related registers back (where they are writable).
+// Only restores it if the vpmu is bound.
+static inline void tryRestorePmuState(tcb_t *thread) {
+    if (thread->tcbArch.vpmu == NULL) return;
+    pmu_state_t *pmu_state = &thread->tcbArch.vpmu->reg_state;
     MSR(PMCR_EL0, pmu_state->pmcr);
+    MSR(PMU_CYCLE_CTR, pmu_state->cycle_counter);
     MSR(PMCNTENSET_EL0, pmu_state->pmcntenset);
     MSR(PMOVSCLR_EL0, pmu_state->pmovsclr);
     MSR(PMINTENSET_EL1, pmu_state->pmintenset);
-
-    MSR(PMU_CYCLE_CTR, pmu_state->cycle_counter);
-
-    // Get the number of counters available on this platform
-    uint32_t ctrl_reg;
-    MRS(PMCR_EL0, ctrl_reg);
-    uint32_t num_counters = (ctrl_reg >> 11) & 0x1f;
-
-    for (int i = 0; i < num_counters; i++) {
-        MSR(PMSELR_EL0, (1 << i));
-        MSR(PMXEVCNTR_EL0, pmu_state->event_counters[i]);
-        MSR(PMXEVTYPER_EL0, pmu_state->event_counters[i]);
-    }
-}
-
-static inline void restorePmuState(tcb_t *thread)
-{
-    if ((NODE_STATE(ksCurThread)->tcbArch.vpmu != NULL) &&
-        (thread->tcbArch.vpmu != NULL)) {
-        savePmuState(&NODE_STATE(ksCurThread)->tcbArch.vpmu->reg_state);
-        loadPmuState(&NODE_STATE(ksCurThread)->tcbArch.vpmu->reg_state);
-    } else if (NODE_STATE(ksCurThread)->tcbArch.vpmu != NULL) {
-        // Transitioning from TCB doing per process monitoring to use global cpu
-        // counters
-        savePmuState(&NODE_STATE(ksCurThread)->tcbArch.vpmu->reg_state);
-        loadPmuState(&ARCH_NODE_STATE(cpu_pmu_state).reg_state);
-    } else if (thread->tcbFlags & seL4_TCBFlag_localPmuState) {
-        // Transitioning from a TCB not doing per process monitoring to one that is
-        savePmuState(&ARCH_NODE_STATE(cpu_pmu_state).reg_state);
-        loadPmuState(&NODE_STATE(ksCurThread)->tcbArch.vpmu->reg_state);
-    }
-    /* In the case that we are transitioning between two TCB's not using per process
-    PMU counters, then we don't need to alter any state, just continue to let the global
-    counters persist. */
-
-    /* @kwinter: There is an issue here related to how we set the TCB flags. As we can do
-    this dynamically in this approach, then we should also do a simple save to the global counters
-    every context switch. This is because if all threads are using the global PMU, then one decides
-    to do per process monitoring, then all the global counters will reset back to 0, as the second
-    case in the above if statement will be chosen, and the cpu_pmu_state will be unpopulated.
-    We may need to change away from using these TCB flags. Is there a way to do this at build time? */
+    isb();
 }
 #endif /* CONFIG_THREAD_LOCAL_PMU */

@@ -1727,14 +1727,14 @@ exception_t decodeBindVPMU(cap_t cap)
         current_syscall_error.type = seL4_IllegalOperation;
         return EXCEPTION_SYSCALL_ERROR;
     }
-
-    /* Save the current PMU state to the core global state, and load the VPMU state.*/
-    savePmuState(&ARCH_NODE_STATE(cpu_pmu_state).reg_state);
-    loadPmuState(&pmuPtr->reg_state);
-
     /* Set the pointer in the arch TCB to the pmuPtr from the VPMU cap
     we have been passed in. */
     tcb->tcbArch.vpmu = pmuPtr;
+
+    /* Save the current PMU state to the core global state, and load the VPMU state.*/
+    trySavePmuState(tcb);
+    tryRestorePmuState(tcb);
+
 
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
     return EXCEPTION_NONE;

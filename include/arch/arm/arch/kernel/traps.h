@@ -9,14 +9,23 @@
 #include <config.h>
 #include <machine.h>
 #include <util.h>
+#ifdef CONFIG_THREAD_LOCAL_PMU
+#include <arch/object/pmu.h>
+#endif
 
 static inline void arch_c_entry_hook(void)
 {
     arm_save_thread_id(NODE_STATE(ksCurThread));
+#ifdef CONFIG_THREAD_LOCAL_PMU
+    trySavePmuState(NODE_STATE(ksCurThread));
+#endif
 }
 
 static inline void arch_c_exit_hook(void)
 {
+#ifdef CONFIG_THREAD_LOCAL_PMU
+    tryRestorePmuState(NODE_STATE(ksCurThread));
+#endif
     arm_load_thread_id(NODE_STATE(ksCurThread));
 }
 

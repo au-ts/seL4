@@ -711,6 +711,7 @@ BOOT_CODE VISIBLE void init_kernel(
 #endif /* ENABLE_SMP_SUPPORT */
 
 	printf("size of tcb_t: %ld\n", sizeof(tcb_t));
+	printf("size of vpmu_t: %ld\n", sizeof(vpmu_t));
 
     if (!result) {
         fail("ERROR: kernel init failed");
