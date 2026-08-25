@@ -161,10 +161,14 @@ static inline bool_t CONST cap_get_archCapIsPhysical(cap_t cap)
     case cap_smc_cap:
         return false;
 #endif
+#ifdef CONFIG_THREAD_LOCAL_PMU
+    case cap_vpmu_cap:
+        return true;
+#endif
 
     default:
         /* Unreachable, but GCC can't figure that out */
-        return false;
+        assert(false && "Invalid cap object");
     }
 }
 
@@ -202,10 +206,14 @@ static inline void *CONST cap_get_archCapPtr(cap_t cap)
     case cap_smc_cap:
         return NULL;
 #endif
+#ifdef CONFIG_THREAD_LOCAL_PMU
+    case cap_vpmu_cap:
+        return VPMU_PTR(cap_vpmu_cap_get_capPMUPtr(cap));
+#endif
 
     default:
         /* Unreachable, but GCC can't figure that out */
-        return NULL;
+        assert(false && "Invalid cap object");
     }
 }
 
