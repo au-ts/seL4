@@ -14,8 +14,37 @@
 #include <arch/types.h>
 #include <arch/object/structures_gen.h>
 #include <arch/machine/hardware.h>
+#include <arch/machine/registerset.h>
 #ifdef CONFIG_THREAD_LOCAL_PMU
-#include <arch/object/vpmu.h>
+
+typedef struct tcb tcb_t;
+
+/* Cycle-counting only for now. */
+typedef struct pmu_state {
+    /* This state is the only things that userspace can read/access based
+    on the kernel PMU access control capability's invocations. */
+    uint64_t cycle_counter;
+    /* PMU Control register. */
+    /* If the pmcr value is 0, then any invocation methods will initialise it */
+    uint32_t pmcr;
+    /* PMU Counter enable register */
+    uint32_t pmcntenset;
+    /* PMU Overflow flag status register */
+    uint32_t pmovsclr;
+    /* PMCCFILTR_EL0 is automatically set to ignore the kernel. */
+} pmu_state_t;
+
+typedef struct vpmu {
+    pmu_state_t reg_state;
+    // Reading from a running TCB will need to temporarily stop the running TCB.
+    // If NULL, then not bound.
+    tcb_t* tcb;
+} vpmu_t;
+
+compile_assert(vpmu_size_sane,
+               BIT(seL4_VPMUBits) >= sizeof(vpmu_t))
+compile_assert(vpmu_size_not_excessive,
+               BIT(seL4_VPMUBits - 1) < sizeof(vpmu_t))
 #endif /* CONFIG_THREAD_LOCAL_PMU */
 
 typedef struct arch_tcb {

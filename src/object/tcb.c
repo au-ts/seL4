@@ -28,7 +28,7 @@
 #include <arch/smp/ipi_inline.h>
 
 #ifdef CONFIG_THREAD_LOCAL_PMU
-#include <arch/object/pmu.h>
+#include <arch/object/vpmu.h>
 #include <mode/machine/registerset.h>
 #endif /* CONFIG_THREAD_LOCAL_PMU */
 
@@ -1727,14 +1727,26 @@ exception_t decodeBindVPMU(cap_t cap)
         current_syscall_error.type = seL4_IllegalOperation;
         return EXCEPTION_SYSCALL_ERROR;
     }
+    if (pmuPtr->tcb) {
+        userError("TCB BindVPMU: VPMU is already bound.");
+        current_syscall_error.type = seL4_IllegalOperation;
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+
+    pmuPtr->tcb = tcb;
     /* Set the pointer in the arch TCB to the pmuPtr from the VPMU cap
     we have been passed in. */
     tcb->tcbArch.vpmu = pmuPtr;
+    // Do not restore any pmu state, as that is done when the TCB is scheduled.
 
-    /* Save the current PMU state to the core global state, and load the VPMU state.*/
-    trySavePmuState(tcb);
-    tryRestorePmuState(tcb);
+	// disable counting in EL1.
+	// disable counting in EL2 (should be off by default)
+	// disable counting in EL3 (off by default when EL1 is off)
+	uint64_t filtr =  0;
+	MRS("PMCCFILTR_EL0", filtr);
 
+	filtr = filtr | BIT(31);
+	MSR("PMCCFILTR_EL0", filtr);
 
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
     return EXCEPTION_NONE;
@@ -1752,6 +1764,7 @@ exception_t decodeUnbindVPMU(cap_t cap)
         return EXCEPTION_SYSCALL_ERROR;
     }
 
+    tcb->tcbArch.vpmu->tcb = NULL;
     tcb->tcbArch.vpmu = NULL;
 
     setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);

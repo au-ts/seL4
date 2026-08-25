@@ -272,7 +272,6 @@ add_sources(
         object/vcpu.c
         object/smmu.c
         object/smc.c
-        object/pmu.c
         object/vpmu.c
         smp/ipi.c
         profiling/profiling.c

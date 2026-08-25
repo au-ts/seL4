@@ -24,8 +24,6 @@
 #include <arch/object/vpmu.h>
 #endif
 
-#include <arch/object/pmu.h>
-
 /* The top level asid mapping table */
 extern asid_pool_t *armKSASIDTable[nASIDPools] VISIBLE;
 

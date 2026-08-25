@@ -19,13 +19,6 @@ exception_t Arch_decodeIRQControlInvocation(word_t invLabel, word_t length,
 exception_t decodeSGISignalInvocation(word_t invLabel, word_t length,
                                       cap_t cap, word_t *buffer);
 
-#ifdef CONFIG_THREAD_LOCAL_PMU
-static inline uint8_t maybeHandlePMUVirq(void)
-{
-   return arm_vpmu_handle_irq();
-}
-#endif /* CONFIG_THREAD_LOCAL_PMU */
-
 /* Handle a platform-reserved IRQ. */
 static inline void handleReservedIRQ(irq_t irq)
 {
