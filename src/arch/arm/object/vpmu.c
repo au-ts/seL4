@@ -13,17 +13,18 @@ UP_STATE_DEFINE(vpmu_t *, armCurVPMU);
 // can't do global variables because of possible in-kernel preemption.
 static inline bool_t beginVpmuTransaction(vpmu_t *vpmu)
 {
-        switch (thread_state_get_tsType(vpmu->tcb->tcbState)) {
+    if (vpmu->tcb == NULL) return false;
+    switch (thread_state_get_tsType(vpmu->tcb->tcbState)) {
 #ifdef CONFIG_VTX
-            case ThreadState_RunningVM:
+        case ThreadState_RunningVM:
 #endif
-            case ThreadState_Running:
-                // preempt the tcb. this should force it to save the registers
-                invokeTCB_Suspend(vpmu->tcb);
-                assert(thread_state_get_tsType(vpmu->tcb->tcbState) == ThreadState_Inactive);
-                return true;
-        }
-        return false;
+        case ThreadState_Running:
+            // preempt the tcb. this should force it to save the registers
+            invokeTCB_Suspend(vpmu->tcb);
+            assert(thread_state_get_tsType(vpmu->tcb->tcbState) == ThreadState_Inactive);
+            return true;
+    }
+    return false;
 }
 static inline void endVpmuTransaction(vpmu_t *vpmu, bool_t suspended)
 {
