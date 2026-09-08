@@ -1263,11 +1263,23 @@ static exception_t decodeX64PML4Invocation(word_t invLabel, word_t length,
                 }
             }
 
-            lookupPTSlot_ret_t pt_lu_ret = lookupPTSlot(vspaceRoot, curVaddr);
-            if (unlikely(pt_lu_ret.status != EXCEPTION_NONE)) {
+            exception_t lookup_status;
+            switch (frameSize) {
+            case X86_SmallPage:
+                lookup_status = lookupPTSlot(vspaceRoot, curVaddr).status;
+                break;
+            case X86_LargePage:
+                lookup_status = lookupPDSlot(vspaceRoot, curVaddr).status;
+                break;
+            default:
+                userError("X86VSpaceAbsolutePageMap: invalid frame size to map.");
+                current_syscall_error.type = seL4_IllegalOperation;
+                return EXCEPTION_SYSCALL_ERROR;
+            }
+            if (unlikely(lookup_status != EXCEPTION_NONE)) {
                 current_syscall_error.type = seL4_FailedLookup;
                 current_syscall_error.failedLookupWasSource = false;
-                /* current_lookup_fault will have been set by lookupPTSlot */
+                /* current_lookup_fault will have been set by the lookup above */
                 return EXCEPTION_SYSCALL_ERROR;
             }
         }
@@ -1287,17 +1299,21 @@ static exception_t decodeX64PML4Invocation(word_t invLabel, word_t length,
             frameCap = cap_frame_cap_set_capFMapType(frameCap, X86_MappingVSpace);
 
             base = pptr_to_paddr((void *)cap_frame_cap_get_capFBasePtr(frameCap));
-            lookupPTSlot_ret_t pt_lu_ret = lookupPTSlot(vspaceRoot, curVaddr);
-
             switch(frameSize) {
             case X86_SmallPage: {
+                lookupPTSlot_ret_t pt_lu_ret = lookupPTSlot(vspaceRoot, curVaddr);
                 performX86PageInvocationMapPTE(frameCap, frameCapSlot, pt_lu_ret.ptSlot,
                                                makeUserPTE(base, attributes, vmRights), vspaceRoot);
                 break;
             }
+            case X86_LargePage: {
+                lookupPDSlot_ret_t pd_lu_ret = lookupPDSlot(vspaceRoot, curVaddr);
+                performX86PageInvocationMapPDE(frameCap, frameCapSlot, pd_lu_ret.pdSlot,
+                                               makeUserPDELargePage(base, attributes, vmRights), vspaceRoot);
+                break;
+            }
             default:
-                userError("X86VSpaceAbsolutePageMap: invalid frame size to map (unsupported yet).");
-                return EXCEPTION_SYSCALL_ERROR;
+                fail("Unsupported frame size passed validation");
             }
         }
         setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
