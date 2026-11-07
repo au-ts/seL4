@@ -213,6 +213,14 @@ devices:
         kernel: APLIC_PPTR
         kernel_size: 0x4000
 
+  # IOMMU ownership is selected by /chosen/seL4,kernel-devices.
+  - compatible:
+      - riscv,iommu
+    regions:
+      - index: 0
+        kernel: RISCV_IOMMU_PPTR
+        kernel_size: 0x1000
+
   # elfloader rules
   - compatible:
       - arm,psci-0.2
