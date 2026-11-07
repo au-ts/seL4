@@ -23,29 +23,79 @@ base 64(39,1)
 block frame_cap {
     field       capFMappedASID      16
     field_high  capFBasePtr         39
+#ifdef CONFIG_RISCV_IOMMU
+    field       capFMapType         2
+    padding                         7
+#else
     padding                         9
+#endif
 
     field       capType             5
     field       capFSize            2
     field       capFVMRights        2
     field       capFIsDevice        1
+#ifdef CONFIG_RISCV_IOMMU
+    padding                         13
+    field       capFMappedAddress   41
+#else
     padding                         15
     field_high  capFMappedAddress   39
+#endif
 }
 
 -- N-level page table
 block page_table_cap {
     field       capPTMappedASID     16
     field_high  capPTBasePtr        39
+#ifdef CONFIG_RISCV_IOMMU
+    field       capPTMapType        2
+    field       capPTRootX4         1
+    padding                         6
+#else
     padding                         9
+#endif
 
     field       capType             5
+#ifdef CONFIG_RISCV_IOMMU
+    padding                         18
+    field       capPTMappedAddress  41
+#else
     padding                         19
     field       capPTIsMapped       1
     field_high  capPTMappedAddress  39
+#endif
 }
 
--- Cap to the table of 2^6 ASID pools
+#ifdef CONFIG_RISCV_IOMMU
+block iommu_cap {
+    field_high  capIOMMUBasePtr     39
+    padding                         25
+
+    field       capType             5
+    padding                         57
+    field       capIOMMUDDTLevels   2
+}
+
+block iommu_ddt_cap {
+    field_high  capDDTIOMMUBasePtr  39
+    field       capDDTDeviceID      24
+    field       capDDTIsMapped      1
+
+    field       capType             5
+    field_high  capDDTBasePtr       39
+    padding                         20
+}
+
+block iommu_device_cap {
+    field_high  capDevBasePtr       39
+    padding                         25
+
+    field       capType             5
+    padding                         59
+}
+#endif
+
+-- Cap to the table of ASID pools
 block asid_control_cap {
     padding 64
 
@@ -53,7 +103,7 @@ block asid_control_cap {
     padding             59
 }
 
--- Cap to a pool of 2^10 ASIDs
+-- Cap to a pool of ASIDs
 block asid_pool_cap {
     padding 64
 
@@ -87,6 +137,11 @@ tagged_union cap capType {
     tag page_table_cap      3
     tag asid_control_cap    11
     tag asid_pool_cap       13
+#ifdef CONFIG_RISCV_IOMMU
+    tag iommu_cap           5
+    tag iommu_ddt_cap       7
+    tag iommu_device_cap    9
+#endif
 }
 
 ---- Arch-independent object types
@@ -142,4 +197,30 @@ block satp {
     field ppn           44
 }
 
+#ifdef CONFIG_RISCV_IOMMU
+block asid_entry {
+    field       ASID                16
+    padding                         48
+
+    field_high  rootPtr             27
+    field_high  deviceHeadPtr       34
+    field       mapType             2
+    padding                         1
+}
+
+block iommu_device {
+    padding                         25
+    field_high  iommuBasePtr        39
+
+    padding                         30
+    field_high  nextPtr             34
+
+    padding                         30
+    field_high  prevPtr             34
+
+    padding                         5
+    field       deviceID            24
+    field_high  asidEntryPtr        35
+}
+#endif
 #include <sel4/arch/shared_types.bf>
