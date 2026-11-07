@@ -64,6 +64,13 @@ compile_assert(kernel_elf_no_overflow, KERNEL_ELF_BASE_RAW < KERNEL_ELF_BASE_RAW
 #define SIE_MEIE  11 /* M-Mode external interrupt enable (MIP only). */
 /* Bit 12 and above are reserved. */
 
+#ifdef CONFIG_RISCV_IOMMU
+static inline void fence_iorw_iorw(void)
+{
+    asm volatile("fence iorw, iorw" ::: "memory");
+}
+#endif
+
 #ifdef ENABLE_SMP_SUPPORT
 
 static inline void fence_rw_rw(void)
