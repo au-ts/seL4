@@ -12,7 +12,9 @@
 #include <machine/timer.h>
 #include <arch/machine.h>
 #include <arch/smp/ipi.h>
-
+#ifdef CONFIG_RISCV_APLIC
+#include <model/statedata.h>
+#endif
 #ifndef CONFIG_KERNEL_MCS
 #define RESET_CYCLES ((TIMER_CLOCK_HZ / MS_IN_S) * CONFIG_TIMER_TICK_MS)
 #endif /* !CONFIG_KERNEL_MCS */
@@ -104,12 +106,16 @@ static inline irq_t getActiveIRQ(void)
          * triggered interrupt might have been deasserted again or another hard
          * has claimed it in a multicore system.
          */
+#ifdef CONFIG_RISCV_AIA
+        irq = aia_get_claim();
+#else
         irq = plic_get_claim();
 #ifdef CONFIG_PLAT_QEMU_RISCV_VIRT
         /* QEMU bug requires external interrupts to be immediately claimed. For
          * other platforms, the claim is done in invokeIRQHandler_AckIRQ.
          */
         plic_complete_claim(irq);
+#endif
 #endif
 #ifdef ENABLE_SMP_SUPPORT
     } else if (sip & BIT(SIP_SSIP)) {
@@ -194,7 +200,17 @@ static inline void maskInterrupt(bool_t disable, irq_t irq)
         return;
 #endif
     } else {
+#ifdef CONFIG_RISCV_AIA
+        if (irq <= IMSIC_NUM_IDS) {
+#ifdef CONFIG_RISCV_APLIC
+            aia_mask_irq(disable, irq, intStateIRQTable[IRQT_TO_IDX(irq)].aplicSource);
+#else
+            aia_mask_irq(disable, irq);
+#endif
+        }
+#else
         plic_mask_irq(disable, irq);
+#endif
     }
 }
 
@@ -250,7 +266,11 @@ BOOT_CODE void initLocalIRQController(void)
     printf("Init local IRQ\n");
 
     /* Init per-hart PLIC */
+#ifdef CONFIG_RISCV_AIA
+    aia_init_hart();
+#else
     plic_init_hart();
+#endif
 
     /* Enable timer and external interrupt. If SMP is enabled, then enable the
      * software interrupt also, it is used as IPI between cores. */
@@ -259,7 +279,11 @@ BOOT_CODE void initLocalIRQController(void)
 
 BOOT_CODE void initIRQController(void)
 {
+#ifdef CONFIG_RISCV_AIA
+    printf("Initialising APLIC...\n");
+#else
     printf("Initializing PLIC...\n");
+#endif
 
     /* Initialize active_irq[] properly to stick to the semantics and play safe.
      * Effectively this is not needed if irqInvalid is zero (which is currently
@@ -270,7 +294,11 @@ BOOT_CODE void initIRQController(void)
         active_irq[i] = irqInvalid;
     }
 
+#ifdef CONFIG_RISCV_AIA
+    aia_init_controller();
+#else
     plic_init_controller();
+#endif
 }
 
 static inline void handleSpuriousIRQ(void)

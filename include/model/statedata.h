@@ -99,7 +99,11 @@ extern word_t ksNumCPUs;
 #define INT_STATE_ARRAY_SIZE (maxIRQ + 1)
 #endif
 extern word_t ksWorkUnitsCompleted;
+#ifdef CONFIG_RISCV_APLIC
+extern irq_entry_t intStateIRQTable[];
+#else
 extern irq_state_t intStateIRQTable[];
+#endif
 extern cte_t intStateIRQNode[];
 
 extern word_t ksDomScheduleIdx;

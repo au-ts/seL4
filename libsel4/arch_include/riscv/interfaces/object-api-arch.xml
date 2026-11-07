@@ -319,6 +319,7 @@
 
        <method id="RISCVIRQIssueIRQHandlerTrigger" name="GetTrigger" manual_name="Get IRQ Handler with Trigger Type"
            manual_label="irq_controlgettrigger">
+            <condition><not><config var="CONFIG_RISCV_AIA"/></not></condition>
             <brief>
                 Create an IRQ handler capability and specify the trigger method (edge or level).
             </brief>
@@ -366,6 +367,35 @@
             </error>
         </method>
 
+        <method id="RISCVIRQIssueIRQHandlerAPLIC" name="GetAPLIC">
+            <condition><config var="CONFIG_RISCV_APLIC"/></condition>
+            <brief>Create an IRQ handler and route an APLIC source to an IMSIC interrupt identity.</brief>
+            <description>
+                Available only when an APLIC is assigned to this kernel.
+                The source and interrupt identity must both be available. The route remains fixed until the final IRQHandler cap is deleted.
+                seL4 does not guarantee upon finalisation that all outstanding interrupts are delivered.
+            </description>
+            <param dir="in" name="irq" type="seL4_Word" description="The destination IMSIC interrupt identity."/>
+            <param dir="in" name="source" type="seL4_Word" description="The APLIC source number."/>
+            <param dir="in" name="trigger" type="seL4_Word">
+                <description>
+                    Use <texttt text="seL4_RISCV_IRQLevelHigh"/>,
+                    <texttt text="seL4_RISCV_IRQLevelLow"/>,
+                    <texttt text="seL4_RISCV_IRQEdgeRising"/>, or
+                    <texttt text="seL4_RISCV_IRQEdgeFalling"/>.
+                </description>
+            </param>
+            <param dir="in" name="root" type="seL4_CNode" description="Root of the destination CSpace."/>
+            <param dir="in" name="index" type="seL4_Word" description="Destination slot index."/>
+            <param dir="in" name="depth" type="seL4_Uint8" description="Number of bits of index to resolve."/>
+            <error name="seL4_DeleteFirst" description="The destination slot is occupied."/>
+            <error name="seL4_FailedLookup" description="The destination slot could not be resolved."/>
+            <error name="seL4_IllegalOperation" description="The invoked capability does not support GetAPLIC."/>
+            <error name="seL4_InvalidCapability" description="A supplied capability has the wrong type."/>
+            <error name="seL4_InvalidArgument" description="The trigger is invalid or unsupported by this source. The source remains inactive."/>
+            <error name="seL4_RangeError" description="The IMSIC interrupt identity, APLIC source or CSpace depth is out of range."/>
+            <error name="seL4_RevokeFirst" description="The identity is allocated or reserved, or the APLIC source is already active."/>
+        </method>
     </interface>
 
 </api>
