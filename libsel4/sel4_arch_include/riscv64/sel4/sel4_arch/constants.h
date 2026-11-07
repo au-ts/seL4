@@ -40,8 +40,61 @@
 #define seL4_PageTableBits     12
 #define seL4_VSpaceBits        seL4_PageTableBits
 
+#ifdef CONFIG_RISCV_IOMMU
+#define seL4_RootX4PageTableBits            (seL4_PageTableBits + 2)
+#define seL4_RootX4PageTableIndexBits       (seL4_PageTableIndexBits + 2)
+#define seL4_X4GPABits                      41
+
+/* A 4 KiB ASID pool holds 256 entries of 16 bytes each. */
+#define seL4_NumASIDPoolsBits               8
+#define seL4_ASIDPoolIndexBits              8
+#define seL4_ASIDEntryBits                  4
+
+#define seL4_IOMMUDeviceBits                5
+#define seL4_IOMMUDDTBits                   12
+#define seL4_IOMMUDDTEntryBits              3
+#define seL4_IOMMUDDTLeafEntryBits          5
+#define seL4_IOMMUDDTLeafExtendedEntryBits  6
+#define seL4_IOMMUDDTIndexBits              (seL4_IOMMUDDTBits - seL4_IOMMUDDTEntryBits)
+#define seL4_IOMMUDDTLeafIndexBits          (seL4_IOMMUDDTBits - seL4_IOMMUDDTLeafEntryBits)
+#define seL4_IOMMUDDTLeafExtendedIndexBits  (seL4_IOMMUDDTBits - seL4_IOMMUDDTLeafExtendedEntryBits)
+#define seL4_IOMMUDeviceIDBits              24
+#define seL4_IOMMUDDTMaxLevels              3
+#define seL4_IOMMUGSCIDBits                 16
+#define seL4_IOMMUPSCIDBits                 20
+#define seL4_IOMMUFaultRecordBits           5
+
+#define seL4_IOMMUInterruptMSI              0
+#define seL4_IOMMUInterruptWSI              1
+#define seL4_IOMMUInterruptBoth             2
+
+/* ConfigureFirstStage kind and flags. */
+#define seL4_IOMMUFirstStageDirect          0
+#define seL4_IOMMUFirstStagePDT             1
+#define seL4_IOMMUFirstStageDPE             (1 << 0)
+#define seL4_IOMMUFirstStageAD              (1 << 2)
+
+/* InvalidateFirstStage kind. */
+#define seL4_IOMMUInvalidatePDT             0
+#define seL4_IOMMUInvalidatePSCID           1
+#define seL4_IOMMUInvalidateAllPSCID        2
+
+/* ConfigureFirstStage mode. */
+#define seL4_IOMMUModeBare                  0
+#define seL4_IOMMUModeSv39                  8
+#define seL4_IOMMUModeSv48                  9
+#define seL4_IOMMUModeSv57                  10
+#define seL4_IOMMUModePD8                   1
+#define seL4_IOMMUModePD17                  2
+#define seL4_IOMMUModePD20                  3
+
+/* RWFaultQueue clearErrors and status bits. */
+#define seL4_IOMMUFaultOverflow             (1 << 9)
+#define seL4_IOMMUFaultMemoryError          (1 << 8)
+#else
 #define seL4_NumASIDPoolsBits   7
 #define seL4_ASIDPoolIndexBits  9
+#endif
 #define seL4_ASIDPoolBits       12
 
 /* Untyped size limits */
