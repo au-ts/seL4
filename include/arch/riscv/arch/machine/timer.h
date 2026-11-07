@@ -6,11 +6,22 @@
 
 #pragma once
 
+#include <types.h>
+#include <config.h>
+#include <arch/sbi.h>
+
+static inline void riscv_set_timer(uint64_t deadline) 
+{
+#ifdef CONFIG_RISCV_SSTC
+    asm volatile("csrw 0x14d, %0" :: "r"(deadline) : "memory");
+#else
+    sbi_set_timer(deadline);
+#endif
+}
+
 #ifdef CONFIG_KERNEL_MCS
 
-#include <types.h>
 #include <mode/util.h>
-#include <arch/sbi.h>
 #include <arch/machine/hardware.h>
 
 /* The scheduler clock is greater than 1MHz */
@@ -63,7 +74,7 @@ static inline ticks_t getCurrentTime(void)
 static inline void setDeadline(ticks_t deadline)
 {
     /* Setting the timer acknowledges any existing IRQs */
-    sbi_set_timer(deadline);
+    riscv_set_timer(deadline);
 }
 
 /* ack previous deadline irq */
