@@ -74,7 +74,11 @@ UP_STATE_DEFINE(timestamp_t, benchmark_kernel_number_schedules);
  * pending interrupts */
 word_t ksWorkUnitsCompleted;
 
+#ifdef CONFIG_RISCV_APLIC
+irq_entry_t intStateIRQTable[INT_STATE_ARRAY_SIZE];
+#else
 irq_state_t intStateIRQTable[INT_STATE_ARRAY_SIZE];
+#endif
 /* CNode containing interrupt handler endpoints - like all seL4 objects, this CNode needs to be
  * of a size that is a power of 2 and aligned to its size. */
 cte_t intStateIRQNode[BIT(IRQ_CNODE_SLOT_BITS)] ALIGN(BIT(IRQ_CNODE_SLOT_BITS + seL4_SlotBits));

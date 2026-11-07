@@ -133,7 +133,7 @@ exception_t decodeIRQHandlerInvocation(word_t invLabel, irq_t irq)
 
 void invokeIRQHandler_AckIRQ(irq_t irq)
 {
-#ifdef CONFIG_ARCH_RISCV
+#if defined(CONFIG_ARCH_RISCV) && !defined(CONFIG_RISCV_AIA)
 #if !defined(CONFIG_PLAT_QEMU_RISCV_VIRT)
     /* QEMU has a bug where interrupts must be
      * immediately claimed, which is done in getActiveIRQ. For other
@@ -195,6 +195,14 @@ void deletingIRQHandler(irq_t irq)
 void deletedIRQHandler(irq_t irq)
 {
     setIRQState(IRQInactive, irq);
+#ifdef CONFIG_RISCV_AIA
+#ifdef CONFIG_RISCV_APLIC
+    aia_delete_irq(irq, intStateIRQTable[IRQT_TO_IDX(irq)].aplicSource);
+    intStateIRQTable[IRQT_TO_IDX(irq)].aplicSource = 0;
+#else
+    aia_delete_irq(irq);
+#endif
+#endif
 }
 
 void handleInterrupt(irq_t irq)
@@ -212,7 +220,11 @@ void handleInterrupt(irq_t irq)
         return;
     }
 
+#ifdef CONFIG_RISCV_APLIC
+    switch (intStateIRQTable[IRQT_TO_IDX(irq)].state) {
+#else
     switch (intStateIRQTable[IRQT_TO_IDX(irq)]) {
+#endif
     case IRQSignal: {
         /* Merging the variable declaration and initialization into one line
          * requires an update in the proofs first. Might be a c89 legacy.
@@ -228,7 +240,7 @@ void handleInterrupt(irq_t irq)
             printf("Undelivered IRQ: %d\n", (int)IRQT_TO_IRQ(irq));
 #endif
         }
-#ifndef CONFIG_ARCH_RISCV
+#if !defined(CONFIG_ARCH_RISCV) || defined(CONFIG_RISCV_AIA)
         if (!config_set(CONFIG_ARM_GIC_V3_SUPPORT)) {
             maskInterrupt(true, irq);
         }
@@ -281,12 +293,20 @@ void handleInterrupt(irq_t irq)
 
 bool_t isIRQActive(irq_t irq)
 {
+#ifdef CONFIG_RISCV_APLIC
+    return intStateIRQTable[IRQT_TO_IDX(irq)].state != IRQInactive;
+#else
     return intStateIRQTable[IRQT_TO_IDX(irq)] != IRQInactive;
+#endif
 }
 
 void setIRQState(irq_state_t irqState, irq_t irq)
 {
+#ifdef CONFIG_RISCV_APLIC
+    intStateIRQTable[IRQT_TO_IDX(irq)].state = irqState;
+#else
     intStateIRQTable[IRQT_TO_IDX(irq)] = irqState;
+#endif
 #if defined ENABLE_SMP_SUPPORT && defined CONFIG_ARCH_ARM
     if (IRQ_IS_PPI(irq) && IRQT_TO_CORE(irq) != getCurrentCPUIndex()) {
         doRemoteMaskPrivateInterrupt(IRQT_TO_CORE(irq), irqState == IRQInactive, IRQT_TO_IDX(irq));

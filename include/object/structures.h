@@ -26,6 +26,12 @@ enum irq_state {
     IRQReserved
 };
 typedef word_t irq_state_t;
+#ifdef CONFIG_RISCV_APLIC
+typedef struct irq_entry {
+    irq_state_t state;
+    word_t aplicSource;
+} irq_entry_t;
+#endif
 
 enum asidSizeConstants {
     asidHighBits = seL4_NumASIDPoolsBits,
