@@ -372,12 +372,21 @@ config_option(
   "Expose implementations of ctzl and ctzll to verification by avoiding the use \
      of __builtin_ctzl and __builtin_ctzll." DEFAULT OFF)
 
+if(KernelRiscvAIA AND (NOT KernelSel4ArchRiscV64 OR KernelMaxNumNodes GREATER 1 OR
+                     KernelVerificationBuild))
+  message(FATAL_ERROR "AIA requires a non-verification, single-hart RV64 kernel")
+endif()
+if(KernelRiscvAIA AND NOT (KernelPlatformAriane OR KernelPlatformQEMURiscVVirt))
+  message(FATAL_ERROR "AIA platform configuration is supported on Ariane and QEMU RISC-V virt")
+endif()
+
 if(DEFINED KernelDTSList AND (NOT "${KernelDTSList}" STREQUAL ""))
   set(KernelDTSIntermediate "${CMAKE_CURRENT_BINARY_DIR}/kernel.dts")
   set(KernelDTBPath "${CMAKE_CURRENT_BINARY_DIR}/kernel.dtb" CACHE INTERNAL
                                                                    "Location of kernel DTB file")
   set(compatibility_outfile "${CMAKE_CURRENT_BINARY_DIR}/kernel_compat.txt")
   set(device_dest "${CMAKE_CURRENT_BINARY_DIR}/gen_headers/plat/machine/devices_gen.h")
+  set(hardware_config "${CMAKE_CURRENT_BINARY_DIR}/gen_headers/plat/machine/hardware_gen.cmake")
   set(platform_yaml "${CMAKE_CURRENT_BINARY_DIR}/gen_headers/plat/machine/platform_gen.yaml"
       CACHE INTERNAL "Location of platform YAML description")
   set(platform_json "${CMAKE_CURRENT_BINARY_DIR}/gen_headers/plat/machine/platform_gen.json"
@@ -445,27 +454,29 @@ if(DEFINED KernelDTSList AND (NOT "${KernelDTSList}" STREQUAL ""))
     set(KernelDTBSize "${KernelDTBSize}" CACHE INTERNAL "Size of DTB blob, in bytes")
   endif()
 
+  # Generate devices_gen.h and hardware_gen.cmake from the DTB.
+  # Import the CMake output below to expose APLIC ownership through CONFIG_RISCV_APLIC.
   set(deps ${KernelDTBPath} ${config_file} ${config_schema} ${HARDWARE_GEN_PATH})
-  check_outfile_stale(regen ${device_dest} deps ${CMAKE_CURRENT_BINARY_DIR}/gen_header.cmd)
-  if(regen)
-    # Generate devices_gen header based on DTB
-    message(STATUS "${device_dest} is out of date. Regenerating from DTB...")
+    list(APPEND deps "${CMAKE_CURRENT_SOURCE_DIR}/tools/hardware/riscv_aia.py")
+  message(STATUS "Generating hardware definitions and configuration from DTB...")
     file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/gen_headers/plat/machine/")
     execute_process(
       COMMAND
         ${PYTHON3} "${HARDWARE_GEN_PATH}" --dtb "${KernelDTBPath}" --compat-strings
         --compat-strings-out "${compatibility_outfile}" --c-header --header-out "${device_dest}"
+        --config-out "${hardware_config}"
         --hardware-config "${config_file}" --hardware-schema "${config_schema}" --yaml --yaml-out
         "${platform_yaml}" --sel4arch "${KernelSel4Arch}" --addrspace-max "${KernelPaddrUserTop}"
         --json --json-out "${platform_json}" --kernel-config-flags
         "CONFIG_PRINTING=${KernelPrinting}"
         "CONFIG_ARM_HYPERVISOR_SUPPORT=${KernelArmHypervisorSupport}"
         "CONFIG_ARM_SMMU=${KernelArmSMMU}" "CONFIG_TK1_SMMU=${KernelTk1SMMU}"
+        "CONFIG_RISCV_AIA=${KernelRiscvAIA}"
       RESULT_VARIABLE error)
     if(error)
       message(FATAL_ERROR "Failed to generate from DTB: ${device_dest}")
-    endif()
   endif()
+  include("${hardware_config}")
   file(READ "${compatibility_outfile}" compatibility_strings)
 
   # Mark all file dependencies as CMake rerun dependencies.
@@ -474,6 +485,8 @@ if(DEFINED KernelDTSList AND (NOT "${KernelDTSList}" STREQUAL ""))
                                                                        ${cmake_deps})
 
   include(src/drivers/config.cmake)
+else()
+  config_set(KernelRiscvAPLIC RISCV_APLIC OFF)
 endif()
 
 add_config_library(kernel "${configure_string}")

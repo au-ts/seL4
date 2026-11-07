@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: GPL-2.0-only
 #
 
+config_option(KernelRiscvAIA RISCV_AIA "Enable RISC-V AIA" DEFAULT OFF)
+
 config_string(
   KernelPTLevels PT_LEVELS "Number of page \
     table levels for RISC-V depends on the mode. For example there are: \
