@@ -234,7 +234,7 @@
             <description>
                 Together with a capability to <texttt text="Untyped Memory"/>, which is passed as an argument,
                 create an <texttt text="ASID Pool"/>. The untyped capability must represent a
-                4K memory object. This will create an ASID pool with enough space for 1024 VSpaces.
+                4K memory object. This will create an ASID pool with enough space for 2^seL4_ASIDPoolIndexBits address space roots.
             </description>
             <param dir="in" name="untyped" type="seL4_Untyped"
             description="Capability to an untyped memory object that will become the pool. Must be 4K bytes."/>
@@ -289,6 +289,7 @@
             </brief>
             <description>
                 Assigns an ASID to the VSpace passed in as an argument.
+                With IOMMU support enabled, the address space root type selects the address space format that is stored in the ASID entry, either Sv39 or Sv39x4.
             </description>
             <param dir="in" name="vspace" type="seL4_CPtr">
             <description>
@@ -395,6 +396,103 @@
             <error name="seL4_InvalidArgument" description="The trigger is invalid or unsupported by this source. The source remains inactive."/>
             <error name="seL4_RangeError" description="The IMSIC interrupt identity, APLIC source or CSpace depth is out of range."/>
             <error name="seL4_RevokeFirst" description="The identity is allocated or reserved, or the APLIC source is already active."/>
+        </method>
+    </interface>
+    <interface name="seL4_RISCV_IOMMUControl" manual_name="IOMMUControl" cap_description="The IOMMUControl capability.">
+        <method id="RISCVIOMMUGetCapabilities" name="GetCapabilities">
+            <condition><config var="CONFIG_RISCV_IOMMU"/></condition>
+            <brief>Read IOMMU hardware capabilities, and DDT depth.</brief>
+            <param dir="out" name="capabilities" type="seL4_Word"/>
+            <param dir="out" name="ddtLevels" type="seL4_Word" description="The maximum supported DDT depth, used by this IOMMU."/>
+        </method>
+        <method id="RISCVIOMMUConfigureFaultInterrupt" name="ConfigureFaultInterrupt">
+            <condition><config var="CONFIG_RISCV_IOMMU"/></condition>
+            <brief>Configure the delivery of fault interrupts.</brief>
+            <description>
+                With AIA enabled, MSI delivery is preferred when supported. Without AIA, the IOMMU must support WSI.
+                To receive a wired interrupt parsing the device tree is necessary to create the correct IRQHandler object.
+                This system call allows user level to enable fault interrupts and to program the MSI information
+                the IOMMU requires to deliver the interrupt.
+            </description>
+            <param dir="in" name="enable" type="seL4_Word" description="Zero will disable fault interrupts, non zero enables them."/>
+            <param dir="in" name="identity" type="seL4_Word" description="Local supervisor IMSIC interrupt identity, ignored for WSI."/>
+            <error name="seL4_InvalidArgument" description="The MSI identity is zero or exceeds the local IMSIC's supported range."/>
+            <error name="seL4_IllegalOperation" description="The invoked capability is not an IOMMU control capability, or hardware cannot represent the MSI destination"/>
+        </method>
+        <method id="RISCVIOMMUMapFaultQueue" name="MapFaultQueue">
+            <condition><config var="CONFIG_RISCV_IOMMU"/></condition>
+            <brief>Register a frame as the IOMMU fault queue.</brief>
+            <description>
+                The frame must be unmapped and have read and write permission.
+                The frame will be used as the fault queue for the IOMMU it is being bound to.
+                Use RWFaultQueue to update the head register and read the tail and status registers.
+            </description>
+            <param dir="in" name="frame" type="seL4_RISCV_Page"/>
+            <error name="seL4_InvalidCapability" description="The supplied capability is not a frame with required permissions."/>
+            <error name="seL4_DeleteFirst" description="The supplied frame capability is mapped or the IOMMU fault queue is already bound."/>
+            <error name="seL4_IllegalOperation" description="The invoked capability is not an IOMMU control capability, or the hardware cannot represent the queue base or size."/>
+        </method>
+        <method id="RISCVIOMMURWFaultQueue" name="RWFaultQueue">
+            <condition><config var="CONFIG_RISCV_IOMMU"/></condition>
+            <brief>Update the fault-queue head, and read its tail and status.</brief>
+            <param dir="in" name="head" type="seL4_Word" description="The next record to be consumed, modulo the queue's entry count."/>
+            <param dir="in" name="clearErrors" type="seL4_Word" description="Bitmask of seL4_IOMMUFaultMemoryError and seL4_IOMMUFaultOverflow to clear."/>
+            <param dir="out" name="tail" type="seL4_Word" description="The hardware index of the next record to be written."/>
+            <param dir="out" name="status" type="seL4_Word" description="A copy of the fqcsr."/>
+            <error name="seL4_IllegalOperation" description="The IOMMU has no active fault queue."/>
+        </method>
+    </interface>
+    <interface name="seL4_RISCV_IOMMUDDT" manual_name="IOMMUDDT" cap_description="The IOMMUDDT capability.">
+        <method id="RISCVIOMMUDDTMap" name="Map">
+            <condition><config var="CONFIG_RISCV_IOMMU"/></condition>
+            <brief>Map a device directory table into the first free slot in the DDT hierarchy for the provided deviceID.</brief>
+            <param dir="in" name="iommu" type="seL4_CPtr"/>
+            <param dir="in" name="deviceID" type="seL4_Word"/>
+            <error name="seL4_InvalidArgument" description="The device ID is outside the range supported by the IOMMU's DDT configuration."/>
+        </method>
+        <method id="RISCVIOMMUDDTUnmap" name="Unmap">
+            <condition><config var="CONFIG_RISCV_IOMMU"/></condition>
+            <brief>Detach and clear a device directory table after synchronising translations.</brief>
+        </method>
+    </interface>
+    <interface name="seL4_RISCV_IOMMUDevice" manual_name="IOMMUDevice" cap_description="The IOMMUDevice capability.">
+        <method id="RISCVIOMMUDeviceMap" name="Map">
+            <condition><config var="CONFIG_RISCV_IOMMU"/></condition>
+            <brief>Map a device to an ASID-assigned Sv39x4 root.</brief>
+            <param dir="in" name="iommu" type="seL4_CPtr"/>
+            <param dir="in" name="vspace" type="seL4_CPtr"/>
+            <param dir="in" name="deviceID" type="seL4_Word"/>
+        </method>
+        <method id="RISCVIOMMUDeviceUnmap" name="Unmap">
+            <condition><config var="CONFIG_RISCV_IOMMU"/></condition>
+            <brief>Unmap a device and invalidate its cached translations.</brief>
+        </method>
+        <method id="RISCVIOMMUDeviceConfigureFirstStage" name="ConfigureFirstStage">
+            <condition><config var="CONFIG_RISCV_IOMMU"/></condition>
+            <brief>Select a guest first-stage root or process directory table. Only 64-bit formats are supported.</brief>
+            <description>Provide indirect modification of the device context.</description>
+            <param dir="in" name="kind" type="seL4_Word" description="Set the PDTV bit in translation control."/>
+            <param dir="in" name="mode" type="seL4_Word" description="Set the mode bits in the first stage context."/>
+            <param dir="in" name="rootGPA" type="seL4_Word" description="Guest physical byte address of the first-stage root or process directory table."/>
+            <param dir="in" name="pscid" type="seL4_Word" description="Set the PSCID in the translation attributes."/>
+            <param dir="in" name="flags" type="seL4_Word" description="Set the SADE bit and DPE bit in translation control."/>
+        </method>
+        <method id="RISCVIOMMUDeviceInvalidateFirstStage" name="InvalidateFirstStage">
+            <condition><config var="CONFIG_RISCV_IOMMU"/></condition>
+            <brief>Invalidate first stage caches relevant to the device.</brief>
+            <description>
+                Used to issue first stage invalidation commands. These include seL4_IOMMUInvalidatePDT to invalidate the device context
+                and all associated PDT entries with IODIR.INVAL_DDT. Use seL4_IOMMUInvalidatePSCID to invalidate cached translations for
+                the supplied PSCID within the device's GSCID with IOTINVAL.VMA. Use seL4_IOMMUInvalidateAllPSCID to invalidate all cached
+                translations for the device's GSCID including global mappings.
+                NOTE: seL4_IOMMUInvalidateAllPSCID affects the first-stage translation cache entries of all devices on the same IOMMU that
+                use the VSpace this device object is bound to. Currently it is the mechanism to clear global entries but maybe we can move the invocation
+                or increase required authority.
+            </description>
+            <param dir="in" name="kind" type="seL4_Word" description="Select the type of invalidation: PDT, PSCID, AllPSCID"/>
+            <param dir="in" name="pscid" type="seL4_Word" description="Low 20 bits are used for the PSCID otherwise ignored."/>
+            <error name="seL4_IllegalOperation" description="The capability does not support this invocation or PDT invalidation was requested but DDT is disabled."/>
+            <error name="seL4_InvalidArgument" description="The invalidation kind is not supported."/>
         </method>
     </interface>
 
