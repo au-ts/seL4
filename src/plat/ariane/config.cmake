@@ -14,11 +14,19 @@ if(KernelPlatformAriane)
     config_set(KernelOpenSBIPlatform OPENSBI_PLATFORM "fpga/ariane")
     list(APPEND KernelDTSList "tools/dts/ariane.dts")
     list(APPEND KernelDTSList "src/plat/ariane/overlay-ariane.dts")
+    if(KernelRiscvAIA)
+    declare_default_headers(
+        MAX_IRQ 63
+        TIMER_FREQUENCY 25000000
+        INTERRUPT_CONTROLLER drivers/irq/riscv_aia.h
+    )
+    else()
     declare_default_headers(
         MAX_IRQ 30
         TIMER_FREQUENCY 25000000
         INTERRUPT_CONTROLLER drivers/irq/riscv_plic0.h
     )
+    endif()
 else()
     unset(KernelPlatformFirstHartID CACHE)
 endif()

@@ -56,10 +56,20 @@ def main(args: argparse.Namespace):
     validate_rules(rules, schema)
     hw_yaml = HardwareYaml(rules, cfg)
 
+    args.aia = None
+    if cfg.arch == 'riscv':
+        from hardware import riscv_aia
+        args.aia = riscv_aia.parse(parsed_dt, kernel_config_dict.get('CONFIG_RISCV_AIA') == 'ON')
+
     arg_dict = vars(args)
     for t in sorted(OUTPUTS.keys()):
         if arg_dict[t]:
             OUTPUTS[t].run(parsed_dt, hw_yaml, cfg, kernel_config_dict, args)
+
+    if args.config_out:
+        aplic = 'ON' if args.aia and args.aia['sources'] else 'OFF'
+        with args.config_out:
+            args.config_out.write(f'config_set(KernelRiscvAPLIC RISCV_APLIC {aplic})\n')
 
 
 if __name__ == '__main__':
@@ -77,6 +87,8 @@ if __name__ == '__main__':
                         required=True)
     parser.add_argument('--kernel-config-flags',
                         help='List of kernel config params', action='append', nargs='+')
+    parser.add_argument('--config-out', help='output file for derived CMake configuration',
+                        type=argparse.FileType('w'))
     parser.add_argument('--addrspace-max',
                         help='maximum address that is available as device untyped', type=int, default=32)
 

@@ -205,6 +205,14 @@ devices:
       - index: 0
         kernel: CLINT_PPTR
 
+  # APLIC ownership is selected by /chosen/seL4,kernel-devices.
+  - compatible:
+      - riscv,aplic
+    regions:
+      - index: 0
+        kernel: APLIC_PPTR
+        kernel_size: 0x4000
+
   # elfloader rules
   - compatible:
       - arm,psci-0.2

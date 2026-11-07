@@ -8,6 +8,8 @@
 #include <sel4/arch/constants.h>
 #include <util.h>
 
+compile_assert(imsic_irq_table_capacity, IMSIC_NUM_IDS <= PLIC_MAX_IRQ)
+
 // *iselect values to access AIA CSRs
 #define IMSIC_EIDELIVERY                0x70
 #define IMSIC_EITHRESHOLD               0x72
