@@ -455,7 +455,7 @@ if(DEFINED KernelDTSList AND (NOT "${KernelDTSList}" STREQUAL ""))
   endif()
 
   # Generate devices_gen.h and hardware_gen.cmake from the DTB.
-  # Import the CMake output below to expose APLIC ownership through CONFIG_RISCV_APLIC.
+  # Import the derived CMake configuration below.
   set(deps ${KernelDTBPath} ${config_file} ${config_schema} ${HARDWARE_GEN_PATH})
     list(APPEND deps "${CMAKE_CURRENT_SOURCE_DIR}/tools/hardware/riscv_aia.py")
   message(STATUS "Generating hardware definitions and configuration from DTB...")
@@ -487,6 +487,7 @@ if(DEFINED KernelDTSList AND (NOT "${KernelDTSList}" STREQUAL ""))
   include(src/drivers/config.cmake)
 else()
   config_set(KernelRiscvAPLIC RISCV_APLIC OFF)
+  config_set(KernelRiscvIOMMU RISCV_IOMMU OFF)
 endif()
 
 add_config_library(kernel "${configure_string}")

@@ -158,6 +158,23 @@ static const p_region_t BOOT_RODATA *const kernel_device_reserved_regions = NULL
 {% endif %}
 {% endif %}
 
+#ifdef CONFIG_RISCV_IOMMU
+{% set iommus = namespace(count=0) %}
+static const struct {
+    pptr_t mmio;
+    paddr_t paddr;
+} riscv_iommus[] BOOT_RODATA = {
+{% for reg in kernel_regions %}
+{% for label, offset in reg.labels.items() if label.startswith('RISCV_IOMMU_') %}
+    { .mmio = {{ label }}, .paddr = {{ '0x{:x}'.format(reg.base + offset) }} },
+{% set iommus.count = iommus.count + 1 %}
+{% endfor %}
+{% endfor %}
+};
+#define NUM_RISCV_IOMMUS {{ iommus.count }}
+#endif
+
+
 /* PHYSICAL MEMORY */
 static const p_region_t BOOT_RODATA avail_p_regs[] = {
     {% for reg in physical_memory %}
@@ -187,11 +204,15 @@ def get_kernel_devices(tree: FdtParser, hw_yaml: HardwareYaml, kernel_config_dic
     kernel_devices = tree.get_kernel_devices()
 
     kernel_offset = 0
+    iommu_index = 0
     groups = []
     for dev in kernel_devices:
         dev_rule = hw_yaml.get_rule(dev)
         new_regions = dev_rule.get_regions(dev)
         for reg in new_regions:
+            if 'RISCV_IOMMU_PPTR' in reg.labels:
+                reg.labels[f'RISCV_IOMMU_{iommu_index}_PPTR'] = reg.labels.pop('RISCV_IOMMU_PPTR')
+                iommu_index += 1
             if reg in groups:
                 other = groups[groups.index(reg)]
                 other.take_labels(reg)

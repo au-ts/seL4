@@ -68,8 +68,12 @@ def main(args: argparse.Namespace):
 
     if args.config_out:
         aplic = 'ON' if args.aia and args.aia['sources'] else 'OFF'
+        iommu = 'ON' if cfg.arch == 'riscv' and any(
+                'riscv,iommu' in node.get_prop('compatible').strings
+                for node in parsed_dt.get_kernel_devices()) else 'OFF'
         with args.config_out:
             args.config_out.write(f'config_set(KernelRiscvAPLIC RISCV_APLIC {aplic})\n')
+            args.config_out.write(f'config_set(KernelRiscvIOMMU RISCV_IOMMU {iommu})\n')
 
 
 if __name__ == '__main__':
