@@ -7,3 +7,12 @@
 
 #pragma once
 
+#include <config.h>
+
+#ifdef CONFIG_RISCV_IOMMU
+enum riscv_map_type {
+    RISCVMapSv39 = 0,
+    RISCVMapSv39x4 = 1,
+    RISCVMapFQ = 2,
+};
+#endif

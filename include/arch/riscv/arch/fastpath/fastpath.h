@@ -69,7 +69,12 @@ static inline void mdb_node_ptr_set_mdbPrev_np(mdb_node_t *node_ptr, word_t mdbP
 static inline bool_t isValidVTableRoot_fp(cap_t vspace_root_cap)
 {
     return cap_capType_equals(vspace_root_cap, cap_page_table_cap) &&
+#ifdef CONFIG_RISCV_IOMMU
+           cap_page_table_cap_get_capPTMappedASID(vspace_root_cap) != asidInvalid &&
+           !cap_page_table_cap_get_capPTRootX4(vspace_root_cap);
+#else
            cap_page_table_cap_get_capPTIsMapped(vspace_root_cap);
+#endif
 }
 
 /* Fastpath version of findVSpaceForASID(). Returns NULL if the ASID does not resolve. */
@@ -79,7 +84,11 @@ static inline pte_t *findVSpaceForASID_fp(asid_t asid)
     if (unlikely(!poolPtr)) {
         return NULL;
     }
+#ifdef CONFIG_RISCV_IOMMU
+    return (pte_t *)asid_entry_ptr_get_rootPtr(&poolPtr->array[ASID_LOW(asid)]);
+#else
     return poolPtr->array[ASID_LOW(asid)];
+#endif
 }
 
 /* This is an accelerated check that msgLength, which appears

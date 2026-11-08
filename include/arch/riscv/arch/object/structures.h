@@ -21,7 +21,11 @@
 #define tcbArchCNodeEntries tcbCNodeEntries
 
 struct asid_pool {
+#ifdef CONFIG_RISCV_IOMMU
+    asid_entry_t array[BIT(asidLowBits)] ALIGN(BIT(seL4_ASIDEntryBits));
+#else
     pte_t *array[BIT(asidLowBits)];
+#endif
 };
 
 typedef struct asid_pool asid_pool_t;
@@ -54,7 +58,7 @@ typedef pte_t pde_t;
 #define PTE_PTR(r) ((pte_t *)(r))
 #define PTE_REF(p) ((word_t)(p))
 
-#define PT_SIZE_BITS 12
+#define PT_SIZE_BITS seL4_PageTableBits
 #define PT_PTR(r) ((pte_t *)(r))
 #define PT_REF(p) ((word_t)(p))
 
@@ -78,6 +82,14 @@ static inline bool_t CONST cap_get_archCapIsPhysical(cap_t cap)
     case cap_page_table_cap:
         return true;
 
+#ifdef CONFIG_RISCV_IOMMU
+    case cap_iommu_cap:
+        return false;
+
+    case cap_iommu_ddt_cap:
+    case cap_iommu_device_cap:
+        return true;
+#endif
     case cap_asid_control_cap:
         return false;
 
@@ -101,8 +113,22 @@ static inline word_t CONST cap_get_archCapSizeBits(cap_t cap)
         return pageBitsForSize(cap_frame_cap_get_capFSize(cap));
 
     case cap_page_table_cap:
+#ifdef CONFIG_RISCV_IOMMU
+        return cap_page_table_cap_get_capPTRootX4(cap) ? seL4_RootX4PageTableBits : PT_SIZE_BITS;
+#else
         return PT_SIZE_BITS;
+#endif
 
+#ifdef CONFIG_RISCV_IOMMU
+    case cap_iommu_cap:
+        return 0;
+
+    case cap_iommu_ddt_cap:
+        return seL4_IOMMUDDTBits;
+
+    case cap_iommu_device_cap:
+        return seL4_IOMMUDeviceBits;
+#endif
     case cap_asid_control_cap:
         return 0;
 
@@ -130,6 +156,16 @@ static inline void *CONST cap_get_archCapPtr(cap_t cap)
     case cap_page_table_cap:
         return PT_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
 
+#ifdef CONFIG_RISCV_IOMMU
+    case cap_iommu_cap:
+        return NULL;
+
+    case cap_iommu_ddt_cap:
+        return (void *)cap_iommu_ddt_cap_get_capDDTBasePtr(cap);
+
+    case cap_iommu_device_cap:
+        return (void *)cap_iommu_device_cap_get_capDevBasePtr(cap);
+#endif
     case cap_asid_control_cap:
         return NULL;
 

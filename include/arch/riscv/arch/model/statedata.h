@@ -24,6 +24,21 @@ NODE_STATE_END(archNodeState);
 
 extern asid_pool_t *riscvKSASIDTable[nASIDPools];
 
+#ifdef CONFIG_RISCV_IOMMU
+static inline asid_entry_t *PURE lookupASIDEntry(asid_t asid)
+{
+    if (asid == asidInvalid || asid >= BIT(ASID_BITS)) {
+        return NULL;
+    }
+
+    asid_pool_t *pool = riscvKSASIDTable[ASID_HIGH(asid)];
+    if (pool == NULL || asid_entry_ptr_get_rootPtr(&pool->array[ASID_LOW(asid)]) == 0) {
+        return NULL;
+    }
+    return &pool->array[ASID_LOW(asid)];
+}
+#endif
+
 /* Kernel Page Tables */
 extern pte_t kernel_root_pageTable[BIT(PT_INDEX_BITS)] VISIBLE;
 

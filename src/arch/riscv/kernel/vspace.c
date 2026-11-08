@@ -26,6 +26,9 @@
 #include <plat/machine/hardware.h>
 #include <kernel/stack.h>
 #include <util.h>
+#ifdef CONFIG_RISCV_IOMMU
+#include <drivers/iommu/riscv.h>
+#endif
 
 struct resolve_ret {
     paddr_t frameBase;
@@ -226,6 +229,9 @@ BOOT_CODE cap_t create_unmapped_it_frame_cap(pptr_t pptr, bool_t use_large)
     cap_t cap = cap_frame_cap_new(
                     asidInvalid,                     /* capFMappedASID       */
                     pptr,                            /* capFBasePtr          */
+#ifdef CONFIG_RISCV_IOMMU
+                    RISCVMapSv39,                    /* capFMapType          */
+#endif
                     0,                               /* capFSize             */
                     0,                               /* capFVMRights         */
                     0,
@@ -242,7 +248,12 @@ static BOOT_CODE cap_t create_it_pt_cap(cap_t vspace_cap, pptr_t pptr, vptr_t vp
     cap = cap_page_table_cap_new(
               asid,   /* capPTMappedASID      */
               pptr,   /* capPTBasePtr         */
+#ifdef CONFIG_RISCV_IOMMU
+              RISCVMapSv39, /* capPTMapType      */
+              false,        /* capPTRootX4       */
+#else
               1,      /* capPTIsMapped        */
+#endif
               vptr    /* capPTMappedAddress   */
           );
 
@@ -272,8 +283,14 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
         cap_page_table_cap_new(
             IT_ASID,               /* capPTMappedASID    */
             (word_t) rootserver.vspace,  /* capPTBasePtr       */
+#ifdef CONFIG_RISCV_IOMMU
+            RISCVMapSv39,                /* capPTMapType       */
+            false,                       /* capPTRootX4        */
+            0                            /* capPTMappedAddress */
+#else
             1,                     /* capPTIsMapped      */
             (word_t) rootserver.vspace   /* capPTMappedAddress */
+#endif
         );
 
     seL4_SlotPos slot_pos_before = ndks_boot.slot_pos_cur;
@@ -310,7 +327,11 @@ BOOT_CODE void activate_kernel_vspace(void)
 BOOT_CODE void write_it_asid_pool(cap_t it_ap_cap, cap_t it_lvl1pt_cap)
 {
     asid_pool_t *ap = ASID_POOL_PTR(pptr_of_cap(it_ap_cap));
+#ifdef CONFIG_RISCV_IOMMU
+    ap->array[ASID_LOW(IT_ASID)] = asid_entry_new(IT_ASID, pptr_of_cap(it_lvl1pt_cap), 0, RISCVMapSv39);
+#else
     ap->array[ASID_LOW(IT_ASID)] = PTE_PTR(pptr_of_cap(it_lvl1pt_cap));
+#endif
     riscvKSASIDTable[ASID_HIGH(IT_ASID)] = ap;
 }
 
@@ -319,6 +340,10 @@ BOOT_CODE void write_it_asid_pool(cap_t it_ap_cap, cap_t it_lvl1pt_cap)
 static findVSpaceForASID_ret_t findVSpaceForASID(asid_t asid)
 {
     findVSpaceForASID_ret_t ret;
+#ifdef CONFIG_RISCV_IOMMU
+    asid_entry_t *entry = lookupASIDEntry(asid);
+    pte_t *vspace_root = entry != NULL ? (pte_t *)asid_entry_ptr_get_rootPtr(entry) : NULL;
+#else
     asid_pool_t        *poolPtr;
     pte_t     *vspace_root;
 
@@ -332,6 +357,7 @@ static findVSpaceForASID_ret_t findVSpaceForASID(asid_t asid)
     }
 
     vspace_root = poolPtr->array[ASID_LOW(asid)];
+#endif
     if (!vspace_root) {
         current_lookup_fault = lookup_fault_invalid_root_new();
 
@@ -389,7 +415,11 @@ static inline pte_t *getPPtrFromHWPTE(pte_t *pte)
     return PTE_PTR(ptrFromPAddr(pte_ptr_get_ppn(pte) << seL4_PageTableBits));
 }
 
+#ifdef CONFIG_RISCV_IOMMU
+static lookupPTSlot_ret_t lookupPTSlotForMap(pte_t *lvl1pt, vptr_t vptr, word_t mapType)
+#else
 lookupPTSlot_ret_t lookupPTSlot(pte_t *lvl1pt, vptr_t vptr)
+#endif
 {
     lookupPTSlot_ret_t ret;
 
@@ -402,8 +432,12 @@ lookupPTSlot_ret_t lookupPTSlot(pte_t *lvl1pt, vptr_t vptr)
      * or already exists, in ret.ptSlot. The following formulation is an invariant of
      * the loop: */
     ret.ptBitsLeft = PT_INDEX_BITS * level + seL4_PageBits;
+#ifdef CONFIG_RISCV_IOMMU
+    word_t rootBits = mapType == RISCVMapSv39x4 ? seL4_RootX4PageTableIndexBits : PT_INDEX_BITS;
+    ret.ptSlot = pt + ((vptr >> ret.ptBitsLeft) & MASK(rootBits));
+#else
     ret.ptSlot = pt + ((vptr >> ret.ptBitsLeft) & MASK(PT_INDEX_BITS));
-
+#endif
     while (isPTEPageTable(ret.ptSlot) && likely(0 < level)) {
         level--;
         ret.ptBitsLeft -= PT_INDEX_BITS;
@@ -413,6 +447,46 @@ lookupPTSlot_ret_t lookupPTSlot(pte_t *lvl1pt, vptr_t vptr)
 
     return ret;
 }
+
+#ifdef CONFIG_RISCV_IOMMU
+lookupPTSlot_ret_t lookupPTSlot(pte_t *lvl1pt, vptr_t vptr)
+{
+    return lookupPTSlotForMap(lvl1pt, vptr, RISCVMapSv39);
+}
+
+/* pageBits is zero for non-leaf changes. */
+static void synchroniseContext(asid_entry_t *entry, vptr_t vptr, word_t pageBits)
+{
+    if (asid_entry_ptr_get_mapType(entry) == RISCVMapSv39x4) {
+        word_t gscid = asid_entry_ptr_get_ASID(entry);
+        /* Cover the whole mapping for superpages and non-leaf changes. */
+        bool_t av = pageBits == seL4_PageBits;
+        iommu_device_t *device = (void *)asid_entry_ptr_get_deviceHeadPtr(entry);
+        while (device != NULL) {
+            riscv_iommu_regs_ptr_t regs = (void *)iommu_device_ptr_get_iommuBasePtr(device);
+            iommuIOTINVAL(regs, gscid, IOMMU_IOTINVAL_GVMA, av, vptr);
+            iommuIOFence(regs);
+            if ((regs->ddtp & IOMMU_DDTP_MODE_MASK) != IOMMU_DDTP_MODE_OFF) {
+                iommuInvalidateAllDDT(regs);
+            }
+            do {
+                device = (void *)iommu_device_ptr_get_nextPtr(device);
+            } while (device != NULL && iommu_device_ptr_get_iommuBasePtr(device) == (word_t)regs);
+        }
+    } else {
+        sfence();
+    }
+}
+
+static void publishContext(enum riscv_map_type mapType)
+{
+    if (mapType == RISCVMapSv39x4) {
+        fence_iorw_iorw();
+    } else {
+        sfence();
+    }
+}
+#endif
 
 exception_t handleVMFault(tcb_t *thread, vm_fault_type_t vm_faultType)
 {
@@ -445,6 +519,17 @@ void deleteASIDPool(asid_t asid_base, asid_pool_t *pool)
     assert(IS_ALIGNED(asid_base, asidLowBits));
 
     if (riscvKSASIDTable[ASID_HIGH(asid_base)] == pool) {
+#ifdef CONFIG_RISCV_IOMMU
+        for (word_t i = 0; i < BIT(asidLowBits); i++) {
+            asid_entry_t *entry = &pool->array[i];
+            if (asid_entry_ptr_get_rootPtr(entry) != 0) {
+                if (asid_entry_ptr_get_mapType(entry) == RISCVMapSv39x4) {
+                    riscvIOMMURetireContext(entry);
+                }
+                *entry = (asid_entry_t) {0};
+            }
+        }
+#endif
         riscvKSASIDTable[ASID_HIGH(asid_base)] = NULL;
         setVMRoot(NODE_STATE(ksCurThread));
     }
@@ -481,12 +566,23 @@ static exception_t performASIDPoolInvocation(asid_t asid, asid_pool_t *poolPtr, 
     pte_t *regionBase = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
     cap = cap_page_table_cap_set_capPTMappedASID(cap, asid);
     cap = cap_page_table_cap_set_capPTMappedAddress(cap, 0);
+#ifdef CONFIG_RISCV_IOMMU
+    word_t mapType = cap_page_table_cap_get_capPTRootX4(cap) ? RISCVMapSv39x4 : RISCVMapSv39;
+    cap = cap_page_table_cap_set_capPTMapType(cap, mapType);
+#else
     cap = cap_page_table_cap_set_capPTIsMapped(cap, 1);
+#endif
     vspaceCapSlot->cap = cap;
 
+#ifdef CONFIG_RISCV_IOMMU
+    if (mapType == RISCVMapSv39) {
+        copyGlobalMappings(regionBase);
+    }
+    poolPtr->array[ASID_LOW(asid)] = asid_entry_new(asid, (word_t)regionBase, 0, mapType);
+#else
     copyGlobalMappings(regionBase);
-
     poolPtr->array[ASID_LOW(asid)] = regionBase;
+#endif
 
     return EXCEPTION_NONE;
 }
@@ -496,27 +592,53 @@ void deleteASID(asid_t asid, pte_t *vspace)
     asid_pool_t *poolPtr;
 
     poolPtr = riscvKSASIDTable[ASID_HIGH(asid)];
+#ifdef CONFIG_RISCV_IOMMU
+    if (poolPtr != NULL && asid_entry_ptr_get_rootPtr(&poolPtr->array[ASID_LOW(asid)]) == (word_t)vspace) {
+        asid_entry_t *entry = &poolPtr->array[ASID_LOW(asid)];
+        if (asid_entry_ptr_get_mapType(entry) == RISCVMapSv39x4) {
+            riscvIOMMURetireContext(entry);
+        } else {
+            hwASIDFlush(asid);
+        }
+        *entry = (asid_entry_t) {0};
+#else
     if (poolPtr != NULL && poolPtr->array[ASID_LOW(asid)] == vspace) {
         hwASIDFlush(asid);
         poolPtr->array[ASID_LOW(asid)] = NULL;
+#endif
         setVMRoot(NODE_STATE(ksCurThread));
     }
 }
 
+#ifdef CONFIG_RISCV_IOMMU
+void unmapPageTable(asid_t asid, vptr_t vptr, pte_t *target_pt, word_t mapType)
+#else
 void unmapPageTable(asid_t asid, vptr_t vptr, pte_t *target_pt)
+#endif
 {
     findVSpaceForASID_ret_t find_ret = findVSpaceForASID(asid);
     if (unlikely(find_ret.status != EXCEPTION_NONE)) {
         /* nothing to do */
         return;
     }
+#ifdef CONFIG_RISCV_IOMMU
+    asid_entry_t *entry = &riscvKSASIDTable[ASID_HIGH(asid)]->array[ASID_LOW(asid)];
+    if (mapType != asid_entry_ptr_get_mapType(entry)) {
+        return;
+    }
+#endif
     /* We won't ever unmap a top level page table */
     assert(find_ret.vspace_root != target_pt);
     pte_t *ptSlot = NULL;
     pte_t *pt = find_ret.vspace_root;
 
     for (word_t i = 0; i < CONFIG_PT_LEVELS - 1 && pt != target_pt; i++) {
+#ifdef CONFIG_RISCV_IOMMU
+        word_t indexBits = i == 0 && mapType == RISCVMapSv39x4 ? seL4_RootX4PageTableIndexBits : PT_INDEX_BITS;
+        ptSlot = pt + ((vptr >> RISCV_GET_LVL_PGSIZE_BITS(i)) & MASK(indexBits));
+#else
         ptSlot = pt + RISCV_GET_PT_INDEX(vptr, i);
+#endif
         if (unlikely(!isPTEPageTable(ptSlot))) {
             /* couldn't find it */
             return;
@@ -542,7 +664,11 @@ void unmapPageTable(asid_t asid, vptr_t vptr, pte_t *target_pt)
                   0,  /* read */
                   0  /* valid */
               );
+#ifdef CONFIG_RISCV_IOMMU
+    synchroniseContext(entry, vptr, 0);
+#else
     sfence();
+#endif
 }
 
 static pte_t pte_pte_invalid_new(void)
@@ -552,17 +678,35 @@ static pte_t pte_pte_invalid_new(void)
     };
 }
 
+#ifdef CONFIG_RISCV_IOMMU
+void unmapPage(vm_page_size_t page_size, asid_t asid, vptr_t vptr, pptr_t pptr, word_t mapType)
+#else
 void unmapPage(vm_page_size_t page_size, asid_t asid, vptr_t vptr, pptr_t pptr)
+#endif
 {
     findVSpaceForASID_ret_t find_ret;
     lookupPTSlot_ret_t  lu_ret;
 
+#ifdef CONFIG_RISCV_IOMMU
+    if (mapType == RISCVMapFQ) {
+        riscvIOMMUUnmapFaultQueue(vptr | ~MASK(seL4_X4GPABits), pptr);
+        return;
+    }
+#endif
     find_ret = findVSpaceForASID(asid);
     if (find_ret.status != EXCEPTION_NONE) {
         return;
     }
 
+#ifdef CONFIG_RISCV_IOMMU
+    asid_entry_t *entry = &riscvKSASIDTable[ASID_HIGH(asid)]->array[ASID_LOW(asid)];
+    if (mapType != asid_entry_ptr_get_mapType(entry)) {
+        return;
+    }
+    lu_ret = lookupPTSlotForMap(find_ret.vspace_root, vptr, mapType);
+#else
     lu_ret = lookupPTSlot(find_ret.vspace_root, vptr);
+#endif
     if (unlikely(lu_ret.ptBitsLeft != pageBitsForSize(page_size))) {
         return;
     }
@@ -572,7 +716,11 @@ void unmapPage(vm_page_size_t page_size, asid_t asid, vptr_t vptr, pptr_t pptr)
     }
 
     lu_ret.ptSlot[0] = pte_pte_invalid_new();
+#ifdef CONFIG_RISCV_IOMMU
+    synchroniseContext(entry, vptr, pageBitsForSize(page_size));
+#else
     sfence();
+#endif
 }
 
 void setVMRoot(tcb_t *tcb)
@@ -584,7 +732,11 @@ void setVMRoot(tcb_t *tcb)
 
     threadRoot = TCB_PTR_CTE_PTR(tcb, tcbVTable)->cap;
 
+#ifdef CONFIG_RISCV_IOMMU
+    if (cap_get_capType(threadRoot) != cap_page_table_cap || cap_page_table_cap_get_capPTRootX4(threadRoot)) {
+#else
     if (cap_get_capType(threadRoot) != cap_page_table_cap) {
+#endif
         setVSpaceRoot(kpptr_to_paddr(&kernel_root_pageTable), 0);
         return;
     }
@@ -604,7 +756,12 @@ void setVMRoot(tcb_t *tcb)
 bool_t CONST isValidVTableRoot(cap_t cap)
 {
     return (cap_get_capType(cap) == cap_page_table_cap &&
+#ifdef CONFIG_RISCV_IOMMU
+            cap_page_table_cap_get_capPTMappedASID(cap) != asidInvalid &&
+            !cap_page_table_cap_get_capPTRootX4(cap));
+#else
             cap_page_table_cap_get_capPTIsMapped(cap));
+#endif
 }
 
 exception_t checkValidIPCBuffer(vptr_t vptr, cap_t cap)
@@ -680,6 +837,19 @@ static inline bool_t CONST checkVPAlignment(vm_page_size_t sz, word_t w)
     return (w & MASK(pageBitsForSize(sz))) == 0;
 }
 
+#ifdef CONFIG_RISCV_IOMMU
+static bool_t getPageTableMapping(cap_t cap, pte_t **pt, asid_t *asid, word_t *mapType)
+{
+    if (cap_get_capType(cap) != cap_page_table_cap) {
+        return false;
+    }
+    *pt = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
+    *asid = cap_page_table_cap_get_capPTMappedASID(cap);
+    *mapType = cap_page_table_cap_get_capPTMapType(cap);
+    return *asid != asidInvalid;
+}
+#endif
+
 static exception_t decodeRISCVPageTableInvocation(word_t label, word_t length,
                                                   cte_t *cte, cap_t cap, word_t *buffer)
 {
@@ -690,7 +860,11 @@ static exception_t decodeRISCVPageTableInvocation(word_t label, word_t length,
             return EXCEPTION_SYSCALL_ERROR;
         }
         /* Ensure that if the page table is mapped, it is not a top level table */
+#ifdef CONFIG_RISCV_IOMMU
+        if (likely(cap_page_table_cap_get_capPTMappedASID(cap) != asidInvalid)) {
+#else
         if (likely(cap_page_table_cap_get_capPTIsMapped(cap))) {
+#endif
             asid_t asid = cap_page_table_cap_get_capPTMappedASID(cap);
             findVSpaceForASID_ret_t find_ret = findVSpaceForASID(asid);
             pte_t *pte = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
@@ -717,7 +891,11 @@ static exception_t decodeRISCVPageTableInvocation(word_t label, word_t length,
         current_syscall_error.type = seL4_TruncatedMessage;
         return EXCEPTION_SYSCALL_ERROR;
     }
+#ifdef CONFIG_RISCV_IOMMU
+    if (unlikely(cap_page_table_cap_get_capPTMappedASID(cap) != asidInvalid)) {
+#else
     if (unlikely(cap_page_table_cap_get_capPTIsMapped(cap))) {
+#endif
         userError("RISCVPageTable: PageTable is already mapped.");
         current_syscall_error.type = seL4_InvalidCapability;
         current_syscall_error.invalidCapNumber = 0;
@@ -727,8 +905,15 @@ static exception_t decodeRISCVPageTableInvocation(word_t label, word_t length,
     word_t vaddr = getSyscallArg(0, buffer);
     cap_t lvl1ptCap = current_extra_caps.excaprefs[0]->cap;
 
+#ifdef CONFIG_RISCV_IOMMU
+    pte_t *lvl1pt;
+    asid_t asid;
+    word_t mapType;
+    if (unlikely(!getPageTableMapping(lvl1ptCap, &lvl1pt, &asid, &mapType))) {
+#else
     if (unlikely(cap_get_capType(lvl1ptCap) != cap_page_table_cap ||
                  cap_page_table_cap_get_capPTIsMapped(lvl1ptCap) == asidInvalid)) {
+#endif
         userError("RISCVPageTableMap: Invalid top-level PageTable.");
         current_syscall_error.type = seL4_InvalidCapability;
         current_syscall_error.invalidCapNumber = 1;
@@ -736,10 +921,17 @@ static exception_t decodeRISCVPageTableInvocation(word_t label, word_t length,
         return EXCEPTION_SYSCALL_ERROR;
     }
 
+#ifndef CONFIG_RISCV_IOMMU
     pte_t *lvl1pt = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(lvl1ptCap));
     asid_t asid = cap_page_table_cap_get_capPTMappedASID(lvl1ptCap);
+#endif
 
+#ifdef CONFIG_RISCV_IOMMU
+    word_t addressTop = mapType == RISCVMapSv39x4 ? BIT(seL4_X4GPABits) : USER_TOP;
+    if (unlikely(vaddr >= addressTop)) {
+#else
     if (unlikely(vaddr >= USER_TOP)) {
+#endif
         userError("RISCVPageTableMap: Virtual address cannot be in kernel window.");
         current_syscall_error.type = seL4_InvalidArgument;
         current_syscall_error.invalidArgumentNumber = 0;
@@ -762,7 +954,11 @@ static exception_t decodeRISCVPageTableInvocation(word_t label, word_t length,
         return EXCEPTION_SYSCALL_ERROR;
     }
 
+#ifdef CONFIG_RISCV_IOMMU
+    lookupPTSlot_ret_t lu_ret = lookupPTSlotForMap(lvl1pt, vaddr, mapType);
+#else
     lookupPTSlot_ret_t lu_ret = lookupPTSlot(lvl1pt, vaddr);
+#endif
 
     /* if there is already something mapped (valid is set) or we have traversed far enough
      * that a page table is not valid to map then tell the user that they have to delete
@@ -789,8 +985,11 @@ static exception_t decodeRISCVPageTableInvocation(word_t label, word_t length,
                         0,  /* read */
                         1 /* valid */
                        );
-
+#ifdef CONFIG_RISCV_IOMMU
+    cap = cap_page_table_cap_set_capPTMapType(cap, mapType);
+#else
     cap = cap_page_table_cap_set_capPTIsMapped(cap, 1);
+#endif
     cap = cap_page_table_cap_set_capPTMappedASID(cap, asid);
     cap = cap_page_table_cap_set_capPTMappedAddress(cap, (vaddr & ~MASK(lu_ret.ptBitsLeft)));
 
@@ -803,6 +1002,12 @@ static exception_t decodeRISCVFrameInvocation(word_t label, word_t length,
 {
     switch (label) {
     case RISCVPageMap: {
+#ifdef CONFIG_RISCV_IOMMU
+        if (cap_frame_cap_get_capFMapType(cap) == RISCVMapFQ) {
+            current_syscall_error.type = seL4_DeleteFirst;
+            return EXCEPTION_SYSCALL_ERROR;
+        }
+#endif
         if (unlikely(length < 3 || current_extra_caps.excaprefs[0] == NULL)) {
             userError("RISCVPageMap: Truncated message.");
             current_syscall_error.type = seL4_TruncatedMessage;
@@ -817,16 +1022,25 @@ static exception_t decodeRISCVFrameInvocation(word_t label, word_t length,
         vm_page_size_t frameSize = cap_frame_cap_get_capFSize(cap);
         vm_rights_t capVMRights = cap_frame_cap_get_capFVMRights(cap);
 
+#ifdef CONFIG_RISCV_IOMMU
+        pte_t *lvl1pt;
+        asid_t asid;
+        word_t mapType;
+        if (unlikely(!getPageTableMapping(lvl1ptCap, &lvl1pt, &asid, &mapType))) {
+#else
         if (unlikely(cap_get_capType(lvl1ptCap) != cap_page_table_cap ||
                      !cap_page_table_cap_get_capPTIsMapped(lvl1ptCap))) {
+#endif
             userError("RISCVPageMap: Bad PageTable cap.");
             current_syscall_error.type = seL4_InvalidCapability;
             current_syscall_error.invalidCapNumber = 1;
             return EXCEPTION_SYSCALL_ERROR;
         }
 
+#ifndef CONFIG_RISCV_IOMMU
         pte_t *lvl1pt = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(lvl1ptCap));
         asid_t asid = cap_page_table_cap_get_capPTMappedASID(lvl1ptCap);
+#endif
 
         findVSpaceForASID_ret_t find_ret = findVSpaceForASID(asid);
         if (unlikely(find_ret.status != EXCEPTION_NONE)) {
@@ -844,8 +1058,13 @@ static exception_t decodeRISCVFrameInvocation(word_t label, word_t length,
         }
 
         /* check the vaddr is valid */
+#ifdef CONFIG_RISCV_IOMMU
+        word_t addressTop = mapType == RISCVMapSv39x4 ? BIT(seL4_X4GPABits) : USER_TOP;
+        if (unlikely(vaddr >= addressTop) || BIT(pageBitsForSize(frameSize)) > addressTop - vaddr) {
+#else
         word_t vtop = vaddr + BIT(pageBitsForSize(frameSize)) - 1;
         if (unlikely(vtop >= USER_TOP)) {
+#endif
             current_syscall_error.type = seL4_InvalidArgument;
             current_syscall_error.invalidArgumentNumber = 0;
             return EXCEPTION_SYSCALL_ERROR;
@@ -856,7 +1075,11 @@ static exception_t decodeRISCVFrameInvocation(word_t label, word_t length,
         }
 
         /* Check if this page is already mapped */
+#ifdef CONFIG_RISCV_IOMMU
+        lookupPTSlot_ret_t lu_ret = lookupPTSlotForMap(lvl1pt, vaddr, mapType);
+#else
         lookupPTSlot_ret_t lu_ret = lookupPTSlot(lvl1pt, vaddr);
+#endif
         if (unlikely(lu_ret.ptBitsLeft != pageBitsForSize(frameSize))) {
             current_lookup_fault = lookup_fault_missing_capability_new(lu_ret.ptBitsLeft);
             current_syscall_error.type = seL4_FailedLookup;
@@ -867,7 +1090,11 @@ static exception_t decodeRISCVFrameInvocation(word_t label, word_t length,
         asid_t frame_asid = cap_frame_cap_get_capFMappedASID(cap);
         if (unlikely(frame_asid != asidInvalid)) {
             /* this frame is already mapped */
+#ifdef CONFIG_RISCV_IOMMU
+            if (frame_asid != asid || mapType != cap_frame_cap_get_capFMapType(cap)) {
+#else
             if (frame_asid != asid) {
+#endif
                 userError("RISCVPageMap: Attempting to remap a frame that does not belong to the passed address space");
                 current_syscall_error.type = seL4_InvalidCapability;
                 current_syscall_error.invalidCapNumber = 1;
@@ -900,7 +1127,9 @@ static exception_t decodeRISCVFrameInvocation(word_t label, word_t length,
         paddr_t frame_paddr = addrFromPPtr((void *) cap_frame_cap_get_capFBasePtr(cap));
         cap = cap_frame_cap_set_capFMappedASID(cap, asid);
         cap = cap_frame_cap_set_capFMappedAddress(cap,  vaddr);
-
+#ifdef CONFIG_RISCV_IOMMU
+        cap = cap_frame_cap_set_capFMapType(cap, mapType);
+#endif
         bool_t executable = !vm_attributes_get_riscvExecuteNever(attr);
         pte_t pte = makeUserPTE(frame_paddr, executable, vmRights);
         setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
@@ -936,6 +1165,12 @@ exception_t decodeRISCVMMUInvocation(word_t label, word_t length, cptr_t cptr,
     switch (cap_get_capType(cap)) {
 
     case cap_page_table_cap:
+#ifdef CONFIG_RISCV_IOMMU
+        if (cap_page_table_cap_get_capPTRootX4(cap)) {
+            current_syscall_error.type = seL4_IllegalOperation;
+            return EXCEPTION_SYSCALL_ERROR;
+        }
+#endif
         return decodeRISCVPageTableInvocation(label, length, cte, cap, buffer);
 
     case cap_frame_cap:
@@ -1036,9 +1271,14 @@ exception_t decodeRISCVMMUInvocation(word_t label, word_t length, cptr_t cptr,
         vspaceCapSlot = current_extra_caps.excaprefs[0];
         vspaceCap = vspaceCapSlot->cap;
 
+#ifdef CONFIG_RISCV_IOMMU
+        if (unlikely(cap_get_capType(vspaceCap) != cap_page_table_cap ||
+                     cap_page_table_cap_get_capPTMappedASID(vspaceCap) != asidInvalid)) {
+#else
         if (unlikely(
                 cap_get_capType(vspaceCap) != cap_page_table_cap ||
                 cap_page_table_cap_get_capPTIsMapped(vspaceCap))) {
+#endif
             userError("RISCVASIDPool: Invalid vspace root.");
             current_syscall_error.type = seL4_InvalidCapability;
             current_syscall_error.invalidCapNumber = 1;
@@ -1062,7 +1302,12 @@ exception_t decodeRISCVMMUInvocation(word_t label, word_t length, cptr_t cptr,
 
         /* Find first free ASID */
         asid = cap_asid_pool_cap_get_capASIDBase(cap);
+#ifdef CONFIG_RISCV_IOMMU
+        for (i = 0; i < BIT(asidLowBits) &&
+             (asid + i == asidInvalid || asid_entry_ptr_get_rootPtr(&pool->array[i]) != 0); i++);
+#else
         for (i = 0; i < BIT(asidLowBits) && (asid + i == 0 || pool->array[i]); i++);
+#endif
 
         if (i == BIT(asidLowBits)) {
             current_syscall_error.type = seL4_DeleteFirst;
@@ -1075,6 +1320,12 @@ exception_t decodeRISCVMMUInvocation(word_t label, word_t length, cptr_t cptr,
         setThreadState(NODE_STATE(ksCurThread), ThreadState_Restart);
         return performASIDPoolInvocation(asid, pool, vspaceCapSlot);
     }
+#ifdef CONFIG_RISCV_IOMMU
+    case cap_iommu_cap:
+    case cap_iommu_ddt_cap:
+    case cap_iommu_device_cap:
+        return decodeRISCVIOMMUInvocation(label, length, cte, cap, call, buffer);
+#endif
     default:
         fail("Invalid arch cap type");
     }
@@ -1084,24 +1335,45 @@ exception_t performPageTableInvocationMap(cap_t cap, cte_t *ctSlot,
                                           pte_t pte, pte_t *ptSlot)
 {
     ctSlot->cap = cap;
+#ifdef CONFIG_RISCV_IOMMU
+    if (cap_page_table_cap_get_capPTMapType(cap) == RISCVMapSv39x4) {
+        /* Publish the initialized child table before making its parent valid. */
+        fence_iorw_iorw();
+    }
+#endif
     *ptSlot = pte;
+#ifdef CONFIG_RISCV_IOMMU
+    publishContext(cap_page_table_cap_get_capPTMapType(cap));
+#else
     sfence();
+#endif
 
     return EXCEPTION_NONE;
 }
 
 exception_t performPageTableInvocationUnmap(cap_t cap, cte_t *ctSlot)
 {
+#ifdef CONFIG_RISCV_IOMMU
+    if (cap_page_table_cap_get_capPTMappedASID(cap) != asidInvalid) {
+#else
     if (cap_page_table_cap_get_capPTIsMapped(cap)) {
+#endif
         pte_t *pt = PTE_PTR(cap_page_table_cap_get_capPTBasePtr(cap));
         unmapPageTable(
             cap_page_table_cap_get_capPTMappedASID(cap),
             cap_page_table_cap_get_capPTMappedAddress(cap),
             pt
+#ifdef CONFIG_RISCV_IOMMU
+            , cap_page_table_cap_get_capPTMapType(cap)
+#endif
         );
         clearMemory((void *)pt, seL4_PageTableBits);
     }
+#ifdef CONFIG_RISCV_IOMMU
+    cap_page_table_cap_ptr_set_capPTMappedASID(&(ctSlot->cap), asidInvalid);
+#else
     cap_page_table_cap_ptr_set_capPTIsMapped(&(ctSlot->cap), 0);
+#endif
 
     return EXCEPTION_NONE;
 }
@@ -1125,10 +1397,24 @@ static exception_t performPageGetAddress(void *vbase_ptr, bool_t call)
     return EXCEPTION_NONE;
 }
 
+#ifdef CONFIG_RISCV_IOMMU
+static exception_t updatePTE(pte_t pte, pte_t *base, asid_entry_t *entry, vptr_t vptr, word_t pageBits)
+#else
 static exception_t updatePTE(pte_t pte, pte_t *base)
+#endif
 {
+#ifdef CONFIG_RISCV_IOMMU
+    if (asid_entry_ptr_get_mapType(entry) == RISCVMapSv39x4 && pte_ptr_get_valid(base)) {
+        *base = pte_pte_invalid_new();
+        synchroniseContext(entry, vptr, pageBits);
+    }
+#endif
     *base = pte;
+#ifdef CONFIG_RISCV_IOMMU
+    publishContext(asid_entry_ptr_get_mapType(entry));
+#else
     sfence();
+#endif
     return EXCEPTION_NONE;
 }
 
@@ -1136,22 +1422,38 @@ exception_t performPageInvocationMapPTE(cap_t cap, cte_t *ctSlot,
                                         pte_t pte, pte_t *base)
 {
     ctSlot->cap = cap;
+#ifdef CONFIG_RISCV_IOMMU
+    return updatePTE(pte, base, lookupASIDEntry(cap_frame_cap_get_capFMappedASID(cap)),
+                     cap_frame_cap_get_capFMappedAddress(cap), pageBitsForSize(cap_frame_cap_get_capFSize(cap)));
+#else
     return updatePTE(pte, base);
+#endif
 }
 
 exception_t performPageInvocationUnmap(cap_t cap, cte_t *ctSlot)
 {
+#ifdef CONFIG_RISCV_IOMMU
+    if (cap_frame_cap_get_capFMappedASID(cap) != asidInvalid
+        || cap_frame_cap_get_capFMapType(cap) == RISCVMapFQ) {
+#else
     if (cap_frame_cap_get_capFMappedASID(cap) != asidInvalid) {
+#endif
         unmapPage(cap_frame_cap_get_capFSize(cap),
                   cap_frame_cap_get_capFMappedASID(cap),
                   cap_frame_cap_get_capFMappedAddress(cap),
                   cap_frame_cap_get_capFBasePtr(cap)
+#ifdef CONFIG_RISCV_IOMMU
+                  , cap_frame_cap_get_capFMapType(cap)
+#endif
                  );
     }
 
     cap_t slotCap = ctSlot->cap;
     slotCap = cap_frame_cap_set_capFMappedAddress(slotCap, 0);
     slotCap = cap_frame_cap_set_capFMappedASID(slotCap, asidInvalid);
+#ifdef CONFIG_RISCV_IOMMU
+    slotCap = cap_frame_cap_set_capFMapType(slotCap, RISCVMapSv39);
+#endif
     ctSlot->cap = slotCap;
 
     return EXCEPTION_NONE;
