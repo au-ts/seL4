@@ -148,6 +148,15 @@ static const p_region_t BOOT_RODATA *const kernel_device_reserved_regions = NULL
 #define NUM_KERNEL_DEVICE_RESERVED_REGIONS 0
 {% endif %}
 
+#define NUM_RESERVED_P_REGIONS {{ len(reserved_regions) }}
+{% if reserved_regions %}
+static const p_region_t BOOT_RODATA reserved_p_regs[] = {
+{% for reg in reserved_regions %}
+    { .start = {{ '0x{:x}'.format(reg.base) }}, .end = {{ '0x{:x}'.format(reg.base + reg.size) }} },
+{% endfor %}
+};
+{% endif %}
+
 {% if aia %}
 /* AIA: the boot CPU's supervisor interrupt file and optional APLIC. */
 #define IMSIC_S_FILE_PADDR {{ '0x{:x}'.format(aia.paddr) }}
@@ -230,7 +239,7 @@ def get_interrupts(tree: FdtParser, hw_yaml: HardwareYaml) -> List:
 
 def create_c_header_file(config, kernel_irqs: List, kernel_macros: Dict,
                          kernel_regions: List, kernel_reserved_regions: List,
-                         physBase: int, physical_memory, outputStream, aia=None):
+                         physBase: int, physical_memory, outputStream, aia=None, reserved_regions=()):
 
     jinja_env = jinja2.Environment(loader=jinja2.BaseLoader, trim_blocks=True,
                                    lstrip_blocks=True)
@@ -244,6 +253,7 @@ def create_c_header_file(config, kernel_irqs: List, kernel_macros: Dict,
             'kernel_macros': kernel_macros,
             'kernel_regions': kernel_regions,
             'kernel_reserved_regions': kernel_reserved_regions,
+            'reserved_regions': reserved_regions,
             'physBase': physBase,
             'physical_memory': physical_memory,
             'aia': aia})
@@ -269,7 +279,8 @@ def run(tree: FdtParser, hw_yaml: HardwareYaml, config: Config, kernel_config_di
         physBase,
         physical_memory,
         args.header_out,
-        args.aia)
+        args.aia,
+        sorted(hardware.utils.memory.parse_reserved_regions(tree.get_path('/reserved-memory'))))
 
 
 def add_args(parser):

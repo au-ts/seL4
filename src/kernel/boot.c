@@ -786,6 +786,13 @@ BOOT_CODE static bool_t create_untypeds_for_region(
 
 BOOT_CODE bool_t create_untypeds(cap_t root_cnode_cap)
 {
+#if defined(NUM_RESERVED_P_REGIONS) && NUM_RESERVED_P_REGIONS > 0
+    for (word_t i = 0; i < NUM_RESERVED_P_REGIONS; i++) {
+        if (!reserve_region(reserved_p_regs[i])) {
+            return false;
+        }
+    }
+#endif
     seL4_SlotPos first_untyped_slot = ndks_boot.slot_pos_cur;
 
     paddr_t start = 0;

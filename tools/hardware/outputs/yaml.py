@@ -63,7 +63,8 @@ def run(tree: FdtParser, hw_yaml: HardwareYaml, config: Config,
 
     phys_mem, _ = hardware.utils.memory.get_physical_memory(tree, config)
     kernel_devs = get_kernel_devices(tree, hw_yaml, kernel_config_dict)
-    dev_mem = hardware.utils.memory.get_addrspace_exclude(phys_mem + kernel_devs, config)
+    reserved = hardware.utils.memory.parse_reserved_regions(tree.get_path('/reserved-memory'))
+    dev_mem = hardware.utils.memory.get_addrspace_exclude(phys_mem + kernel_devs + list(reserved), config)
 
     create_yaml_file(dev_mem, phys_mem, args.yaml_out)
 
