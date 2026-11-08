@@ -20,6 +20,10 @@
 #include <linker.h>
 #include <plat/machine/hardware.h>
 #include <machine.h>
+#ifdef CONFIG_RISCV_IOMMU
+#include <drivers/iommu/riscv.h>
+#include <sel4/arch/bootinfo_types.h>
+#endif
 
 #ifdef ENABLE_SMP_SUPPORT
 /* SMP boot synchronization works based on a global variable with the initial
@@ -31,6 +35,10 @@ BOOT_BSS static volatile _Atomic word_t node_boot_lock;
 #endif
 
 BOOT_BSS static region_t res_reg[NUM_RESERVED_REGIONS];
+
+#ifdef CONFIG_RISCV_IOMMU
+static iommu_command_queue_t iommu_command_queues[NUM_RISCV_IOMMUS];
+#endif
 
 BOOT_CODE cap_t create_mapped_it_frame_cap(cap_t pd_cap, pptr_t pptr, vptr_t vptr, asid_t asid, bool_t
                                            use_large, bool_t executable)
@@ -275,6 +283,10 @@ static BOOT_CODE bool_t try_init_kernel(
         };
     }
 
+#ifdef CONFIG_RISCV_IOMMU
+    extra_bi_size += NUM_RISCV_IOMMUS * sizeof(seL4_RISCV_IOMMUBootInfo);
+#endif
+
     /* The region of the initial thread is the user image + ipcbuf + boot info + extra */
     word_t extra_bi_size_bits = calculate_extra_bi_size_bits(extra_bi_size);
     v_region_t it_v_reg = {
@@ -313,6 +325,24 @@ static BOOT_CODE bool_t try_init_kernel(
 
     /* create the bootinfo frame */
     populate_bi_frame(0, CONFIG_MAX_NUM_NODES, ipcbuf_vptr, extra_bi_size);
+
+#ifdef CONFIG_RISCV_IOMMU
+    for (word_t i = 0; i < NUM_RISCV_IOMMUS; i++) {
+        seL4_RISCV_IOMMUBootInfo *info = (void *)(rootserver.extra_bi + extra_bi_offset);
+        info->header.id = SEL4_BOOTINFO_HEADER_RISCV_IOMMU;
+        info->header.len = sizeof(*info);
+        info->control = seL4_CapNull;
+        info->paddr = riscv_iommus[i].paddr;
+        cap_t iommu = riscvIOMMUInit(riscv_iommus[i].mmio, kpptr_to_paddr(&iommu_command_queues[i]));
+        if (cap_get_capType(iommu) != cap_null_cap) {
+            info->control = ndks_boot.slot_pos_cur;
+            if (!provide_cap(root_cnode_cap, iommu)) {
+                return false;
+            }
+        }
+        extra_bi_offset += sizeof(*info);
+    }
+#endif
 
     /* put DTB in the bootinfo block, if present. */
     seL4_BootInfoHeader header;
