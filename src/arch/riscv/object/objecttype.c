@@ -12,6 +12,9 @@
 #include <arch/machine.h>
 #include <arch/model/statedata.h>
 #include <arch/object/objecttype.h>
+#ifdef CONFIG_RISCV_IOMMU
+#include <drivers/iommu/riscv.h>
+#endif
 
 deriveCap_ret_t Arch_deriveCap(cte_t *slot, cap_t cap)
 {
@@ -20,7 +23,11 @@ deriveCap_ret_t Arch_deriveCap(cte_t *slot, cap_t cap)
     switch (cap_get_capType(cap)) {
 
     case cap_page_table_cap:
+#ifdef CONFIG_RISCV_IOMMU
+        if (cap_page_table_cap_get_capPTMappedASID(cap) != asidInvalid) {
+#else
         if (cap_page_table_cap_get_capPTIsMapped(cap)) {
+#endif
             ret.cap = cap;
             ret.status = EXCEPTION_NONE;
         } else {
@@ -32,11 +39,29 @@ deriveCap_ret_t Arch_deriveCap(cte_t *slot, cap_t cap)
         return ret;
 
     case cap_frame_cap:
+#ifdef CONFIG_RISCV_IOMMU
+        cap = cap_frame_cap_set_capFMapType(cap, RISCVMapSv39);
+#endif
         cap = cap_frame_cap_set_capFMappedAddress(cap, 0);
         ret.cap = cap_frame_cap_set_capFMappedASID(cap, asidInvalid);
         ret.status = EXCEPTION_NONE;
         return ret;
 
+#ifdef CONFIG_RISCV_IOMMU
+    case cap_iommu_ddt_cap:
+        if (!cap_iommu_ddt_cap_get_capDDTIsMapped(cap)) {
+            current_syscall_error.type = seL4_IllegalOperation;
+            ret.cap = cap_null_cap_new();
+            ret.status = EXCEPTION_SYSCALL_ERROR;
+            return ret;
+        } else {
+            ret.cap = cap;
+            ret.status = EXCEPTION_NONE;
+            return ret;
+        }
+    case cap_iommu_cap:
+    case cap_iommu_device_cap:
+#endif
     case cap_asid_control_cap:
     case cap_asid_pool_cap:
         ret.cap = cap;
@@ -74,16 +99,27 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
 
     switch (cap_get_capType(cap)) {
     case cap_frame_cap:
-
+#ifdef CONFIG_RISCV_IOMMU
+        if (cap_frame_cap_get_capFMappedASID(cap) || cap_frame_cap_get_capFMapType(cap) == RISCVMapFQ) {
+#else
         if (cap_frame_cap_get_capFMappedASID(cap)) {
+#endif
             unmapPage(cap_frame_cap_get_capFSize(cap),
                       cap_frame_cap_get_capFMappedASID(cap),
                       cap_frame_cap_get_capFMappedAddress(cap),
-                      cap_frame_cap_get_capFBasePtr(cap));
+                      cap_frame_cap_get_capFBasePtr(cap)
+#ifdef CONFIG_RISCV_IOMMU
+                      , cap_frame_cap_get_capFMapType(cap)
+#endif
+                     );
         }
         break;
     case cap_page_table_cap:
+#ifdef CONFIG_RISCV_IOMMU
+        if (final && cap_page_table_cap_get_capPTMappedASID(cap) != asidInvalid) {
+#else
         if (final && cap_page_table_cap_get_capPTIsMapped(cap)) {
+#endif
             /*
              * This PageTable is either mapped as a vspace_root or otherwise exists
              * as an entry in another PageTable. We check if it is a vspace_root and
@@ -97,7 +133,14 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
             if (find_ret.status == EXCEPTION_NONE && find_ret.vspace_root == pte) {
                 deleteASID(asid, pte);
             } else {
+#ifdef CONFIG_RISCV_IOMMU
+                if (!cap_page_table_cap_get_capPTRootX4(cap)) {
+                    unmapPageTable(asid, cap_page_table_cap_get_capPTMappedAddress(cap),
+                                   pte, cap_page_table_cap_get_capPTMapType(cap));
+                }
+#else
                 unmapPageTable(asid, cap_page_table_cap_get_capPTMappedAddress(cap), pte);
+#endif
             }
         }
         break;
@@ -109,6 +152,15 @@ finaliseCap_ret_t Arch_finaliseCap(cap_t cap, bool_t final)
             );
         }
         break;
+#ifdef CONFIG_RISCV_IOMMU
+    case cap_iommu_cap:
+    case cap_iommu_ddt_cap:
+    case cap_iommu_device_cap:
+        if (final) {
+            riscvIOMMUFinaliseCap(cap);
+        }
+        break;
+#endif
     case cap_asid_control_cap:
         break;
     }
@@ -137,6 +189,17 @@ bool_t CONST Arch_sameRegionAs(cap_t cap_a, cap_t cap_b)
                    cap_page_table_cap_get_capPTBasePtr(cap_b);
         }
         break;
+#ifdef CONFIG_RISCV_IOMMU
+    case cap_iommu_cap:
+        return cap_get_capType(cap_b) == cap_iommu_cap &&
+               cap_iommu_cap_get_capIOMMUBasePtr(cap_a) == cap_iommu_cap_get_capIOMMUBasePtr(cap_b);
+    case cap_iommu_ddt_cap:
+        return cap_get_capType(cap_b) == cap_iommu_ddt_cap &&
+               cap_iommu_ddt_cap_get_capDDTBasePtr(cap_a) == cap_iommu_ddt_cap_get_capDDTBasePtr(cap_b);
+    case cap_iommu_device_cap:
+        return cap_get_capType(cap_b) == cap_iommu_device_cap &&
+               cap_iommu_device_cap_get_capDevBasePtr(cap_a) == cap_iommu_device_cap_get_capDevBasePtr(cap_b);
+#endif
     case cap_asid_control_cap:
         if (cap_get_capType(cap_b) == cap_asid_control_cap) {
             return true;
@@ -175,6 +238,14 @@ word_t Arch_getObjectSize(word_t t)
     case seL4_RISCV_4K_Page:
     case seL4_RISCV_PageTableObject:
         return seL4_PageBits;
+#ifdef CONFIG_RISCV_IOMMU
+    case seL4_RISCV_RootX4PageTableObject:
+        return seL4_RootX4PageTableBits;
+    case seL4_RISCV_IOMMUDDTObject:
+        return seL4_IOMMUDDTBits;
+    case seL4_RISCV_IOMMUDeviceObject:
+        return seL4_IOMMUDeviceBits;
+#endif
     case seL4_RISCV_Mega_Page:
         return seL4_LargePageBits;
 #if CONFIG_PT_LEVELS > 2
@@ -212,6 +283,9 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
         return cap_frame_cap_new(
                    asidInvalid,                    /* capFMappedASID       */
                    (word_t) regionBase,            /* capFBasePtr          */
+#ifdef CONFIG_RISCV_IOMMU
+                   RISCVMapSv39,                   /* capFMapType          */
+#endif
                    RISCV_4K_Page,                  /* capFSize             */
                    wordFromVMRights(VMReadWrite),  /* capFVMRights         */
                    deviceMemory,                   /* capFIsDevice         */
@@ -235,6 +309,9 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
         return cap_frame_cap_new(
                    asidInvalid,                    /* capFMappedASID       */
                    (word_t) regionBase,            /* capFBasePtr          */
+#ifdef CONFIG_RISCV_IOMMU
+                   RISCVMapSv39,                   /* capFMapType           */
+#endif
                    RISCV_Mega_Page,                  /* capFSize             */
                    wordFromVMRights(VMReadWrite),  /* capFVMRights         */
                    deviceMemory,                   /* capFIsDevice         */
@@ -260,6 +337,9 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
         return cap_frame_cap_new(
                    asidInvalid,                    /* capFMappedASID       */
                    (word_t) regionBase,            /* capFBasePtr          */
+#ifdef CONFIG_RISCV_IOMMU
+                   RISCVMapSv39,                   /* capFMapType          */
+#endif
                    RISCV_Giga_Page,                  /* capFSize             */
                    wordFromVMRights(VMReadWrite),  /* capFVMRights         */
                    deviceMemory,                   /* capFIsDevice         */
@@ -274,10 +354,23 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t
         return cap_page_table_cap_new(
                    asidInvalid,            /* capPTMappedASID    */
                    (word_t)regionBase,     /* capPTBasePtr       */
+#ifdef CONFIG_RISCV_IOMMU
+                   RISCVMapSv39,           /* capPTMapType       */
+                   false,                  /* capPTRootX4        */
+#else
                    0,                      /* capPTIsMapped      */
+#endif
                    0                       /* capPTMappedAddress */
                );
 
+#ifdef CONFIG_RISCV_IOMMU
+    case seL4_RISCV_RootX4PageTableObject:
+        return cap_page_table_cap_new(asidInvalid, (word_t)regionBase, RISCVMapSv39x4, true, 0);
+    case seL4_RISCV_IOMMUDDTObject:
+        return cap_iommu_ddt_cap_new(0, 0, 0, (word_t)regionBase);
+    case seL4_RISCV_IOMMUDeviceObject:
+        return cap_iommu_device_cap_new((word_t)regionBase);
+#endif
     default:
         /*
          * This is a conflation of the haskell error: "Arch.createNewCaps

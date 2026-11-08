@@ -125,6 +125,12 @@ void print_cap_arch(cap_t cap)
 {
     switch (cap_get_capType(cap)) {
     case cap_page_table_cap: {
+#ifdef CONFIG_RISCV_IOMMU
+        if (cap_page_table_cap_get_capPTMapType(cap) != RISCVMapSv39) {
+            printf("[non-native page table %p]\n", (void *)cap_page_table_cap_get_capPTBasePtr(cap));
+            break;
+        }
+#endif
         asid_t asid = cap_page_table_cap_get_capPTMappedASID(cap);
         findVSpaceForASID_ret_t find_ret = findVSpaceForASID(asid);
         vptr_t vptr = cap_page_table_cap_get_capPTMappedAddress(cap);
@@ -145,6 +151,12 @@ void print_cap_arch(cap_t cap)
         break;
     }
     case cap_frame_cap: {
+#ifdef CONFIG_RISCV_IOMMU
+        if (cap_frame_cap_get_capFMapType(cap) != RISCVMapSv39) {
+            printf("[non-native frame %p]\n", (void *)cap_frame_cap_get_capFBasePtr(cap));
+            break;
+        }
+#endif
         vptr_t vptr = cap_frame_cap_get_capFMappedAddress(cap);
         findVSpaceForASID_ret_t find_ret = findVSpaceForASID(cap_frame_cap_get_capFMappedASID(cap));
 
