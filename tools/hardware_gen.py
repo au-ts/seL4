@@ -57,9 +57,14 @@ def main(args: argparse.Namespace):
     hw_yaml = HardwareYaml(rules, cfg)
 
     args.aia = None
+    hart = None
     if cfg.arch == 'riscv':
         from hardware import riscv_aia
         args.aia = riscv_aia.parse(parsed_dt, kernel_config_dict.get('CONFIG_RISCV_AIA') == 'ON')
+        chosen = parsed_dt.get_path('/chosen')
+        if chosen and chosen.has_prop('seL4,boot-cpu'):
+            boot = parsed_dt.get_phandle(parsed_dt.get_boot_cpu())
+            hart = boot.parse_address(list(boot.get_prop('reg').words))
 
     arg_dict = vars(args)
     for t in sorted(OUTPUTS.keys()):
@@ -70,6 +75,8 @@ def main(args: argparse.Namespace):
         aplic = 'ON' if args.aia and args.aia['sources'] else 'OFF'
         with args.config_out:
             args.config_out.write(f'config_set(KernelRiscvAPLIC RISCV_APLIC {aplic})\n')
+            if hart is not None:
+                args.config_out.write(f'config_set(KernelPlatformFirstHartID FIRST_HART_ID {hart})\n')
 
 
 if __name__ == '__main__':
