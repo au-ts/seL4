@@ -5,6 +5,7 @@
 #
 
 config_option(KernelRiscvAIA RISCV_AIA "Enable RISC-V AIA" DEFAULT OFF)
+config_set(KernelRiscvIOMMU RISCV_IOMMU OFF)
 
 config_string(
   KernelPTLevels PT_LEVELS "Number of page \
