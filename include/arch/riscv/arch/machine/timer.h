@@ -10,7 +10,7 @@
 #include <config.h>
 #include <arch/sbi.h>
 
-static inline void riscv_set_timer(uint64_t deadline) 
+static inline void riscv_set_timer(uint64_t deadline)
 {
 #ifdef CONFIG_RISCV_SSTC
     asm volatile("csrw 0x14d, %0" :: "r"(deadline) : "memory");
